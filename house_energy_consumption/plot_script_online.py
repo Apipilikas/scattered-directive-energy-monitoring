@@ -16,12 +16,12 @@ merged_path = r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\run_dumps\vf
 reg_p = r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\run_dumps\vfl_test_results_20251002_150611.json"
 reg_p = r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\run_dumps\vfl_test_results_20251002_150801.json"
 
-backtrack = r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\run_dumps\house_energy_vfl_test_results_20251014_161019.json"
+backtrack = r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\run_dumps\house_energy_vfl_test_results_20251103_163309.json"
 no_backtrack = r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\run_dumps\house_energy_vfl_test_results_20251014_161043.json"
 
 
 # Load the JSON results file
-with open(no_backtrack, 'r') as f:
+with open(backtrack, 'r') as f:
     data = json.load(f)
 
 results = data['results']
@@ -60,3 +60,5 @@ def plot_accuracy(rounds, accuracies, clients):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+plot_accuracy(rounds, accuracies, clients)

@@ -482,6 +482,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}()
 	}
 
+	// note: this is likely misplaced, probably needs to be after the wait
 	if noPing {
 		logger.Sugar().Error("No ping from a client or the server. Something is wrong.")
 	}

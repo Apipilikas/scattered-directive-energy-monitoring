@@ -22,8 +22,8 @@ curl -H "Host: api-gateway.api-gateway.svc.cluster.local" \
         "learning_rate": 0.1,
         "cycles": 180,
         "policy_removal": 60,
-        "policy_reintroduction": 120,
-        "training_backtrack": 1
+        "policy_reintroduction": -1,
+        "training_backtrack": -1
       },
       "requestMetadata": {}
     }

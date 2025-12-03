@@ -3,7 +3,7 @@ import matplotlib.animation as animation
 from matplotlib.patches import FancyArrowPatch
 
 # Choose version: False = all clients communicate; True = block client 3
-block_client3 = True 
+block_client3 = False 
 
 client_positions = [(1, 3), (2, 5), (5, 2)]
 server_position = (3, 1)

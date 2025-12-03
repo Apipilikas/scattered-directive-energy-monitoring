@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 # ---------------------- SET SEED FOR REPRODUCIBILITY ----------------------
-SEED = 0
-np.random.seed(SEED)
-torch.manual_seed(SEED)
+# SEED = 0
+# np.random.seed(SEED)
+# torch.manual_seed(SEED)
 # --------------------------------------------------------------------------
 
 
@@ -36,6 +36,10 @@ client1_data = data.iloc[:, :cols_per_client]
 client2_data = data.iloc[:, cols_per_client : 2 * cols_per_client]
 client3_data = data.iloc[:, 2 * cols_per_client:]
 
+print(f"Client 1 data shape: {client1_data.shape}")
+print(f"Client 2 data shape: {client2_data.shape}") 
+print(f"Client 3 data shape: {client3_data.shape}")
+
 # save data to file 
 # client1_data.to_csv(r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\python\vfl-train-demo\datasets\clientoneData.csv", index=False)
 # client2_data.to_csv(r"C:\Users\alkou\Documents\GitHub\Scattered-Directive\python\vfl-train-demo\datasets\clienttwoData.csv", index=False)
@@ -49,7 +53,6 @@ print(client2_data.head())
 print(client3_data.head())
 
 
-# I put the client 2 at the end so that it is excluded when NOF_CLIENTS=2. For demonstration purposes, because client 3 din't have a big effect.
 client_datasets = [client1_data, client2_data, client3_data]  
 # client_datasets = [data]  
 
@@ -63,13 +66,13 @@ client1_data.index.equals(server_data.index)
 # client_datasets = [merged]
 
 DEFAULT_NOF_CLIENTS = 3
-REMOVE_CLIENT_ROUND = 30  # remove one client after these rounds
-BACKTRACK = False  # if True, reinstantiate the server when a client is removed. Otherwise, keep the neurons the same, just fewer. Truncate the last neurons.
+REMOVE_CLIENT_ROUND = 60  # remove one client after these rounds
+BACKTRACK = True  # if True, reinstantiate the server when a client is removed. Otherwise, keep the neurons the same, just fewer. Truncate the last neurons.
 
-ADD_CLIENT_ROUND = 60  # add one client after these rounds
+ADD_CLIENT_ROUND = 120  # add one client after these rounds
 ADD_CLIENT_CLEAN = False  # if True, reinstantiate the added client. Otherwise, just keep the client the way it is. It might be pretrained already.
 
-TOTAL_ROUNDS = 90
+TOTAL_ROUNDS = 180
 # with one client and one FC layer it takes about 2000 rounds to converge
 # with one client and two FC layers it takes about 200 rounds to converge
 
@@ -100,6 +103,7 @@ class ClientModel(nn.Module):
     def __init__(self, input_size):
         super().__init__()
         # Layer 1: Input features -> Hidden layer (e.g., 64 neurons)
+        print(f"Client model input size: {input_size}")
         self.fc1 = nn.Linear(input_size, 64*neurons_multiplier)
         # Layer 2: Hidden layer -> Output embedding (8 neurons)
         self.fc2 = nn.Linear(64*neurons_multiplier, 4*neurons_multiplier)
