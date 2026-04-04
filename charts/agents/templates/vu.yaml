@@ -1,35 +1,32 @@
-# api-gateway deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
-  namespace: {{ .Values.Namespace }}
+  name: vu
+  namespace: vu
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api-gateway
+      app: vu
   template:
     metadata:
       labels:
-        app: api-gateway
+        app: vu
+      annotations:
+        "linkerd.io/inject" : enabled
     spec:
+      serviceAccountName: job-creator-vu
       containers:
-      - name: api-gateway
-        image: {{ .Values.dockerArtifactAccount }}/api-gateway:{{ .Values.branchNameTag}}
+      - name: vu
+        image: {{ .Values.dockerArtifactAccount }}/agent:{{ .Values.branchNameTag }}
         imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
         env:
+        - name: DATA_STEWARD_NAME
+          value: VU
         - name: OC_AGENT_HOST
           value: {{ .Values.tracingEndpoint }}
-        # resources:
-        #   requests:
-        #     memory: "128Mi"
-        #   limits:
-        #     memory: "256Mi"
       - name: sidecar
-        image: {{ .Values.dockerArtifactAccount }}/sidecar:{{ .Values.branchNameTag}}
+        image: {{ .Values.dockerArtifactAccount }}/sidecar:{{ .Values.branchNameTag }}
         imagePullPolicy: Always
         env:
         - name: AMQ_PASSWORD
@@ -43,39 +40,41 @@ spec:
           value: {{ .Values.tracingEndpoint }}
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: api-gateway
-  namespace: {{ .Values.Namespace }}
+  name: vu
+  namespace: vu
 spec:
   selector:
-    app: api-gateway
+    app: vu
   ports:
-    - name: http-api-gateway-api
+    - name: http-vu-api
       protocol: TCP
       port: 8080
       targetPort: 8080
   type: ClusterIP
 
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: api-gateway-ingress
-  namespace: {{ .Values.Namespace }}
+  name: vu-ingress
+  namespace: vu
   annotations:
     nginx.ingress.kubernetes.io/service-upstream: "true"
 spec:
   ingressClassName: nginx
   rules:
-  - host: api-gateway.api-gateway.svc.cluster.local
+  - host: vu.vu.svc.cluster.local
     http:
       paths:
       - pathType: Prefix
-        path: "/api/v1"
+        path: "/agent/v1/sqlDataRequest/vu"
         backend:
           service:
-            name: api-gateway
+            name: vu
             port:
               number: 8080

@@ -1,26 +1,30 @@
-# api-gateway deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
-  namespace: {{ .Values.Namespace }}
+  name: uva
+  namespace: uva
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api-gateway
+      app: uva
   template:
     metadata:
       labels:
-        app: api-gateway
+        app: uva
+      annotations:
+        "linkerd.io/inject" : enabled
     spec:
+      serviceAccountName: job-creator-uva
       containers:
-      - name: api-gateway
-        image: {{ .Values.dockerArtifactAccount }}/api-gateway:{{ .Values.branchNameTag}}
+      - name: uva
+        image: {{ .Values.dockerArtifactAccount }}/agent:{{ .Values.branchNameTag }}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
+        - name: DATA_STEWARD_NAME
+          value: UVA
         - name: OC_AGENT_HOST
           value: {{ .Values.tracingEndpoint }}
         # resources:
@@ -29,7 +33,7 @@ spec:
         #   limits:
         #     memory: "256Mi"
       - name: sidecar
-        image: {{ .Values.dockerArtifactAccount }}/sidecar:{{ .Values.branchNameTag}}
+        image: {{ .Values.dockerArtifactAccount }}/sidecar:{{ .Values.branchNameTag }}
         imagePullPolicy: Always
         env:
         - name: AMQ_PASSWORD
@@ -43,39 +47,41 @@ spec:
           value: {{ .Values.tracingEndpoint }}
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: api-gateway
-  namespace: {{ .Values.Namespace }}
+  name: uva
+  namespace: uva
 spec:
   selector:
-    app: api-gateway
+    app: uva
   ports:
-    - name: http-api-gateway-api
+    - name: http-uva-api
       protocol: TCP
       port: 8080
       targetPort: 8080
   type: ClusterIP
 
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: api-gateway-ingress
-  namespace: {{ .Values.Namespace }}
+  name: uva-ingress
+  namespace: uva
   annotations:
     nginx.ingress.kubernetes.io/service-upstream: "true"
 spec:
   ingressClassName: nginx
   rules:
-  - host: api-gateway.api-gateway.svc.cluster.local
+  - host: uva.uva.svc.cluster.local
     http:
       paths:
       - pathType: Prefix
-        path: "/api/v1"
+        path: "/agent/v1/sqlDataRequest/uva"
         backend:
           service:
-            name: api-gateway
+            name: uva
             port:
               number: 8080

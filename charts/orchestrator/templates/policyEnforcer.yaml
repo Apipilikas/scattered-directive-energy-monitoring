@@ -14,11 +14,9 @@ spec:
       labels:
         app: policy-enforcer
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: {{ .Values.node }}
       containers:
       - name: policy-enforcer
-        image: dynamos1/policy-enforcer:{{ .Values.branchNameTag }}
+        image: {{ .Values.dockerArtifactAccount }}/policy-enforcer:{{ .Values.branchNameTag }}
         imagePullPolicy: Always
         env:
         - name: OC_AGENT_HOST

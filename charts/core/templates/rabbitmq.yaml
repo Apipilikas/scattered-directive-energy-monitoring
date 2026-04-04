@@ -15,8 +15,6 @@ spec:
       # annotations:
       #   "config.linkerd.io/proxy-opaque-ports" : "15692"
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: {{ .Values.node }}
       containers:
       - name: rabbitmq
         image: "{{ .Values.rabbitmq.image }}"

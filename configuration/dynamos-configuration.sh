@@ -4,7 +4,7 @@ set -e
 
 # Change this to the path of the DYNAMOS repository on your disk
 echo "Setting up paths..."
-DYNAMOS_ROOT="${HOME}/DYNAMOS"
+DYNAMOS_ROOT="C:/Users/apipi/Documents/UNI/master/MP/scattered-directive-energy-monitoring"
 
 # Charts
 charts_path="${DYNAMOS_ROOT}/charts"
@@ -18,7 +18,7 @@ api_gw_chart="${charts_path}/api-gateway"
 # Config
 config_path="${DYNAMOS_ROOT}/configuration"
 k8s_service_files="${config_path}/k8s_service_files"
-# etcd_launch_files="${config_path}/etcd_launch_files"  # I think this is unused now 
+etcd_launch_files="${config_path}/etcd_launch_files"
 
 rabbit_definitions_file="${k8s_service_files}/definitions.json"
 example_definitions_file="${k8s_service_files}/definitions_example.json"
@@ -30,16 +30,9 @@ echo "Generating RabbitMQ password..."
 # Create a password for a rabbit user
 rabbit_pw=$(openssl rand -hex 16)
 
-function encode_password()
-{
-    SALT=$(od -A n -t x -N 4 /dev/urandom)
-    PASS=$SALT$(echo -n $1 | xxd -ps | tr -d '\n' | tr -d ' ')
-    PASS=$(echo -n $PASS | xxd -r -p | sha256sum | head -c 128)
-    PASS=$(echo -n $SALT$PASS | xxd -r -p | base64 | tr -d '\n')
-    echo $PASS
-}
-
-actual_hash=$(encode_password $rabbit_pw)
+# Use the RabbitCtl to make a special hash of that password:
+hashed_pw=$($SUDO docker run --rm rabbitmq:3-management rabbitmqctl hash_password $rabbit_pw)
+actual_hash=$(echo "$hashed_pw" | cut -d $'\n' -f2)
 
 echo "Replacing tokens..."
 cp ${k8s_service_files}/definitions_example.json ${rabbit_definitions_file}
@@ -61,7 +54,6 @@ helm upgrade -i -f ${namespace_chart}/values.yaml namespaces ${namespace_chart} 
 
 echo "Preparing PVC"
 
-# TODO: Check if this is required at all
 {
     cd ${DYNAMOS_ROOT}/configuration
     ./fill-rabbit-pvc.sh
@@ -72,12 +64,10 @@ echo "Installing Prometheus..."
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-helm upgrade -i prometheus prometheus-community/kube-prometheus-stack \
-  --version 68.1.0 \
-  -f "${core_chart}/prometheus-values.yaml"
+helm upgrade -i -f "${core_chart}/prometheus-values.yaml" prometheus prometheus-community/prometheus
 
 echo "Installing NGINX..."
-helm upgrade -i -f "${core_chart}/ingress-values.yaml" nginx oci://ghcr.io/nginxinc/charts/nginx-ingress -n ingress --version 0.18.0
+helm install -f "${core_chart}/ingress-values.yaml" nginx oci://ghcr.io/nginxinc/charts/nginx-ingress -n ingress --version 0.18.0
 
 echo "Installing DYNAMOS core..."
 helm upgrade -i -f ${core_chart}/values.yaml core ${core_chart} --set hostPath=${HOME}
@@ -94,7 +84,7 @@ helm upgrade -i -f "${agents_chart}/values.yaml" agents ${agents_chart}
 sleep 1
 
 echo "Installing thirdparty layer..."
-helm upgrade -i -f "${ttp_chart}/values.yaml" thirdparties ${ttp_chart}
+helm upgrade -i -f "${ttp_chart}/values.yaml" surf ${ttp_chart}
 
 sleep 1
 
