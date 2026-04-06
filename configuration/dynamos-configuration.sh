@@ -2,6 +2,8 @@
 
 set -e
 
+echo "Started setting up DYNAMOS..."
+
 # Change this to the path of the DYNAMOS repository on your disk
 echo "Setting up paths..."
 DYNAMOS_ROOT="C:/Users/apipi/Documents/UNI/master/MP/scattered-directive-energy-monitoring"
@@ -61,7 +63,6 @@ echo "Preparing PVC"
 
 #Install prometheus
 echo "Installing Prometheus..."
-
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm upgrade -i -f "${core_chart}/prometheus-values.yaml" prometheus prometheus-community/prometheus
@@ -73,12 +74,13 @@ echo "Installing DYNAMOS core..."
 helm upgrade -i -f ${core_chart}/values.yaml core ${core_chart} --set hostPath=${HOME}
 
 sleep 3
-# Install orchestrator layer
+
+echo "Installing orchestrator layer..."
 helm upgrade -i -f "${orchestrator_chart}/values.yaml" orchestrator ${orchestrator_chart}
 
 sleep 1
 
-echo "Installing agents layer"
+echo "Installing agents layer..."
 helm upgrade -i -f "${agents_chart}/values.yaml" agents ${agents_chart}
 
 sleep 1
@@ -88,9 +90,9 @@ helm upgrade -i -f "${ttp_chart}/values.yaml" surf ${ttp_chart}
 
 sleep 1
 
-echo "Installing api gateway"
+echo "Installing api gateway..."
 helm upgrade -i -f "${api_gw_chart}/values.yaml" api-gateway ${api_gw_chart}
 
-echo "Finished setting up DYNAMOS"
+echo "Finished setting up DYNAMOS!"
 
 exit 0

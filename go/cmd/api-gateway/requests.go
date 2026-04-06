@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+
 	"github.com/Jorrit05/DYNAMOS/pkg/api"
 	"github.com/Jorrit05/DYNAMOS/pkg/lib"
 	pb "github.com/Jorrit05/DYNAMOS/pkg/proto"
@@ -19,9 +20,9 @@ import (
 )
 
 const (
-    StatusPending = "pending"
-    StatusDone    = "done"
-    StatusFailed  = "failed"
+	StatusPending = "pending"
+	StatusDone    = "done"
+	StatusFailed  = "failed"
 )
 
 var (
@@ -36,7 +37,6 @@ type TrainingRequestData struct {
 	Metadata map[string]any
 	// add more fields as needed
 }
-
 
 func getTrainingStatusHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +82,39 @@ func requestHandler() http.HandlerFunc {
 			return
 		}
 
+		// Parse the request body
+		body, err := api.GetRequestBody(w, r, serviceName)
+		if err != nil {
+			return
+		}
+
+		var apiReqApproval api.RequestApproval
+		if err := json.Unmarshal(body, &apiReqApproval); err != nil {
+			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		userPb := &pb.User{
+			Id:       apiReqApproval.User.Id,
+			UserName: apiReqApproval.User.UserName,
+		}
+
+		var dataRequestInterface map[string]any
+		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestInterface); err != nil {
+			logger.Sugar().Errorf("Error unmarhsalling get request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		dataRequestOptions := &api.DataRequestOptions{}
+		dataRequestOptions.Options = make(map[string]bool)
+		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestOptions); err != nil {
+			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		// Accept new job
 		requestID := uuid.New().String()
 		activeJobID = requestID
@@ -100,36 +133,6 @@ func requestHandler() http.HandlerFunc {
 		}
 
 		logger.Sugar().Info("Accepted new job with id: ", activeJobID)
-
-		// Parse the request body
-		body, err := api.GetRequestBody(w, r, serviceName)
-		if err != nil {
-			return
-		}
-
-		var apiReqApproval api.RequestApproval
-		if err := json.Unmarshal(body, &apiReqApproval); err != nil {
-			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
-			return
-		}
-
-		userPb := &pb.User{
-			Id:       apiReqApproval.User.Id,
-			UserName: apiReqApproval.User.UserName,
-		}
-
-		var dataRequestInterface map[string]any
-		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestInterface); err != nil {
-			logger.Sugar().Errorf("Error unmarhsalling get request: %v", err)
-			return
-		}
-
-		dataRequestOptions := &api.DataRequestOptions{}
-		dataRequestOptions.Options = make(map[string]bool)
-		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestOptions); err != nil {
-			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
-			return
-		}
 
 		dataRequestInterface["user"] = userPb
 
@@ -570,7 +573,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 
 			if err == nil {
-				// on success we can continue 
+				// on success we can continue
 				break
 			}
 
@@ -660,7 +663,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		reqData := v.(TrainingRequestData)
 		reqData.Results = results
 		trainingRequests.Store(requestID, reqData)
-		
+
 		if trainingFailed {
 			break
 		}
@@ -735,7 +738,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	}
 
 	logger.Sugar().Info("Training results: ", string(responseJson))
-	return cleanupAndMarshalResponse(response)  // note this is not the same as responseJson
+	return cleanupAndMarshalResponse(response) // note this is not the same as responseJson
 }
 
 // Use the data request that was previously built and send it to the authorised providers

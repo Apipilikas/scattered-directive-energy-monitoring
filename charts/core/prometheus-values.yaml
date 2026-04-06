@@ -48,3 +48,8 @@ extraScrapeConfigs: |
 # server:
 #   podAnnotations:
 #     config.linkerd.io/skip-outbound-ports: "15692"
+
+prometheus-node-exporter:
+  hostRootFsMount:
+    enabled: false
+  hostNetwork: false
