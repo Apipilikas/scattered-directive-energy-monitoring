@@ -23,6 +23,14 @@ config_path="${DYNAMOS_ROOT}/configuration"
 k8s_service_files="${config_path}/k8s_service_files"
 etcd_launch_files="${config_path}/etcd_launch_files"
 
+# Add agents
+agents=$(grep '"name":' ${etcd_launch_files}/agreements.json | awk -F'"' '{print $4}' | paste -sd "," -)
+echo "Agents discovered: $agents"
+
+configure_dynamos="${DYNAMOS_ROOT}/fabric/node_scripts/configure_dynamos.sh "
+chmod +x ${configure_dynamos}
+${configure_dynamos} $agents
+
 rabbit_definitions_file="${k8s_service_files}/definitions.json"
 example_definitions_file="${k8s_service_files}/definitions_example.json"
 
@@ -80,6 +88,12 @@ sleep 3
 
 echo "Installing orchestrator layer..."
 helm upgrade -i -f "${orchestrator_chart}/values.yaml" orchestrator ${orchestrator_chart}
+
+echo "Transferring etcd_launch_files..."
+{
+    cd ${DYNAMOS_ROOT}/configuration
+    ./fill-etcd-pvc.sh
+}
 
 sleep 1
 
