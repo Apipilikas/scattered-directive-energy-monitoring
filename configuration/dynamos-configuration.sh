@@ -11,6 +11,7 @@ DYNAMOS_ROOT="C:/Users/apipi/Documents/UNI/master/MP/scattered-directive-energy-
 # Charts
 charts_path="${DYNAMOS_ROOT}/charts"
 core_chart="${charts_path}/core"
+monitoring_chart="${charts_path}/monitoring"
 namespace_chart="${charts_path}/namespaces"
 orchestrator_chart="${charts_path}/orchestrator"
 agents_chart="${charts_path}/agents"
@@ -50,8 +51,6 @@ else
 fi
 
 echo "Installing namespaces..."
-
-# Install namespaces
 helm upgrade -i -f ${namespace_chart}/values.yaml namespaces ${namespace_chart} --set secret.password=${rabbit_pw}
 
 echo "Preparing PVC"
@@ -61,11 +60,15 @@ echo "Preparing PVC"
     ./fill-rabbit-pvc.sh
 }
 
-#Install prometheus
 echo "Installing Prometheus..."
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-helm upgrade -i -f "${core_chart}/prometheus-values.yaml" prometheus prometheus-community/prometheus
+helm upgrade -i -f "${monitoring_chart}/prometheus-values.yaml" prometheus prometheus-community/prometheus
+
+echo "Installing Grafana..."
+helm repo add grafana-community https://grafana-community.github.io/helm-charts
+helm repo update
+helm upgrade -i -f "${monitoring_chart}/grafana-values.yaml" grafana  grafana-community/grafana
 
 echo "Installing NGINX..."
 helm install -f "${core_chart}/ingress-values.yaml" nginx oci://ghcr.io/nginxinc/charts/nginx-ingress -n ingress --version 0.18.0
