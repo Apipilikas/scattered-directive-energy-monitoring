@@ -2,7 +2,7 @@ SHELL := /bin/bash
 targets := sql-query vfl-train-model vfl-train vfl-train-demo vfl-train-model-demo
 datasets := "../configuration/datasets/"
 branch_name := $(shell git rev-parse --abbrev-ref HEAD)
-dockerhub_account := dynamos1
+dockerhub_account := apipilikas
 PUSH ?= 1
 #  default is 1 (do push to dockerhub) (the mechanism is a bit problematic because it reads whitespaces, so be careful)
 
@@ -35,4 +35,5 @@ $(targets): proto
 		docker push $(dockerhub_account)/$@:$(branch_name); \
 		docker push $(dockerhub_account)/$@:latest; \
 	fi
-all: all $(targets) $(proto)
+	
+all: $(targets) proto

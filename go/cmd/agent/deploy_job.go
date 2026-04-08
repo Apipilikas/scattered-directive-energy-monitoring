@@ -87,7 +87,7 @@ func deployJob(ctx context.Context, msChain []mschain.MicroserviceMetadata, jobN
 					Labels: map[string]string{"app": dataStewardName, "nodeName": dataStewardName},
 				},
 				Spec: v1.PodSpec{
-					NodeName:   dataStewardName,
+					// NodeName:   dataStewardName, // Comment out to run locally
 					Containers: []v1.Container{},
 					// 	{
 					// 		Name:    "pvc-container",
@@ -143,8 +143,8 @@ func deployJob(ctx context.Context, msChain []mschain.MicroserviceMetadata, jobN
 
 		repositoryName := os.Getenv("MICROSERVICE_REPOSITORY_NAME")
 		if repositoryName == "" {
-			repositoryName = "dynamos1"  // note: I changed this  
-		}  
+			repositoryName = "dynamos1" // note: I changed this
+		}
 
 		fullImage := fmt.Sprintf("%s/%s:%s", repositoryName, microservice.Name, microserviceTag)
 		logger.Sugar().Debugf("FullImage name: %s", fullImage)
