@@ -4,6 +4,7 @@ podAnnotations:
 grafana.ini:
   server:
     root_url: '%(protocol)s://%(domain)s:/grafana/'
+    serve_from_sub_path: true
   auth:
     disable_login_form: true
   auth.anonymous:
@@ -21,19 +22,19 @@ grafana.ini:
     format: text
     level: info
 
-# # datasources:
-# #   datasources.yaml:
-# #     apiVersion: 1
-# #     datasources:
-# #     - name: prometheus
-# #       type: prometheus
-# #       access: proxy
-# #       orgId: 1
-# #       url: http://prometheus.linkerd-viz.svc.cluster.local:9090
-# #       isDefault: true
-# #       jsonData:
-# #         timeInterval: "5s"
-# #       editable: true
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+    - name: prometheus
+      type: prometheus
+      access: proxy
+      orgId: 1
+      url: http://prometheus-server.default.svc.cluster.local:80
+      isDefault: true
+      jsonData:
+        timeInterval: "5s"
+      editable: true
 
 dashboardProviders:
   dashboardproviders.yaml:
