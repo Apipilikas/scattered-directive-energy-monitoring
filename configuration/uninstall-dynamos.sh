@@ -1,3 +1,8 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+source "${SCRIPT_DIR}/../dynamos.conf"
+
 echo "Uninstalling namespaces..."
 helm uninstall nginx namespaces core orchestrator agents thirdparties api-gateway prometheus grafana --ignore-not-found
 
@@ -6,7 +11,6 @@ helm uninstall nginx --ignore-not-found
 helm uninstall nginx -n ingress
 
 #Config
-DYNAMOS_ROOT="C:/Users/apipi/Documents/UNI/master/MP/scattered-directive-energy-monitoring"
 config_path="${DYNAMOS_ROOT}/configuration"
 etcd_launch_files="${config_path}/etcd_launch_files"
 

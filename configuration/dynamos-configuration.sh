@@ -4,9 +4,12 @@ set -e
 
 echo "Started setting up DYNAMOS..."
 
+# Importing dynamos config
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+source "${SCRIPT_DIR}/../dynamos.conf"
+
 # Change this to the path of the DYNAMOS repository on your disk
 echo "Setting up paths..."
-DYNAMOS_ROOT="C:/Users/apipi/Documents/UNI/master/MP/scattered-directive-energy-monitoring"
 
 # Charts
 charts_path="${DYNAMOS_ROOT}/charts"
@@ -19,9 +22,8 @@ ttp_chart="${charts_path}/thirdparty"
 api_gw_chart="${charts_path}/api-gateway"
 
 # Config
-config_path="${DYNAMOS_ROOT}/configuration"
-k8s_service_files="${config_path}/k8s_service_files"
-etcd_launch_files="${config_path}/etcd_launch_files"
+k8s_service_files="${CONFIG_PATH}/k8s_service_files"
+etcd_launch_files="${CONFIG_PATH}/etcd_launch_files"
 
 # Add agents
 agents=$(grep '"name":' ${etcd_launch_files}/agreements.json | awk -F'"' '{print $4}' | paste -sd "," -)
@@ -87,7 +89,7 @@ helm upgrade -i -f ${core_chart}/values.yaml core ${core_chart} --set hostPath=$
 sleep 3
 
 echo "Installing orchestrator layer..."
-helm upgrade -i -f "${orchestrator_chart}/values.yaml" orchestrator ${orchestrator_chart}
+helm upgrade -i -f "${orchestrator_chart}/values.yaml" orchestrator ${orchestrator_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 echo "Transferring etcd_launch_files..."
 {
@@ -98,17 +100,17 @@ echo "Transferring etcd_launch_files..."
 sleep 1
 
 echo "Installing agents layer..."
-helm upgrade -i -f "${agents_chart}/values.yaml" agents ${agents_chart}
+helm upgrade -i -f "${agents_chart}/values.yaml" agents ${agents_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 sleep 1
 
 echo "Installing thirdparty layer..."
-helm upgrade -i -f "${ttp_chart}/values.yaml" surf ${ttp_chart}
+helm upgrade -i -f "${ttp_chart}/values.yaml" surf ${ttp_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 sleep 1
 
 echo "Installing api gateway..."
-helm upgrade -i -f "${api_gw_chart}/values.yaml" api-gateway ${api_gw_chart}
+helm upgrade -i -f "${api_gw_chart}/values.yaml" api-gateway ${api_gw_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 echo "Finished setting up DYNAMOS!"
 

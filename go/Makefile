@@ -1,6 +1,6 @@
 branch_name := $(shell git rev-parse --abbrev-ref HEAD)
 dynamos := sidecar policy-enforcer orchestrator agent api-gateway
-dockerhub_account := apipilikas
+dockerhub_account := $(shell bash -c 'source ../dynamos.conf && echo $$DOCKERHUB_ACCOUNT')
 
 prepare:
 	go mod tidy
