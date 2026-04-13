@@ -175,3 +175,39 @@ panic: runtime error: invalid memory address or nil pointer dereference      
 The agreements didn't transfer correctly to the pod.
 
 TODO: It would be nice to resolve the issue above and provide better error explanation.
+```go
+approvalRequest, ok := requestApprovalMap[requestApprovalResponse.User.Id]
+```
+
+## Uninstalling dynamos and agents
+While the dynamos-configration.sh script upgrades helm charts instead of install them, we encountered an issue with nginx.
+```
+Installing NGINX...
+
+Pulled: ghcr.io/nginxinc/charts/nginx-ingress:0.18.0
+
+Digest: sha256:662500f896f15a142b9ae04e469ae620a88de12dbcacbc8a0f944ce11e5038e1
+
+level=ERROR msg="release name check failed" error="cannot reuse a name that is still in use"
+
+Error: INSTALLATION FAILED: release name check failed: cannot reuse a name that is still in use
+```
+
+For this reason, we created the uninstall-dynamos.sh. 
+
+Additionally, some times there were issues with agents that were not terminated. Thus, we enhanced the script with agents removal:
+```
+agents=$(grep '"name":' ${etcd_launch_files}/agreements.json | awk -F'"' '{print $4}' | paste -sd "," -)
+
+{
+# Parse the agents and thirdparties from the CLI arguments
+IFS=',' read -r -a agents_array <<< "$agents"
+
+echo "Clearing old jobs..."
+for agent in "${agents_array[@]}"
+do
+    echo "Clearing pods for agent: ['$agent']"
+    kubectl delete jobs --all -n "$agent"
+done
+}
+```

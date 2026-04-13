@@ -12,14 +12,12 @@ source "${SCRIPT_DIR}/../dynamos.conf"
 echo "Setting up paths..."
 
 # Charts
-charts_path="${DYNAMOS_ROOT}/charts"
-core_chart="${charts_path}/core"
-monitoring_chart="${charts_path}/monitoring"
-namespace_chart="${charts_path}/namespaces"
-orchestrator_chart="${charts_path}/orchestrator"
-agents_chart="${charts_path}/agents"
-ttp_chart="${charts_path}/thirdparty"
-api_gw_chart="${charts_path}/api-gateway"
+core_chart="${CHARTS_PATH}/core"
+namespace_chart="${CHARTS_PATH}/namespaces"
+orchestrator_chart="${CHARTS_PATH}/orchestrator"
+agents_chart="${CHARTS_PATH}/agents"
+ttp_chart="${CHARTS_PATH}/thirdparty"
+api_gw_chart="${CHARTS_PATH}/api-gateway"
 
 # Config
 k8s_service_files="${CONFIG_PATH}/k8s_service_files"
@@ -70,18 +68,15 @@ echo "Preparing PVC"
     ./fill-rabbit-pvc.sh
 }
 
-echo "Installing Prometheus..."
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm upgrade -i -f "${monitoring_chart}/prometheus-values.yaml" prometheus prometheus-community/prometheus
+echo "Preparing energy monitoring installation..."
 
-echo "Installing Grafana..."
-helm repo add grafana-community https://grafana-community.github.io/helm-charts
-helm repo update
-helm upgrade -i -f "${monitoring_chart}/grafana-values.yaml" grafana  grafana-community/grafana
+{
+    cd ${DYNAMOS_ROOT}/configuration
+    ./dynamos-monitoring-configuration.sh
+}
 
 echo "Installing NGINX..."
-helm install -f "${core_chart}/ingress-values.yaml" nginx oci://ghcr.io/nginxinc/charts/nginx-ingress -n ingress --version 0.18.0
+helm install -f ${core_chart}/ingress-values.yaml nginx oci://ghcr.io/nginxinc/charts/nginx-ingress -n ingress --version 0.18.0
 
 echo "Installing DYNAMOS core..."
 helm upgrade -i -f ${core_chart}/values.yaml core ${core_chart} --set hostPath=${HOME}
@@ -89,7 +84,7 @@ helm upgrade -i -f ${core_chart}/values.yaml core ${core_chart} --set hostPath=$
 sleep 3
 
 echo "Installing orchestrator layer..."
-helm upgrade -i -f "${orchestrator_chart}/values.yaml" orchestrator ${orchestrator_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
+helm upgrade -i -f ${orchestrator_chart}/values.yaml orchestrator ${orchestrator_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 echo "Transferring etcd_launch_files..."
 {
@@ -100,17 +95,17 @@ echo "Transferring etcd_launch_files..."
 sleep 1
 
 echo "Installing agents layer..."
-helm upgrade -i -f "${agents_chart}/values.yaml" agents ${agents_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
+helm upgrade -i -f ${agents_chart}/values.yaml agents ${agents_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 sleep 1
 
 echo "Installing thirdparty layer..."
-helm upgrade -i -f "${ttp_chart}/values.yaml" surf ${ttp_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
+helm upgrade -i -f ${ttp_chart}/values.yaml surf ${ttp_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 sleep 1
 
 echo "Installing api gateway..."
-helm upgrade -i -f "${api_gw_chart}/values.yaml" api-gateway ${api_gw_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
+helm upgrade -i -f ${api_gw_chart}/values.yaml api-gateway ${api_gw_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 echo "Finished setting up DYNAMOS!"
 
