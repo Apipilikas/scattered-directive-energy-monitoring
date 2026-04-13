@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 source "${SCRIPT_DIR}/../dynamos.conf"
 
 echo "Uninstalling namespaces..."
-helm uninstall nginx namespaces core orchestrator agents thirdparties api-gateway prometheus grafana kepler --ignore-not-found
+helm uninstall nginx namespaces core orchestrator agents thirdparties api-gateway surf monitoring --ignore-not-found
 
 echo "Uninstalling nginx..."
 helm uninstall nginx --ignore-not-found

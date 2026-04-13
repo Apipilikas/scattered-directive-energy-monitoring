@@ -42,7 +42,7 @@ data:
       relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
-      - replacement: kubernetes.default.svc:443
+      - replacement: kubernetes.monitoring.svc:443
         target_label: __address__
       - regex: (.+)
         replacement: /api/v1/nodes/$1/proxy/metrics
@@ -60,7 +60,7 @@ data:
       relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
-      - replacement: kubernetes.default.svc:443
+      - replacement: kubernetes.monitoring.svc:443
         target_label: __address__
       - regex: (.+)
         replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
@@ -326,7 +326,7 @@ data:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
       - target_label: __address__
-        replacement: kubernetes.default.svc:443
+        replacement: kubernetes.monitoring.svc:443
       - source_labels: [__meta_kubernetes_node_name]
         regex: (.+)
         target_label: __metrics_path__
@@ -341,7 +341,7 @@ data:
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
         - source_labels: [__meta_kubernetes_namespace]
-          regex: default
+          regex: monitoring
           action: keep
         - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
           regex: prometheus
@@ -360,7 +360,7 @@ kind: ConfigMap
 metadata:
   annotations:
     meta.helm.sh/release-name: prometheus
-    meta.helm.sh/release-namespace: default
+    meta.helm.sh/release-namespace: monitoring
   creationTimestamp: "2023-07-26T19:15:16Z"
   labels:
     app.kubernetes.io/component: server
@@ -371,6 +371,6 @@ metadata:
     app.kubernetes.io/version: v2.45.0
     helm.sh/chart: prometheus-23.1.0
   name: prometheus-server
-  namespace: default
+  namespace: monitoring
   resourceVersion: "744000"
   uid: b2729ca5-e713-42db-b9e6-4589e4b46eae
