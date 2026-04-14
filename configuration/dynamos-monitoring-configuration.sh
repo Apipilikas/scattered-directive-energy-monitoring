@@ -20,9 +20,8 @@ helm repo update
 helm upgrade -i -f ${monitoring_chart}/grafana-values.yaml grafana  grafana-community/grafana \
   --namespace monitoring
 
-echo "Installing Kepler..." 
-helm repo add kepler https://sustainable-computing-io.github.io/kepler-helm-chart
-helm repo update
-helm upgrade -i -f ${monitoring_chart}/kepler-values.yaml kepler kepler/kepler \
-  --version 0.6.1 \
-  --namespace monitoring
+# >!< Cannot run in local environment >!<
+# echo "Installing Kepler..."
+# helm install kepler oci://quay.io/sustainable_computing_io/charts/kepler \
+#   --namespace monitoring \
+#   --version 0.11.4 

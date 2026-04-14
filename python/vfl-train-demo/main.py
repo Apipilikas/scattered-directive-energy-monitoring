@@ -101,7 +101,8 @@ def serialise_array(array):
 
 def deserialise_array(string, hook=None):
     encoded_data = json.loads(string, object_pairs_hook=hook)
-    logger.info(string, encoded_data)
+    # logger.info(string, encoded_data) # This line breaks the execution due to ''unsupported format character''
+    logger.info("%s %s", string, encoded_data)
     dataType = np.dtype(encoded_data[0])
     dataArray = np.frombuffer(encoded_data[1].encode("latin1"), dataType)
 
