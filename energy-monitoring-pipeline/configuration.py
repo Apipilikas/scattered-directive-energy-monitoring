@@ -1,21 +1,38 @@
 from utils import extract_property_from_json
 
 # General
-DATA_COLLECT_OUTPUT_FILE = "data_metrics.csv"
 COLLECT_MINUTES_BEFORE = 15
+COLUMN_TO_DROP = "timestamp"
+
+# Paths / Files
+DATA_OUTPUT_FOLDER = "output"
+DATA_COLLECT_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/data_metrics.csv"
+DATA_ANALYZED_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/analyzed_data_metrics.csv"
 
 # Prometheus
+DURATION = "2m"
 PROM_URL = "http://localhost:9090"
 PROM_QUERY_RANGE_STEPS = "15s"
 PROM_QUERIES = {
     # "energy" : "",
-    "cpu_usage" : "rate(container_cpu_usage_seconds_total[2m])",
-    # "memory_usage" : "",
-    # "memory_rss_usage" : "",
-    # "memory_cache_usage" : "",
-    # "disk" : ""
+    # "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{DURATION}])) by (name)",
+    "cpu_usage" : "rate(container_cpu_usage_seconds_total[2m])"
+    # "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by (name)",
+    # "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by (name)",
+    # "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by (name)",
+    # "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by (name)"
 }
 
+# Arguments
+AD_ARGUMENT = '-ad', '--anomaly-detection', 'Run only anomaly detection algorithm'
+RCA_ARGUMENT = '-rca', '--root-cause-analysis', 'Run only root cause analysis algorithm'
+CM_ARGUMENT = '-cm', '--collect-metrics', 'Run only anomaly detection algorithm'
+
+# AD and RCA parameters
+TRAINING_DATA_PATH = f"{DATA_OUTPUT_FOLDER}/baseline_data_metrics.csv"
+RCD_K = 5
+
+# Namespaces
 NAMESPACES = [
     "api-gateway",
     "policy-enforcer",

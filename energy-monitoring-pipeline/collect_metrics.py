@@ -1,11 +1,11 @@
-from configuration import COLLECT_MINUTES_BEFORE, PROM_QUERIES, DATA_COLLECT_OUTPUT_FILE
+from configuration import COLLECT_MINUTES_BEFORE, PROM_QUERIES, DATA_COLLECT_OUTPUT_PATH
 from utils import get_time_range
 from prometheus_executor import execute_query_range
 import csv
 import pandas as pd
 
 def main():
-    print("============= Data collection started =============")
+    print("============= Metrics collection started =============")
     start_time, end_time = get_time_range(COLLECT_MINUTES_BEFORE)
     print(f"Start time: {start_time}, End time: {end_time}")
 
@@ -46,10 +46,8 @@ def _save_file_to_csv(dataframes: list[pd.DataFrame]):
         final_df.sort_index(inplace=True)
         final_df.fillna(0.0, inplace=True)
 
-        output_path = f"output/{DATA_COLLECT_OUTPUT_FILE}"
-
-        final_df.to_csv(output_path)
-        print(f"Saved file to [{output_path}]!")
+        final_df.to_csv(DATA_COLLECT_OUTPUT_PATH)
+        print(f"Saved file to [{DATA_COLLECT_OUTPUT_PATH}]!")
     else:
         print("No data exported!")
 

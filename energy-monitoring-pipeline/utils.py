@@ -1,5 +1,6 @@
 import time
 import json
+import argparse
 
 def get_time_range(minutes_before: int) -> tuple[float, float]:
 
@@ -29,3 +30,11 @@ def extract_property_from_json(file_path: str, property_name: str):
         print(f"Error: '{file_path}' is not a valid JSON file.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+def add_boolean_argument(parser: argparse.ArgumentParser, arg_tuple: tuple[str, str, str]):
+    arg_flag = arg_tuple[0]
+    arg_name = arg_tuple[1]
+    help = arg_tuple[2]
+    parser.add_argument(
+        arg_flag, arg_name, action='store_true', help=help
+        )
