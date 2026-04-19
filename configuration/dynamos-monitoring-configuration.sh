@@ -21,7 +21,7 @@ helm upgrade -i -f ${monitoring_chart}/grafana-values.yaml grafana  grafana-comm
   --namespace monitoring
 
 # >!< Cannot run in local environment >!<
-# echo "Installing Kepler..."
-# helm install kepler oci://quay.io/sustainable_computing_io/charts/kepler \
-#   --namespace monitoring \
-#   --version 0.11.4 
+echo "Installing Kepler..."
+helm install kepler oci://quay.io/sustainable_computing_io/charts/kepler \
+  --namespace monitoring \
+  --version 0.11.4 

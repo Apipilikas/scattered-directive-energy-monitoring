@@ -5,8 +5,8 @@ kubectl apply -f temp-pod.yaml
 
 # Wait for the pod to be in the 'Running' state
 echo "Waiting for temp-pod to be Running..."
-kubectl wait --for=condition=Ready pod/temp-pod --timeout=30s -n core
-kubectl wait --for=condition=Ready pod/temp-pod-orch --timeout=30s -n orchestrator
+kubectl wait --for=condition=Ready pod/temp-pod --timeout=300s -n core
+kubectl wait --for=condition=Ready pod/temp-pod-orch --timeout=300s -n orchestrator
 
 # Copy local files to the PVC
 kubectl cp ./k8s_service_files/definitions.json temp-pod:/mnt/ -n core
