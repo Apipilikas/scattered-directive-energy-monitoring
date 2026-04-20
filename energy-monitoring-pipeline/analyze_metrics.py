@@ -14,7 +14,8 @@ def main():
     return
 
 def execute_analysis(run_ad: bool, run_rca: bool):
-    print("============= Metrics analysis started =============")
+    if run_ad or run_rca:
+        print("============= Metrics analysis started =============")
 
     if run_ad:
         print("Anomaly detection started...")
