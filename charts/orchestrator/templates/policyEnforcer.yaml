@@ -14,6 +14,8 @@ spec:
       labels:
         app: policy-enforcer
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.node }}
       containers:
       - name: policy-enforcer
         image: {{ .Values.dockerArtifactAccount }}/policy-enforcer:{{ .Values.branchNameTag }}

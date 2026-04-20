@@ -14,6 +14,8 @@ spec:
       labels:
         app: orchestrator
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.node }}
       containers:
       - name: orchestrator
         image: {{ .Values.dockerArtifactAccount }}/orchestrator:{{ .Values.branchNameTag }}
