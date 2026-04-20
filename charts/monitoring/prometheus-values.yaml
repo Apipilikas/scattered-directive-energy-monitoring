@@ -1,6 +1,18 @@
 prometheus:
   prometheusSpec:
     additionalScrapeConfigs:
+      - job_name: 'cadvisor'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_name]
+            action: keep
+            regex: cadvisor
+          - source_labels: [__meta_kubernetes_pod_ip]
+            action: replace
+            target_label: __address__
+            regex: (.+)
+            replacement: ${1}:8080
       - job_name: 'kubelet'
         scheme: https
         tls_config:
@@ -30,6 +42,16 @@ prometheus:
           password: 'guest'
 
 grafana:
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+      access: proxy
+      orgId: 1
+      isDefault: true
+      jsonData:
+        timeInterval: "5s"
+      editable: true
   grafana.ini:
     server:
       root_url: '%(protocol)s://%(domain)s:/grafana/'
@@ -53,5 +75,5 @@ grafana:
 
 prometheus-node-exporter:
   hostRootFsMount:
-    enabled: false
-  hostNetwork: false
+    enabled: true
+  hostNetwork: true
