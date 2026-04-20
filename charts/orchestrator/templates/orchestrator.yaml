@@ -16,6 +16,7 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.node }}
+      nodeName: {{ .Values.node }}
       containers:
       - name: orchestrator
         image: {{ .Values.dockerArtifactAccount }}/orchestrator:{{ .Values.branchNameTag }}
