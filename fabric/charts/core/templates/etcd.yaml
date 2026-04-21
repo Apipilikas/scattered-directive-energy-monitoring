@@ -1,3 +1,79 @@
+# PV for etcd-0
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: core-etcd-pv-0
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/core-etcd-data-0"
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: {{ .Values.Namespace }}
+    name: etcd-data-etcd-0
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ .Values.node }}
+---
+# PV for etcd-1
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: core-etcd-pv-1
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/core-etcd-data-1"
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: {{ .Values.Namespace }}
+    name: etcd-data-etcd-1
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ .Values.node }}
+---
+# PV for etcd-2
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: core-etcd-pv-2
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/core-etcd-data-2"
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: {{ .Values.Namespace }}
+    name: etcd-data-etcd-2
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ .Values.node }}
+---
+# Original StatefulSet
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -21,8 +97,6 @@ spec:
       - name: etcd
         image: quay.io/coreos/etcd:v3.5.1
         env:
-        # - name: OC_AGENT_HOST
-        #   value: {{ .Values.tracingEndpoint }}
         - name: POD_NAME
           valueFrom:
             fieldRef:
