@@ -1,7 +1,16 @@
 #!/bin/bash
 
+if [ "$1" == "local" ]; then
+    TEMP_POD_FILE="temp-pod-local.yaml"
+elif [ "$1" == "fabric" ]; then
+    TEMP_POD_FILE="temp-pod.yaml"
+else
+    echo "ERROR: Environment is not specified: 'local' or 'fabric'."
+    exit 1
+fi
+
 # Create the temporary pod
-kubectl apply -f temp-pod.yaml
+kubectl apply -f "${TEMP_POD_FILE}"
 
 # Wait for the pod to be in the 'Running' state
 echo "Waiting for temp-pod to be Running..."

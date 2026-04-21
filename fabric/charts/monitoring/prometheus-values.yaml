@@ -1,0 +1,57 @@
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: 'kubelet'
+        scheme: https
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        scrape_interval: 5s
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.monitoring.svc:443
+        - source_labels: [__address__]
+          target_label: __metrics_path__
+          replacement: /metrics
+
+      - job_name: 'rabbitmq'
+        tls_config:
+          insecure_skip_verify: true
+        metrics_path: '/metrics'
+        scrape_interval: 5s
+        static_configs:
+          - targets: ['rabbitmq.core.svc.cluster.local:15692']
+        basic_auth:
+          username: 'guest'
+          password: 'guest'
+
+grafana:
+  grafana.ini:
+    server:
+      root_url: '%(protocol)s://%(domain)s:/grafana/'
+      serve_from_sub_path: true
+    auth:
+      disable_login_form: true
+    auth.anonymous:
+      enabled: true
+      org_role: Editor
+    auth.basic:
+      enabled: false
+    analytics:
+      check_for_updates: false
+    panels:
+      disable_sanitize_html: true
+    log:
+      mode: console
+    log.console:
+      format: text
+      level: info
+
+prometheus-node-exporter:
+  hostRootFsMount:
+    enabled: false
+  hostNetwork: false

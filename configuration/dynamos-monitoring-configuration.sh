@@ -4,6 +4,15 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 source "${SCRIPT_DIR}/../dynamos.conf"
 
+if [ "$1" == "local" ]; then
+    CHARTS_PATH="${CHARTS_LOCAL_PATH}"
+elif [ "$1" == "fabric" ]; then
+    CHARTS_PATH="${CHARTS_FABRIC_PATH}"
+else
+    echo "ERROR: Environment is not specified: 'local' or 'fabric'."
+    exit 1
+fi
+
 # Paths
 monitoring_chart="${CHARTS_PATH}/monitoring"
 

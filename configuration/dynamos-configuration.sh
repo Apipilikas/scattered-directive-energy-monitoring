@@ -2,11 +2,22 @@
 
 set -e
 
-echo "Started setting up DYNAMOS..."
-
 # Importing dynamos config
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 source "${SCRIPT_DIR}/../dynamos.conf"
+
+if [ "$1" == "local" ]; then
+    echo "Environment set to 'LOCAL'."
+    CHARTS_PATH="${CHARTS_LOCAL_PATH}"
+elif [ "$1" == "fabric" ]; then
+    echo "Environment set to 'FABRIC'."
+    CHARTS_PATH="${CHARTS_FABRIC_PATH}"
+else
+    echo "ERROR: You must specify an environment argument: 'local' or 'fabric'."
+    exit 1
+fi
+
+echo "=============== Started setting up DYNAMOS ==============="
 
 # Change this to the path of the DYNAMOS repository on your disk
 echo "Setting up paths..."
@@ -65,14 +76,14 @@ echo "Preparing PVC"
 
 {
     cd ${DYNAMOS_ROOT}/configuration
-    ./fill-rabbit-pvc.sh
+    ./fill-rabbit-pvc.sh "$1"
 }
 
 echo "Preparing energy monitoring installation..."
 
 {
     cd ${DYNAMOS_ROOT}/configuration
-    ./dynamos-monitoring-configuration.sh
+    ./dynamos-monitoring-configuration.sh "$1"
 }
 
 echo "Installing NGINX..."
@@ -86,11 +97,15 @@ sleep 3
 echo "Installing orchestrator layer..."
 helm upgrade -i -f ${orchestrator_chart}/values.yaml orchestrator ${orchestrator_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
-echo "Transferring etcd_launch_files..."
-{
-    cd ${DYNAMOS_ROOT}/configuration
-    ./fill-etcd-pvc.sh
-}
+if [ "$1" == "local" ]; then
+    echo "Transferring local etcd_launch_files..."
+    {
+        cd ${DYNAMOS_ROOT}/configuration
+        ./fill-etcd-pvc.sh
+    }
+fi
+
+
 
 sleep 1
 
@@ -107,6 +122,6 @@ sleep 1
 echo "Installing api gateway..."
 helm upgrade -i -f ${api_gw_chart}/values.yaml api-gateway ${api_gw_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
-echo "Finished setting up DYNAMOS!"
+echo "=============== Finished setting up DYNAMOS ==============="
 
 exit 0
