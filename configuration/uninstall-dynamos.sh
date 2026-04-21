@@ -7,7 +7,7 @@ echo "Uninstalling DYNAMOS namespaces..."
 helm uninstall nginx namespaces core orchestrator agents thirdparties api-gateway surf --ignore-not-found
 
 echo "Uninstalling monitoring namespaces..."
-helm uninstall prometheus grafana kepler -n monitoring
+helm uninstall prometheus kepler -n monitoring --ignore-not-found
 
 echo "Uninstalling nginx..."
 helm uninstall nginx --ignore-not-found
