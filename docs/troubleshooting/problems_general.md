@@ -316,3 +316,25 @@ To resolve this you have to first run the following:
 ```
 python -m pip install --use-pep517 git+https://github.com/SchmollerLab/python-javabridge-windows
 ```
+
+Another issue was the following:
+
+```
+Traceback (most recent call last):
+
+File "/home/ubuntu/scattered-directive-energy-monitoring/energy-monitoring-pipeline/execute_pipeline.py", line 2, in <module>
+
+from analyze_metrics import execute_analysis
+
+File "/home/ubuntu/scattered-directive-energy-monitoring/energy-monitoring-pipeline/analyze_metrics.py", line 6, in <module>
+
+from pyrca.analyzers.rcd import RCD
+
+File "/home/ubuntu/scattered-directive-energy-monitoring/energy-monitoring-pipeline/pyrca/__init__.py", line 6, in <module>
+
+from pkg_resources import get_distribution, DistributionNotFound
+
+ModuleNotFoundError: No module named 'pkg_resources'
+```
+
+2026 update: setuptools 82.0 removed pkg_resources, so if you still need it, make sure to install version 81 or lower.
