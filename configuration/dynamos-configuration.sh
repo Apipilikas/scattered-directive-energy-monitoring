@@ -7,17 +7,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 source "${SCRIPT_DIR}/../dynamos.conf"
 
 if [ "$1" == "local" ]; then
-    echo "Environment set to 'LOCAL'."
     CHARTS_PATH="${CHARTS_LOCAL_PATH}"
 elif [ "$1" == "fabric" ]; then
-    echo "Environment set to 'FABRIC'."
     CHARTS_PATH="${CHARTS_FABRIC_PATH}"
 else
     echo "ERROR: You must specify an environment argument: 'local' or 'fabric'."
     exit 1
 fi
 
-echo "=============== Started setting up DYNAMOS ==============="
+echo "=============== Started setting up DYNAMOS ($1) ==============="
 
 # Change this to the path of the DYNAMOS repository on your disk
 echo "Setting up paths..."

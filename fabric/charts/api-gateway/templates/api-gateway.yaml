@@ -14,6 +14,9 @@ spec:
       labels:
         app: api-gateway
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.node }}
+      nodeName: {{ .Values.node }}
       containers:
       - name: api-gateway
         image: {{ .Values.dockerArtifactAccount }}/api-gateway:{{ .Values.branchNameTag}}
