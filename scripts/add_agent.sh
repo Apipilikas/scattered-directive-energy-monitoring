@@ -6,10 +6,19 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-sed -e "s/^# //" -e "s/%WORKER%/$1/g" "charts/agents/templates/workerX.yaml" > "charts/agents/templates/${1}.yaml"
+if [ "$2" == "local" ]; then
+    CHARTS_PATH="charts"
+elif [ "$2" == "fabric" ]; then
+    CHARTS_PATH="fabric/charts"
+else
+    echo "ERROR: You must specify an environment argument : 'local' or 'fabric'."
+    exit 1
+fi
 
-if ! grep -q "namespace: $1" charts/agents/templates/cluster_role.yaml; then
-tee -a charts/agents/templates/cluster_role.yaml << END
+sed -e "s/^# //" -e "s/%WORKER%/$1/g" "${CHARTS_PATH}/agents/templates/workerX.yaml" > "${CHARTS_PATH}/agents/templates/${1}.yaml"
+
+if ! grep -q "namespace: $1" ${CHARTS_PATH}/agents/templates/cluster_role.yaml; then
+tee -a ${CHARTS_PATH}/agents/templates/cluster_role.yaml << END
 ---
 
 apiVersion: v1
@@ -34,5 +43,5 @@ subjects:
 END
 fi
 
-./scripts/add_namespace.sh $1
+./scripts/add_namespace.sh $1 $2
 }

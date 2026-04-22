@@ -36,9 +36,9 @@ etcd_launch_files="${CONFIG_PATH}/etcd_launch_files"
 agents=$(grep '"name":' ${etcd_launch_files}/agreements.json | awk -F'"' '{print $4}' | paste -sd "," -)
 echo "Agents discovered: $agents"
 
-configure_dynamos="${DYNAMOS_ROOT}/fabric/node_scripts/configure_dynamos.sh "
+configure_dynamos="${DYNAMOS_ROOT}/fabric/node_scripts/configure_dynamos.sh"
 chmod +x ${configure_dynamos}
-${configure_dynamos} $agents
+${configure_dynamos} $agents "" "$1"
 
 rabbit_definitions_file="${k8s_service_files}/definitions.json"
 example_definitions_file="${k8s_service_files}/definitions_example.json"
