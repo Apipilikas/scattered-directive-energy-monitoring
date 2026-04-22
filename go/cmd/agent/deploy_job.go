@@ -87,7 +87,7 @@ func deployJob(ctx context.Context, msChain []mschain.MicroserviceMetadata, jobN
 					Labels: map[string]string{"app": dataStewardName, "nodeName": dataStewardName},
 				},
 				Spec: v1.PodSpec{
-					// NodeName:   dataStewardName, // Comment out to run locally
+					NodeName:   dataStewardName,
 					Containers: []v1.Container{},
 					// 	{
 					// 		Name:    "pvc-container",

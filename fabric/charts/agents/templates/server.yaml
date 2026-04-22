@@ -16,6 +16,9 @@ spec:
       annotations:
         "linkerd.io/inject" : enabled
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: server
+      nodeName: server
       serviceAccountName: job-creator-server
       containers:
       - name: server

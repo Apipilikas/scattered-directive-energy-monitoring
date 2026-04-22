@@ -16,6 +16,9 @@ spec:
       annotations:
         "linkerd.io/inject" : enabled
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: clientthree
+      nodeName: clientthree
       serviceAccountName: job-creator-clientthree
       containers:
       - name: clientthree
