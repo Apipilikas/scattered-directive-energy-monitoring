@@ -7,13 +7,13 @@ DYNAMOS_PORT=$(kubectl get svc -n ingress | grep "nginx-nginx-ingress-controller
 DYNAMOS_IP=$(kubectl get nodes -o wide | grep dynamos | sed "s/.*\s\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\).*/\1/")
 
 # Send the vflTrainModelRequest using curl
-curl -H "Host: api-gateway.api-gateway.svc.cluster.local" \
-  -H "Content-Type: application/json" \
-  --data-raw '{
+curl --location 'http://localhost:8080/api/v1/requestApproval' \
+--header 'Content-Type: application/json' \
+--data-raw '{
     "type": "vflTrainModelRequest",
     "user": {
       "id": "1234",
-      "userName": "jake.jongejans@student.uva.nl"
+      "userName": "evangelos.pipilikas@student.uva.nl"
     },
     "dataProviders": ["server", "clientone", "clienttwo", "clientthree"],
     "data_request": {
@@ -27,5 +27,4 @@ curl -H "Host: api-gateway.api-gateway.svc.cluster.local" \
       },
       "requestMetadata": {}
     }
-  }' \
-  "http://${DYNAMOS_IP}:${DYNAMOS_PORT}/api/v1/requestApproval"
+  }'

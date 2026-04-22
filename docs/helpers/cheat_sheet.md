@@ -150,3 +150,9 @@ helm repo update
 coreChart=/Users/jorrit/Documents/uva/DYNAMOS/charts/core
 helm install -f "${coreChart}/ingress-values.yaml" nginx ingress-nginx/ingress-nginx -n ingress
 kubectl get svc --namespace ingress nginx
+
+# Grafana
+
+kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring
+
+ssh -F C:\Users\apipi\.ssh\fabric_ssh_config -i C:\Users\apipi\.ssh\slice_key -L 3000:localhost:3000 ubuntu@2001:610:2d0:fabc:f816:3eff:febd:2d19

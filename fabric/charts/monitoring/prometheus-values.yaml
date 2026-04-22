@@ -1,45 +1,44 @@
 prometheus:
-  prometheusSpec:
-    additionalScrapeConfigs:
-      - job_name: 'cadvisor'
-        kubernetes_sd_configs:
-          - role: pod
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_label_name]
-            action: keep
-            regex: cadvisor
-          - source_labels: [__meta_kubernetes_pod_ip]
-            action: replace
-            target_label: __address__
-            regex: (.+)
-            replacement: ${1}:8080
-      - job_name: 'kubelet'
-        scheme: https
-        tls_config:
-          insecure_skip_verify: true
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        scrape_interval: 5s
-        kubernetes_sd_configs:
-        - role: node
-        relabel_configs:
-        - action: labelmap
-          regex: __meta_kubernetes_node_label_(.+)
-        - target_label: __address__
-          replacement: kubernetes.monitoring.svc:443
-        - source_labels: [__address__]
-          target_label: __metrics_path__
-          replacement: /metrics
+  additionalScrapeConfigs:
+    - job_name: 'cadvisor'
+      kubernetes_sd_configs:
+        - role: pod
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_name]
+          action: keep
+          regex: cadvisor
+        - source_labels: [__meta_kubernetes_pod_ip]
+          action: replace
+          target_label: __address__
+          regex: (.+)
+          replacement: ${1}:8080
+    - job_name: 'kubelet'
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      scrape_interval: 5s
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.monitoring.svc:443
+      - source_labels: [__address__]
+        target_label: __metrics_path__
+        replacement: /metrics
 
-      - job_name: 'rabbitmq'
-        tls_config:
-          insecure_skip_verify: true
-        metrics_path: '/metrics'
-        scrape_interval: 5s
-        static_configs:
-          - targets: ['rabbitmq.core.svc.cluster.local:15692']
-        basic_auth:
-          username: 'guest'
-          password: 'guest'
+    - job_name: 'rabbitmq'
+      tls_config:
+        insecure_skip_verify: true
+      metrics_path: '/metrics'
+      scrape_interval: 5s
+      static_configs:
+        - targets: ['rabbitmq.core.svc.cluster.local:15692']
+      basic_auth:
+        username: 'guest'
+        password: 'guest'
 
 grafana:
   additionalDataSources:
@@ -52,15 +51,21 @@ grafana:
       jsonData:
         timeInterval: "5s"
       editable: true
+    - name: Loki
+      type: loki
+      access: proxy
+      orgId: 1
+      url: http://loki.monitoring.svc.cluster.local:3100
+      basicAuth: false
+      isDefault: false
+      version: 1
+      editable: false
   grafana.ini:
-    server:
-      root_url: '%(protocol)s://%(domain)s:/grafana/'
-      serve_from_sub_path: true
     auth:
       disable_login_form: true
     auth.anonymous:
       enabled: true
-      org_role: Editor
+      org_role: Admin
     auth.basic:
       enabled: false
     analytics:
