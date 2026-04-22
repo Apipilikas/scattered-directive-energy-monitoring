@@ -40,8 +40,6 @@ configure_dynamos="${DYNAMOS_ROOT}/fabric/node_scripts/configure_dynamos.sh"
 chmod +x ${configure_dynamos}
 ${configure_dynamos} $agents "" "$1"
 
-exit 1
-
 rabbit_definitions_file="${k8s_service_files}/definitions.json"
 example_definitions_file="${k8s_service_files}/definitions_example.json"
 
