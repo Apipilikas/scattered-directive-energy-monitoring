@@ -5,6 +5,9 @@ metadata:
   name: debug
   namespace: {{ .Values.Namespace }}
 spec:
+  nodeSelector:
+    kubernetes.io/hostname: {{ .Values.node }}
+  nodeName: {{ .Values.node }}
   containers:
   - name: debug
     image: busybox
