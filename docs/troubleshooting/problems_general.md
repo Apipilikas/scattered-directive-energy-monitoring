@@ -316,3 +316,9 @@ To resolve this you have to first run the following:
 ```
 python -m pip install --use-pep517 git+https://github.com/SchmollerLab/python-javabridge-windows
 ```
+
+## VFL taking so long
+
+![alt text](image.png)
+
+Change worker imagePullPolicy to always. Old deployed
