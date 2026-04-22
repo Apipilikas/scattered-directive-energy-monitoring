@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Importing dynamos config
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+source "${SCRIPT_DIR}/../../dynamos.conf"
+
 {
 # Parse the agents and thirdparties from the CLI arguments
 IFS=',' read -r -a agents <<< "$1"
@@ -7,7 +11,7 @@ IFS=',' read -r -a thirdparties <<< "$2"
 
 echo "this is $3"
 
-# cd scattered-directive-energy-monitoring
+cd "${DYNAMOS_ROOT}"
 
 echo "Adding agents..."
 for agent in "${agents[@]}"
