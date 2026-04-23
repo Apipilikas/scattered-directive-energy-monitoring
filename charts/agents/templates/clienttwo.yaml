@@ -24,6 +24,8 @@ spec:
         ports:
         - containerPort: 8080
         env:
+        - name: DYNAMOS_ENVIRONMENT
+          value : local
         - name: DATA_STEWARD_NAME
           value: clienttwo
         - name: MICROSERVICE_REPOSITORY_NAME

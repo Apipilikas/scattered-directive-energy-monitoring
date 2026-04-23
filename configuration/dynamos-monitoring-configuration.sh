@@ -9,21 +9,21 @@ if [ "$1" == "local" ]; then
 elif [ "$1" == "fabric" ]; then
     CHARTS_PATH="${CHARTS_FABRIC_PATH}"
 else
-    echo "ERROR: Environment is not specified: 'local' or 'fabric'."
+    echo ">!< ERROR: Environment is not specified: 'local' or 'fabric'. >!<"
     exit 1
 fi
 
 # Paths
 monitoring_chart="${CHARTS_PATH}/monitoring"
 
-echo "Installing Prometheus..."
+echo -e "Installing Prometheus stack...\n"
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm upgrade -i -f ${monitoring_chart}/prometheus-values.yaml prometheus prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --create-namespace
 
-echo "Installing Kepler..."
+echo -e "Installing Kepler...\n"
 helm repo add kepler https://sustainable-computing-io.github.io/kepler-helm-chart
 helm repo update
 helm upgrade -i kepler kepler/kepler \
@@ -31,3 +31,6 @@ helm upgrade -i kepler kepler/kepler \
     --version 0.5.12 \
     --set serviceMonitor.enabled=true \
     --set serviceMonitor.labels.release=prometheus \
+
+echo -e "Setting up additionally monitoring charts...\n"
+helm upgrade -i monitoring ${monitoring_chart} --namespace monitoring -f ${monitoring_chart}/values.yaml

@@ -15,9 +15,10 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.node }}
+      nodeName: {{ .Values.node }}
       containers:
         - name: loki
-          image: grafana/loki:2.8.0
+          image: {{ .Values.loki.image }}
           args:
             - "-config.file=/etc/loki/local-config.yaml"
           ports:

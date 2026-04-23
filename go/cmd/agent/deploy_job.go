@@ -70,6 +70,12 @@ func deployJob(ctx context.Context, msChain []mschain.MicroserviceMetadata, jobN
 	newValue := jobCounter[jobName]
 	jobMutex.Unlock()
 
+	nodeName := dataStewardName
+
+	if os.Getenv("DYNAMOS_ENVIRONMENT") == "local" {
+		nodeName = ""
+	}
+
 	newJobName := replaceLastCharacter(jobName, newValue)
 	// TODO: Give access to a PVC?
 	job := &batchv1.Job{
@@ -87,7 +93,7 @@ func deployJob(ctx context.Context, msChain []mschain.MicroserviceMetadata, jobN
 					Labels: map[string]string{"app": dataStewardName, "nodeName": dataStewardName},
 				},
 				Spec: v1.PodSpec{
-					NodeName:   dataStewardName,
+					NodeName:   nodeName,
 					Containers: []v1.Container{},
 					// 	{
 					// 		Name:    "pvc-container",

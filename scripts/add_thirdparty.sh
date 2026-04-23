@@ -11,7 +11,7 @@ if [ "$2" == "local" ]; then
 elif [ "$2" == "fabric" ]; then
     CHARTS_PATH="fabric/charts"
 else
-    echo "ERROR: You must specify an environment argument: 'local' or 'fabric'."
+    echo ">!< ERROR: You must specify an environment argument: 'local' or 'fabric'. >!<"
     exit 1
 fi
 

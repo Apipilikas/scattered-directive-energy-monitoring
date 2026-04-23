@@ -22,10 +22,10 @@ def _collect_metrics(start_time: float, end_time: float):
 def _export_metrics(metrics: dict):
     dataframes = []
 
-    for query_name, namespaces in metrics.items():
+    for query_name, containers in metrics.items():
 
-        for namespace, metric_values in namespaces.items():
-            column_name = f"{namespace}_{query_name}"
+        for container, metric_values in containers.items():
+            column_name = f"{container}_{query_name}"
             df = pd.DataFrame(metric_values, columns=["timestamp", column_name])
             
             # Convert timestamps to actual datetime

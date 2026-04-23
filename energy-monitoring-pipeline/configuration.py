@@ -14,13 +14,13 @@ DURATION = "2m"
 PROM_URL = "http://localhost:9090"
 PROM_QUERY_RANGE_STEPS = "15s"
 PROM_QUERIES = {
-    # "energy" : "",
-    # "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{DURATION}])) by (name)",
-    "cpu_usage" : "rate(container_cpu_usage_seconds_total[2m])"
-    # "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by (name)",
-    # "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by (name)",
-    # "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by (name)",
-    # "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by (name)"
+    "energy" : f"sum(increase(kepler_container_joules_total[{DURATION}])) by (container_name)",
+    "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{DURATION}])) by (container_label_io_kubernetes_container_name)",
+    # "cpu_usage" : f"rate(container_cpu_usage_seconds_total[{DURATION}])",
+    "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by (container_label_io_kubernetes_container_name)",
+    "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by (container_label_io_kubernetes_container_name)",
+    "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by (container_label_io_kubernetes_container_name)",
+    "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by (container_label_io_kubernetes_container_name)"
 }
 
 # Arguments

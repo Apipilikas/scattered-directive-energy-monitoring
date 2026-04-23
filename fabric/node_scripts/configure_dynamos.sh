@@ -9,8 +9,6 @@ source "${SCRIPT_DIR}/../../dynamos.conf"
 IFS=',' read -r -a agents <<< "$1"
 IFS=',' read -r -a thirdparties <<< "$2"
 
-echo "this is $3"
-
 cd "${DYNAMOS_ROOT}"
 
 echo "Adding agents..."

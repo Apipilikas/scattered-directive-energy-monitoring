@@ -24,6 +24,8 @@
 #         ports:
 #         - containerPort: 8080
 #         env:
+#         - name: DYNAMOS_ENVIRONMENT
+#           value : local
 #         - name: DATA_STEWARD_NAME
 #           value: %WORKER%
 #         - name: MICROSERVICE_REPOSITORY_NAME
