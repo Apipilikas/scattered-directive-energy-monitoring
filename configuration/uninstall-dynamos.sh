@@ -3,15 +3,15 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 source "${SCRIPT_DIR}/../dynamos.conf"
 
-echo -e "=============== Started uninstalling DYNAMOS ===============\n"
+echo -e "\n=============== Started uninstalling DYNAMOS ===============\n"
 
 echo -e "Uninstalling DYNAMOS namespaces...\n"
 helm uninstall nginx namespaces core orchestrator agents thirdparties api-gateway surf --ignore-not-found
 
-echo -e "Uninstalling monitoring namespaces...\n"
+echo -e "\nUninstalling monitoring namespaces...\n"
 helm uninstall prometheus kepler -n monitoring --ignore-not-found
 
-echo -e "Uninstalling nginx...\n"
+echo -e "\nUninstalling nginx...\n"
 helm uninstall nginx --ignore-not-found
 helm uninstall nginx -n ingress
 
@@ -25,7 +25,7 @@ agents=$(grep '"name":' ${etcd_launch_files}/agreements.json | awk -F'"' '{print
 # Parse the agents and thirdparties from the CLI arguments
 IFS=',' read -r -a agents_array <<< "$agents"
 
-echo -e "Clearing old jobs...\n"
+echo -e "\nClearing old jobs...\n"
 for agent in "${agents_array[@]}"
 do
     echo "- Clearing pods for agent: ['$agent']"
@@ -33,4 +33,4 @@ do
 done
 }
 
-echo "=============== Finished uninstalling DYNAMOS ==============="
+echo -e "\n=============== Finished uninstalling DYNAMOS ===============\n"

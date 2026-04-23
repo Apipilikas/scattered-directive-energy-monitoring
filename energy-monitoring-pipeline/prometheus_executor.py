@@ -1,5 +1,5 @@
 import requests
-from configuration import PROM_URL, PROM_QUERY_RANGE_STEPS, get_namespaces
+from configuration import PROM_URL, PROM_QUERY_RANGE_STEPS, get_containers, CADVISOR_LABEL, KEPLER_LABEL
 
 METRIC_STEP = 5  # In seconds
 MAX_RESOLUTION = 11_000  # Maximum resolution of Prometheus
@@ -48,20 +48,20 @@ def _filter_query_range_response(response: requests.Response):
     data = {}
 
     if response.status_code == 200:
-        namespaces = get_namespaces()
+        containers = get_containers()
         results = response.json()["data"]["result"]
 
         for result in results:
             metric = result["metric"]
-            namespace = None
+            container = None
+            
+            if CADVISOR_LABEL in metric:
+                container = metric[CADVISOR_LABEL]
+            elif KEPLER_LABEL in metric:
+                container = metric[KEPLER_LABEL]
 
-            if not "namespace" in metric:
-                continue
-            else:
-                namespace = metric["namespace"]
-
-            if not namespace is None and namespace in namespaces:
-                data[namespace] = result["values"]
+            if not container is None and container in containers:
+                data[container] = result["values"]
     else:
         raise Exception(
             f"Query range execution failed: Status code received [{response.status_code}]. Content: {response.content}"

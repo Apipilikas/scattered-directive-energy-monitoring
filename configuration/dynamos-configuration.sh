@@ -15,7 +15,7 @@ else
     exit 1
 fi
 
-echo -e "=============== Started setting up DYNAMOS ($1) ===============\n"
+echo -e "\n=============== Started setting up DYNAMOS ($1) ===============\n"
 
 # Change this to the path of the DYNAMOS repository on your disk
 echo -e "Setting up paths...\n"
@@ -71,21 +71,21 @@ fi
 echo -e "Installing namespaces...\n"
 helm upgrade -i -f ${namespace_chart}/values.yaml namespaces ${namespace_chart} --set secret.password=${rabbit_pw}
 
-echo -e "Preparing PVC...\n"
+echo -e "\nPreparing PVC...\n"
 
 {
     cd ${DYNAMOS_ROOT}/configuration
     ./fill-rabbit-pvc.sh "$1"
 }
 
-echo -e "Preparing energy monitoring installation...\n"
+echo -e "\nPreparing energy monitoring installation...\n"
 
 {
     cd ${DYNAMOS_ROOT}/configuration
     ./dynamos-monitoring-configuration.sh "$1"
 }
 
-echo -e "Installing NGINX...\n"
+echo -e "\nInstalling NGINX...\n"
 helm install -f ${core_chart}/ingress-values.yaml nginx oci://ghcr.io/nginxinc/charts/nginx-ingress -n ingress --version 0.18.0
 
 echo -e "Installing DYNAMOS core...\n"
@@ -93,7 +93,7 @@ helm upgrade -i -f ${core_chart}/values.yaml core ${core_chart} --set hostPath=$
 
 sleep 3
 
-echo -e "Installing orchestrator layer...\n"
+echo -e "\nInstalling orchestrator layer...\n"
 helm upgrade -i -f ${orchestrator_chart}/values.yaml orchestrator ${orchestrator_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 if [ "$1" == "local" ]; then
@@ -108,19 +108,19 @@ fi
 
 sleep 1
 
-echo -e "Installing agents layer...\n"
+echo -e "\nInstalling agents layer...\n"
 helm upgrade -i -f ${agents_chart}/values.yaml agents ${agents_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 sleep 1
 
-echo -e "Installing thirdparty layer...\n"
+echo -e "\nInstalling thirdparty layer...\n"
 helm upgrade -i -f ${ttp_chart}/values.yaml surf ${ttp_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
 sleep 1
 
-echo -e "Installing api gateway...\n"
+echo -e "\nInstalling api gateway...\n"
 helm upgrade -i -f ${api_gw_chart}/values.yaml api-gateway ${api_gw_chart} --set dockerArtifactAccount=${DOCKERHUB_ACCOUNT}
 
-echo "=============== Finished setting up DYNAMOS ==============="
+echo -e "\n=============== Finished setting up DYNAMOS ===============\n"
 
 exit 0

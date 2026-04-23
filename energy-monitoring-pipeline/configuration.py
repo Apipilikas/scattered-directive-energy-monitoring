@@ -9,18 +9,32 @@ DATA_OUTPUT_FOLDER = "output"
 DATA_COLLECT_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/data_metrics.csv"
 DATA_ANALYZED_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/analyzed_data_metrics.csv"
 
+# Kepler variables
+KEPLER_WATT_PER_SECOND_TO_KWH = 1/3600000
+KEPLER_COAL = 0.4
+KEPLER_CARBON_COEFFICIENT = 0.2
+
 # Prometheus
 DURATION = "2m"
 PROM_URL = "http://localhost:9090"
 PROM_QUERY_RANGE_STEPS = "15s"
+CADVISOR_LABEL = "namespace"
+KEPLER_LABEL = "container_name"
 PROM_QUERIES = {
-    "energy" : f"sum(increase(kepler_container_joules_total[{DURATION}])) by (container_name)",
-    "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{DURATION}])) by (container_label_io_kubernetes_container_name)",
-    # "cpu_usage" : f"rate(container_cpu_usage_seconds_total[{DURATION}])",
-    "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by (container_label_io_kubernetes_container_name)",
-    "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by (container_label_io_kubernetes_container_name)",
-    "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by (container_label_io_kubernetes_container_name)",
-    "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by (container_label_io_kubernetes_container_name)"
+    "energy" : f"sum(increase(kepler_container_joules_total[{DURATION}])) by ({KEPLER_LABEL})",
+    "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{DURATION}])) by ({CADVISOR_LABEL})",
+    "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by ({CADVISOR_LABEL})",
+    "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by ({CADVISOR_LABEL})",
+    "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by ({CADVISOR_LABEL})",
+    "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by ({CADVISOR_LABEL})",
+    "carbon_coal": f"(sum(increase((kepler_container_joules_total[24h:1m]))) by ({KEPLER_LABEL}) * {KEPLER_WATT_PER_SECOND_TO_KWH}) * {KEPLER_COAL}",
+    # "carbon_emission": f"""(sum(increase(kepler_container_joules_total[1h]) * (1/3600000)) by (container_name)) 
+    #                         * 
+    #                         (
+    #                         sum(count_over_time(kepler_container_joules_total[24h])) by (container_name) 
+    #                         / 
+    #                         sum(count_over_time(kepler_container_joules_total[1h])) by (container_name)
+    #                         ) * {KEPLER_CARBON_COEFFICIENT}"""
 }
 
 # Arguments
@@ -33,7 +47,7 @@ TRAINING_DATA_PATH = f"{DATA_OUTPUT_FOLDER}/baseline_data_metrics.csv"
 RCD_K = 5
 
 # Namespaces
-NAMESPACES = [
+CONTAINERS = [
     "api-gateway",
     "policy-enforcer",
     "orchestrator",
@@ -42,8 +56,8 @@ NAMESPACES = [
     "rabbitmq"
 ]
 
-def get_namespaces():
+def get_containers():
     etcd_launch_files_path = "../configuration/etcd_launch_files"
     agents = extract_property_from_json(f"{etcd_launch_files_path}/agreements.json", "name")
 
-    return NAMESPACES + agents
+    return CONTAINERS + agents

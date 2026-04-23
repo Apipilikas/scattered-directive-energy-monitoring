@@ -5,7 +5,7 @@ if [ "$1" == "local" ]; then
 elif [ "$1" == "fabric" ]; then
     TEMP_POD_FILE="temp-pod.yaml"
 else
-    echo "ERROR: Environment is not specified: 'local' or 'fabric'."
+    echo ">!< ERROR: Environment is not specified: 'local' or 'fabric'. >!<"
     exit 1
 fi
 
@@ -13,7 +13,7 @@ fi
 kubectl apply -f "${TEMP_POD_FILE}"
 
 # Wait for the pod to be in the 'Running' state
-echo "Waiting for temp-pod to be Running..."
+echo -e "\nWaiting for temp-pod to be Running...\n"
 kubectl wait --for=condition=Ready pod/temp-pod --timeout=300s -n core
 kubectl wait --for=condition=Ready pod/temp-pod-orch --timeout=300s -n orchestrator
 
@@ -31,4 +31,4 @@ kubectl cp etcd_files.tar.gz temp-pod-orch:/mnt -n orchestrator
 kubectl exec -n orchestrator temp-pod-orch -- tar -xzvf /mnt/etcd_files.tar.gz -C /mnt
 
 # Delete the temporary pod
-kubectl delete -f temp-pod.yaml
+kubectl delete -f temp-pod.yaml --wait=false

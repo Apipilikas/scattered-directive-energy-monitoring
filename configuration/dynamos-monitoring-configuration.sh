@@ -23,7 +23,7 @@ helm upgrade -i -f ${monitoring_chart}/prometheus-values.yaml prometheus prometh
   --namespace monitoring \
   --create-namespace
 
-echo -e "Installing Kepler...\n"
+echo -e "\nInstalling Kepler...\n"
 helm repo add kepler https://sustainable-computing-io.github.io/kepler-helm-chart
 helm repo update
 helm upgrade -i kepler kepler/kepler \
@@ -32,5 +32,5 @@ helm upgrade -i kepler kepler/kepler \
     --set serviceMonitor.enabled=true \
     --set serviceMonitor.labels.release=prometheus \
 
-echo -e "Setting up additionally monitoring charts...\n"
+echo -e "\nSetting up additionally monitoring charts...\n"
 helm upgrade -i monitoring ${monitoring_chart} --namespace monitoring -f ${monitoring_chart}/values.yaml
