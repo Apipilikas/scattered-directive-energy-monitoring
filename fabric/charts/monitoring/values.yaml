@@ -1,7 +1,7 @@
 cadvisor:
   image:
-    repository: gcr.io/cadvisor/cadvisor
-    tag: v0.49.1
+    repository: ghcr.io/google/cadvisor
+    tag: 0.56.2
   # Resources are required to set to avoid opening too many files error for example
   resources:
     requests:

@@ -1,5 +1,8 @@
 prometheus:
   prometheusSpec:
+    scrapeInterval: "30s"
+    scrapeTimeout: "25s"
+    evaluationInterval: "1m"
     additionalScrapeConfigs:
       - job_name: 'cadvisor'
         kubernetes_sd_configs:

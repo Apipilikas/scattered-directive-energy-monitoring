@@ -7,7 +7,8 @@ COLUMN_TO_DROP = "timestamp"
 # Paths / Files
 DATA_OUTPUT_FOLDER = "output"
 DATA_COLLECT_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/data_metrics.csv"
-DATA_ANALYZED_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/analyzed_data_metrics.csv"
+DATA_DA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/da_data_metrics.csv"
+DATA_RCA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/rca_results.csv"
 
 # Kepler variables
 KEPLER_WATT_PER_SECOND_TO_KWH = 1/3600000
@@ -26,7 +27,9 @@ PROM_QUERIES = {
     "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by ({CADVISOR_LABEL})",
     "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by ({CADVISOR_LABEL})",
     "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by ({CADVISOR_LABEL})",
-    "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by ({CADVISOR_LABEL})",
+    # https://github.com/google/cadvisor/issues/2881 | There is a bug regarding disk. It always shows 0 value in 
+    # both local and fabric environments.
+    # "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by ({CADVISOR_LABEL})",
     "carbon_coal": f"(sum(increase((kepler_container_joules_total[24h:1m]))) by ({KEPLER_LABEL}) * {KEPLER_WATT_PER_SECOND_TO_KWH}) * {KEPLER_COAL}",
     # "carbon_emission": f"""(sum(increase(kepler_container_joules_total[1h]) * (1/3600000)) by (container_name)) 
     #                         * 

@@ -47,9 +47,15 @@ def _resolve_args():
 
     return run_ad, run_rca
 
+def _convert_cpu_usage_to_percentage(df: pd.DataFrame):
+    cpu_columns = [col for col in df.columns if '_cpu' in col]
+    df[cpu_columns] = df[cpu_columns] * 100
+    return df
+
 # Anomaly detection (AD)
 def _detect_anomalies():
     df = pd.read_csv(DATA_COLLECT_OUTPUT_PATH, index_col="timestamp", parse_dates=True)
+    df = _convert_cpu_usage_to_percentage(df)
 
     for column_name in df.columns:
         # Skip timestamp column
@@ -66,7 +72,8 @@ def _detect_anomalies():
             anomaly_score_column_name = f"{column_name}_anomaly_score"
             df[anomaly_score_column_name] = model.decision_function(df_column)
 
-    df.to_csv(DATA_ANALYZED_OUTPUT_PATH)
+    df.to_csv(DATA_DA_OUTPUT_PATH)
+    print(f"Saved file to [{DATA_DA_OUTPUT_PATH}]!")
 
 # Root cause analysis (RCA)
 def _analyze_root_causes():
@@ -93,13 +100,11 @@ def print_results(results):
     # Extracting node names
     nodes_list = [node[0] for node in results['root_cause_nodes']]
 
-    # Writing nodes_list to a CSV file
-    csv_filename = f'{DATA_OUTPUT_FOLDER}/rca_results.csv'
-
-    with open(csv_filename, mode='w', newline='') as file:
+    with open(DATA_RCA_OUTPUT_PATH, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Root Cause'])
         writer.writerows([[node] for node in nodes_list])
+        print(f"Saved file to [{DATA_RCA_OUTPUT_PATH}]!")
 
 if __name__ == '__main__':
     main()
