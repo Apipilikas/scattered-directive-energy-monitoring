@@ -10,23 +10,28 @@ DATA_COLLECT_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/data_metrics.csv"
 DATA_DA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/da_data_metrics.csv"
 DATA_RCA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/rca_results.csv"
 
-# Kepler variables
+# Experiment constants
+EXPERIMENT_RUNS_NO = 7
+IDLE_PERIOD = 120
+ACTIVE_PERIOD = 120
+
+# Kepler constants
 KEPLER_WATT_PER_SECOND_TO_KWH = 1/3600000
 KEPLER_COAL = 0.4
 KEPLER_CARBON_COEFFICIENT = 0.2
 
-# Prometheus
-DURATION = "2m"
+# Prometheus constants
+PROM_DURATION = "2m"
 PROM_URL = "http://localhost:9090"
 PROM_QUERY_RANGE_STEPS = "15s"
-CADVISOR_LABEL = "namespace"
+CADVISOR_LABEL = "container_label_io_kubernetes_container_name"
 KEPLER_LABEL = "container_name"
 PROM_QUERIES = {
-    "energy" : f"sum(increase(kepler_container_joules_total[{DURATION}])) by ({KEPLER_LABEL})",
-    "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{DURATION}])) by ({CADVISOR_LABEL})",
-    "memory_usage" : f"sum(rate(container_memory_usage_bytes[{DURATION}])) by ({CADVISOR_LABEL})",
-    "memory_rss_usage" : f"sum(rate(container_memory_rss[{DURATION}])) by ({CADVISOR_LABEL})",
-    "memory_cache_usage" : f"sum(rate(container_memory_cache[{DURATION}])) by ({CADVISOR_LABEL})",
+    "energy" : f"sum(increase(kepler_container_joules_total[{PROM_DURATION}])) by ({KEPLER_LABEL})",
+    "cpu_usage" : f"sum(rate(container_cpu_usage_seconds_total[{PROM_DURATION}])) by ({CADVISOR_LABEL})",
+    "memory_usage" : f"sum(rate(container_memory_usage_bytes[{PROM_DURATION}])) by ({CADVISOR_LABEL})",
+    "memory_rss_usage" : f"sum(rate(container_memory_rss[{PROM_DURATION}])) by ({CADVISOR_LABEL})",
+    "memory_cache_usage" : f"sum(rate(container_memory_cache[{PROM_DURATION}])) by ({CADVISOR_LABEL})",
     # https://github.com/google/cadvisor/issues/2881 | There is a bug regarding disk. It always shows 0 value in 
     # both local and fabric environments.
     # "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by ({CADVISOR_LABEL})",
@@ -49,7 +54,7 @@ CM_ARGUMENT = '-cm', '--collect-metrics', 'Run only anomaly detection algorithm'
 TRAINING_DATA_PATH = f"{DATA_OUTPUT_FOLDER}/baseline_data_metrics.csv"
 RCD_K = 5
 
-# Namespaces
+# Containers
 CONTAINERS = [
     "api-gateway",
     "policy-enforcer",
@@ -59,8 +64,12 @@ CONTAINERS = [
     "rabbitmq"
 ]
 
-def get_containers():
+# Helpers
+def get_agents():
     etcd_launch_files_path = "../configuration/etcd_launch_files"
     agents = extract_property_from_json(f"{etcd_launch_files_path}/agreements.json", "name")
 
-    return CONTAINERS + agents
+    return agents
+
+def get_containers():
+    return CONTAINERS + get_agents()

@@ -11,6 +11,20 @@ def _merge(x, y):
         data[key] = x.get(key, []) + y[key]
     return data
 
+def execute_query(query: str):
+    print(f"Executing [query_range] query [{query}].")
+
+    params = {
+        "query": query
+    }
+
+    response = requests.get(
+        f"{PROM_URL}/api/v1/query",
+        params=params
+    )
+
+    return _filter_query_response(response)
+
 def execute_query_range(query: str, start_time: float, end_time: float):
     # If all the data can be collected in only one request
     if not (end_time - start_time) / METRIC_STEP > MAX_RESOLUTION:
@@ -44,7 +58,13 @@ def _execute_query_range(query: str, start_time: float, end_time: float):
 
     return _filter_query_range_response(response)
 
+def _filter_query_response(response: requests.Response):
+    return _filter_response(response, "Query", lambda r: r["value"][1])
+
 def _filter_query_range_response(response: requests.Response):
+    return _filter_response(response, "Query range", lambda r: r["values"])
+
+def _filter_response(response: requests.Response, caller_name: str, process_result_fnc: function):
     data = {}
 
     if response.status_code == 200:
@@ -61,10 +81,10 @@ def _filter_query_range_response(response: requests.Response):
                 container = metric[KEPLER_LABEL]
 
             if not container is None and container in containers:
-                data[container] = result["values"]
+                data[container] = process_result_fnc(result)
     else:
         raise Exception(
-            f"Query range execution failed: Status code received [{response.status_code}]. Content: {response.content}"
+            f"{caller_name} execution failed: Status code received [{response.status_code}]. Content: {response.content}"
             )
     
     return data
