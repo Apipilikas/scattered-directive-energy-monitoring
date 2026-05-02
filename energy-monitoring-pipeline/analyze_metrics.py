@@ -87,11 +87,11 @@ def _analyze_root_causes():
 
     train_df = pd.read_csv(TRAINING_DATA_PATH)
     train_df.drop(columns = COLUMN_TO_DROP, inplace=True)
-    # train_df = train_df.filter(like='_energy') # ENERGY CANNOT BE RUN ON LOCAL MACHINE    
+    train_df = train_df.filter(like='_energy')    
     
     test_df = pd.read_csv(DATA_COLLECT_OUTPUT_PATH)
     test_df.drop(columns = COLUMN_TO_DROP, inplace=True)
-    # test_df = test_df.filter(like='_energy') # ENERGY CANNOT BE RUN ON LOCAL MACHINE
+    test_df = test_df.filter(like='_energy')
     
     results = model.find_root_causes(train_df, test_df)
     print_results(results.to_dict())

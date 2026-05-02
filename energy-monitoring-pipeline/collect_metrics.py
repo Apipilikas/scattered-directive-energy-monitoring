@@ -9,15 +9,16 @@ def main():
     start_time, end_time = get_time_range(COLLECT_MINUTES_BEFORE)
     print(f"Start time: {start_time}, End time: {end_time}")
 
-    return _collect_metrics(start_time, end_time)
+    dfs = collect_metrics(start_time, end_time)
+    save_metrics_to_csv(dfs)
 
-def _collect_metrics(start_time: float, end_time: float):
+def collect_metrics(start_time: float, end_time: float):
     metrics = {}
     
     for name, query in PROM_QUERIES.items():
         metrics[name] = execute_query_range(query, start_time, end_time)
     
-    _export_metrics(metrics)
+    return _export_metrics(metrics)
 
 def _export_metrics(metrics: dict):
     dataframes = []
@@ -37,17 +38,17 @@ def _export_metrics(metrics: dict):
 
             dataframes.append(df)
 
-    return _save_file_to_csv(dataframes)
+    return dataframes
 
-def _save_file_to_csv(dataframes: list[pd.DataFrame]):
+def save_metrics_to_csv(dataframes: list[pd.DataFrame], file_path = DATA_COLLECT_OUTPUT_PATH):
     if dataframes:
         final_df = pd.concat(dataframes, axis=1, sort=False)
         
         final_df.sort_index(inplace=True)
         final_df.fillna(0.0, inplace=True)
 
-        final_df.to_csv(DATA_COLLECT_OUTPUT_PATH)
-        print(f"Saved file to [{DATA_COLLECT_OUTPUT_PATH}]!")
+        final_df.to_csv(file_path)
+        print(f"Saved file to [{file_path}]!")
     else:
         print("No data exported!")
 

@@ -64,7 +64,7 @@ def _filter_query_response(response: requests.Response):
 def _filter_query_range_response(response: requests.Response):
     return _filter_response(response, "Query range", lambda r: r["values"])
 
-def _filter_response(response: requests.Response, caller_name: str, process_result_fnc: function):
+def _filter_response(response: requests.Response, caller_name: str, process_result_fnc):
     data = {}
 
     if response.status_code == 200:

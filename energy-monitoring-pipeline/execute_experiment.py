@@ -2,7 +2,8 @@ import time
 from configuration import *
 from prometheus_executor import execute_query
 import requests
-import csv
+import json
+from collect_metrics import collect_metrics, save_metrics_to_csv
 
 # URLs
 API_BASE_URL = "http://localhost:8080/api/v1"
@@ -40,7 +41,8 @@ PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) 
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{PROM_DURATION}])) by ({KEPLER_LABEL})"
 
 def main():
-    return
+    print("============= Execute experiment =============")
+    execute_experiment()
 
 def _request_approval():
     response = requests.post(
@@ -48,15 +50,22 @@ def _request_approval():
         )
     
     status_code = response.status_code
+    response_content = response.json()
 
-    if status_code == "202":
-        return response.json()["request_id"]
+    id = ""
+
+    if "request_id" in response_content:
+        id = response_content["request_id"]
+    elif "active_request_id" in response_content:
+        id = response_content["active_request_id"]
     else:
-        raise Exception("Not accepted")
+        raise Exception("Response is not recognizable.")
+
+    return id
 
 def _get_training_status(jobId : str):
     response = requests.get(
-        GET_TRAINING_STATUS_URL, params={"jobId": jobId}, headers=REQUEST_APPROVAL_HEADER
+        GET_TRAINING_STATUS_URL, params={"id": jobId}, headers=REQUEST_APPROVAL_HEADER
     )
 
     return response.json()
@@ -78,25 +87,29 @@ def _get_energy_comsumption():
 def execute_experiment():
     runs = {}
 
-    for r in range(10):
+    for r in range(1):
         runs[r] = execute_experiment_run()
 
 def execute_experiment_run():
     # Phase 1: Idle period
     # Wait idle period
-    print("Waiting for idle period...")
+    print("> Idle period")
+    print("Waiting for idle period ...")
+    experiment_start_time = time.time()
     time.sleep(IDLE_PERIOD)
     idle_energy = _get_energy_comsumption()
     print(f"Idle Energy: {idle_energy} (in J)")
 
     # Phase 2: Active period
     # Record the start time of the active period
-    start_time = time.time()
+    print("> Active period")
+    active_start_time = time.time()
     request_id = _request_approval()
 
     accuracies = {}
 
     while True:
+        time.sleep(5)
         response = _get_training_status(request_id)
         is_training_done = response["status"] == "done"
 
@@ -104,15 +117,29 @@ def execute_experiment_run():
             accuracies = response["results"]
             break
     
-    elapsed_time = time.time() - start_time
     active_energy = _get_energy_comsumption()
+    experiment_end_time = time.time()
+    experiment_elapsed_time = experiment_end_time - experiment_start_time
+    active_elapsed_time = time.time() - active_start_time
 
-    return {
+    print("\n> Summary")
+    print(f"Experiment elapsed time: {experiment_elapsed_time}")
+    print(f"Active period elapsed time: {active_elapsed_time}")
+
+    dfs = collect_metrics(experiment_start_time, experiment_end_time)
+    save_metrics_to_csv(dfs, "output/experiment_metrics.csv")
+
+    output = {
         "idle_energy": idle_energy,
         "active_energy": active_energy,
-        "accuracies": accuracies
+        "accuracies": accuracies,
+        "metrics_path": "output/experiment_metrics.csv"
     }
 
+    with open('output/experiment.json', 'w') as f:
+        json.dump(output, f, indent=2)
+
+    return output
 
 if __name__ == '__main__':
     main()
