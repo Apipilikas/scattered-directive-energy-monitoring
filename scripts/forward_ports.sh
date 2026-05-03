@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo -e "\n=============== Started port forwarding ===============\n"
+
+kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring &
+kubectl port-forward svc/api-gateway 8080:8080 -n api-gateway &
+kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring &
+
+echo -e "\nAll ports forwarded! Press Ctrl+C to exit.\n"
+wait

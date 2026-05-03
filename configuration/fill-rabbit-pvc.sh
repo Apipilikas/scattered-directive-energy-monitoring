@@ -9,13 +9,35 @@ else
     exit 1
 fi
 
-# Create the temporary pod
-kubectl apply -f "${TEMP_POD_FILE}"
+MAX_RETRIES=3
+RETRY_COUNT=0
+PODS_READY=false
+WAIT_TIMEOUT="60s"
 
-# Wait for the pod to be in the 'Running' state
-echo -e "\nWaiting for temp-pod to be Running...\n"
-kubectl wait --for=condition=Ready pod/temp-pod --timeout=300s -n core
-kubectl wait --for=condition=Ready pod/temp-pod-orch --timeout=300s -n orchestrator
+# Create the temporary pod with retrying as sometimes it gets stuck and I have to exit script and re-run it.
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    echo -e "\nApplying ${TEMP_POD_FILE} (Attempt $((RETRY_COUNT+1))/${MAX_RETRIES})..."
+    kubectl apply -f "${TEMP_POD_FILE}"
+
+    # Wait for the pod to be in the 'Running' state
+    echo -e "\nWaiting for temp-pod to be Running...\n"
+    
+    if kubectl wait --for=condition=Ready pod/temp-pod --timeout=${WAIT_TIMEOUT} -n core && \
+       kubectl wait --for=condition=Ready pod/temp-pod-orch --timeout=${WAIT_TIMEOUT} -n orchestrator; then
+        PODS_READY=true
+        break
+    else
+        echo -e "\n>!< Timeout reached. Pods might be stuck in Pending. Retrying ... >!<"
+        sleep 5
+        RETRY_COUNT=$((RETRY_COUNT+1))
+    fi
+done
+
+# Exit if we exhausted all retries and pods are still not ready
+if [ "$PODS_READY" = false ]; then
+    echo -e "\n>!< ERROR: Failed to get pods into a Ready state after ${MAX_RETRIES} attempts. >!<"
+    exit 1
+fi
 
 # Copy local files to the PVC
 kubectl cp ./k8s_service_files/definitions.json temp-pod:/mnt/ -n core

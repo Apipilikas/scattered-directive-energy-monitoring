@@ -1,3 +1,4 @@
+import datetime
 import time
 from configuration import *
 from prometheus_executor import execute_query
@@ -83,6 +84,11 @@ def _get_energy_comsumption():
 #         total_active_energy = sum(float(value) for value in result_data["active_energy"].values())
 #         total_difference = total_active_energy - total_idle_energy
 
+def _calculate_total_energy(metrics: dict):
+    return sum(float(value) for value in metrics.values())
+
+def _format_datetime(seconds) -> str:
+    return str(datetime.timedelta(seconds=seconds))
 
 def execute_experiment():
     runs = {}
@@ -93,16 +99,19 @@ def execute_experiment():
 def execute_experiment_run():
     # Phase 1: Idle period
     # Wait idle period
-    print("> Idle period")
-    print("Waiting for idle period ...")
+    print("\n> Idle period")
     experiment_start_time = time.time()
+    
+    print("Waiting for idle period ...")
     time.sleep(IDLE_PERIOD)
+    
     idle_energy = _get_energy_comsumption()
+    total_idle_energy = _calculate_total_energy(idle_energy)
     print(f"Idle Energy: {idle_energy} (in J)")
 
     # Phase 2: Active period
     # Record the start time of the active period
-    print("> Active period")
+    print("\n> Active period")
     active_start_time = time.time()
     request_id = _request_approval()
 
@@ -118,20 +127,27 @@ def execute_experiment_run():
             break
     
     active_energy = _get_energy_comsumption()
+    total_active_energy = _calculate_total_energy(active_energy)
+
+    total_energy_difference = total_active_energy - total_idle_energy
+    
     experiment_end_time = time.time()
     experiment_elapsed_time = experiment_end_time - experiment_start_time
     active_elapsed_time = time.time() - active_start_time
 
     print("\n> Summary")
-    print(f"Experiment elapsed time: {experiment_elapsed_time}")
-    print(f"Active period elapsed time: {active_elapsed_time}")
+    print(f"Experiment elapsed time: {experiment_elapsed_time} s ({_format_datetime(experiment_elapsed_time)})")
+    print(f"Active period elapsed time: {active_elapsed_time} s ({_format_datetime(active_elapsed_time)})")
 
     dfs = collect_metrics(experiment_start_time, experiment_end_time)
     save_metrics_to_csv(dfs, "output/experiment_metrics.csv")
 
     output = {
         "idle_energy": idle_energy,
+        "total_idle_energy": total_idle_energy,
         "active_energy": active_energy,
+        "total_active_energy": total_active_energy,
+        "total_energy_difference": total_energy_difference,
         "accuracies": accuracies,
         "metrics_path": "output/experiment_metrics.csv"
     }
