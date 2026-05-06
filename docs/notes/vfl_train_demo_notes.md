@@ -1,3 +1,6 @@
+# File : vfl-train-demo/main.py
+## This is personalized notes to help comprehend better what the code does. This is the client side.
+```python
 import pandas as pd
 import numpy as np
 import sys
@@ -143,8 +146,31 @@ class VFLClient():
             logger.error(f"Error occurred: {e}")
 
 
+# # Note: Gradients sent by server are for this client only to preserve privacy
+# def vfl_train(learning_rate, model_state, gradients):
+#
+#     optimiser = torch.optim.SGD(model.parameters(), lr=learning_rate)
+#
+#     if gradients is not None:
+#         vfl_evaluate(data, model, optimiser, gradients)
+#
+#     embeddings = train_model(data, model)
+#     model_state = model.state_dict()
+#
+#     buffer = io.BytesIO()
+#     torch.save(model_state, buffer)
+#
+#     data = Struct()
+#     data.update({"embeddings": serialise_array(embeddings),
+#                  "model_state": buffer.getvalue().decode("latin1")})
+#
+#     return data
+
+
 # ---  DYNAMOS Interface code At the Bottom --------
 
+# ==================================== MAIN HANDLER ====================================
+# Main function that processes requests.
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
     global ms_config
@@ -164,15 +190,17 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
     DATA_STEWARD_NAME = os.getenv("DATA_STEWARD_NAME").lower()
 
     if DATA_STEWARD_NAME == "server":
+    # This is the server
         if request.type == "vflShutdownRequest":
             logger.info(
                 "Received vflShutdownRequest, shutting down service.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
             signal_continuation(stop_event, stop_microservice_condition)
         else:
-            logger.info(f"Received request: {request.type}. This is the server (not client), relaying request.")
+            logger.info("This is the server (not client), relaying request.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     else:
+    # This is the client
         if request is not None:
             if request.type == "vflTrainRequest":
                 logger.info("Received a vflTrainRequest.")
@@ -262,3 +290,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+```

@@ -131,7 +131,7 @@ func generateMicroserviceChain(compositionRequest *pb.CompositionRequest, option
 	if err != nil {
 		return nil, err
 	}
-	logger.Sugar().Debugf("After GetAndUnmarshalJSON  compositionRequest.RequestType)")
+	logger.Sugar().Debugf("After GetAndUnmarshalJSON: %s", compositionRequest.RequestType)
 
 	var msMetadata []mschain.MicroserviceMetadata
 

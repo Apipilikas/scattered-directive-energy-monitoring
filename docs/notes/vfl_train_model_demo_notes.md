@@ -1,3 +1,7 @@
+# File: vfl-train-model-demo/main.py
+## This is personalized notes to help comprehend better what the code does. This is the server side.
+
+```python
 import pandas as pd
 import numpy as np
 import sys
@@ -261,7 +265,7 @@ class VFLServer():
         print(f"Server state loaded from {filepath}")
 
 
-def handle_vflAggregateRequest(msComm):
+def handleAggregateRequest(msComm):
     global ms_config
     global vfl_server
 
@@ -270,7 +274,7 @@ def handle_vflAggregateRequest(msComm):
 
     backtrack = False
     try:
-        training_backtrack_flag = request.data["trainingBacktrack"]
+        training_backtrack_flag = request.data["trainingBacktrack"] # Gets from the data the training backtrack flag.
         logger.debug(f"Training backtrack flag: {training_backtrack_flag}")
         logger.debug(f"Training backtrack flag: {type(training_backtrack_flag)}")
         if training_backtrack_flag.number_value == 1:
@@ -280,7 +284,7 @@ def handle_vflAggregateRequest(msComm):
         logger.warning(f"Error when retrieving training backtrack flag: {e}")
 
     try:
-        data = request.data["embeddings"]
+        data = request.data["embeddings"] # Gets from the data the embeddings.
         # logger.debug(f"Received data: {data}")
         # logger.debug(f"Embedding len: {len(data)}")
         clients_embeddings = [deserialise_array(
@@ -292,52 +296,58 @@ def handle_vflAggregateRequest(msComm):
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
-def handle_vflShutdownRequest(msComm):
-    global ms_config
-
-    logger.info("Received vflShutdownRequest, shutting down service.")
-    ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
-    signal_continuation(stop_event, stop_microservice_condition)
 
 # ---  DYNAMOS Interface code At the Bottom --------
 
+# ==================================== MAIN HANDLER ====================================
+# Main function that processes requests.
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
-    global ms_config
+    global ms_config # Grabs the master config for this specific microservice
 
+    # This is the "shipping label". It stores metadata. Example: USER_ACTION
+    # Most of the times is : vflTrainModelRequest
     logger.info(f"Received original request type: {msComm.request_type}")
 
     # Ensure all connections have finished setting up before processing data
     signal_wait(wait_for_setup_event, wait_for_setup_condition)
 
     try:
+        # Creates an empty request struct.
         request = rabbitTypes.Request()
+        # Takes the shrink-wrapped data inside the generic msComm shipping box and "unpacks" it into that empty request instance.
         msComm.original_request.Unpack(request)
     except Exception as e:
         logger.error(f"Unexpected original request received: {e}")
+        # Sends the data to the next microservice worker in the chain.
         ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
         return Empty()
 
     DATA_STEWARD_NAME = os.getenv("DATA_STEWARD_NAME").lower()
 
     if DATA_STEWARD_NAME != "server":
+    # This is the client
         if request.type == "vflShutdownRequest":
-            handle_vflShutdownRequest(msComm)
-        else:
-            logger.info(f"Received request: {request.type}. This is the client (not server), relaying request.")
+            logger.info(
+                "Received vflShutdownRequest, shutting down service.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
-
+            signal_continuation(stop_event, stop_microservice_condition) # Signal: Look line 371
+        else:
+            logger.info("This is the server (not client), relaying request.")
+            ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     else:
+    # This is the server
         if request.type == "vflAggregateRequest":
             logger.info("Received a vflAggregateRequest.")
-            handle_vflAggregateRequest(msComm)
+            handleAggregateRequest(msComm)
 
         elif request.type == "vflPingRequest":
             logger.info("Received a vflPingRequest.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
 
         elif request.type == "vflShutdownRequest":
-            handle_vflShutdownRequest(msComm)
+            logger.info("Received a vflShutdownRequest.")
+            signal_continuation(stop_event, stop_microservice_condition)
 
         return Empty()
 
@@ -373,3 +383,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+```
