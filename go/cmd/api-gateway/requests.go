@@ -31,6 +31,8 @@ var (
 	trainingRequests = sync.Map{} // map[string]TrainingRequestData
 )
 
+// #region vflTrainModelRequest
+
 type TrainingRequestData struct {
 	Status   string
 	Results  []map[string]any
@@ -82,39 +84,6 @@ func requestHandler() http.HandlerFunc {
 			return
 		}
 
-		// Parse the request body
-		body, err := api.GetRequestBody(w, r, serviceName)
-		if err != nil {
-			return
-		}
-
-		var apiReqApproval api.RequestApproval
-		if err := json.Unmarshal(body, &apiReqApproval); err != nil {
-			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		userPb := &pb.User{
-			Id:       apiReqApproval.User.Id,
-			UserName: apiReqApproval.User.UserName,
-		}
-
-		var dataRequestInterface map[string]any
-		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestInterface); err != nil {
-			logger.Sugar().Errorf("Error unmarhsalling get request: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		dataRequestOptions := &api.DataRequestOptions{}
-		dataRequestOptions.Options = make(map[string]bool)
-		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestOptions); err != nil {
-			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
 		// Accept new job
 		requestID := uuid.New().String()
 		activeJobID = requestID
@@ -133,6 +102,36 @@ func requestHandler() http.HandlerFunc {
 		}
 
 		logger.Sugar().Info("Accepted new job with id: ", activeJobID)
+
+		// Parse the request body
+		body, err := api.GetRequestBody(w, r, serviceName)
+		if err != nil {
+			return
+		}
+
+		var apiReqApproval api.RequestApproval
+		if err := json.Unmarshal(body, &apiReqApproval); err != nil {
+			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
+			return
+		}
+
+		userPb := &pb.User{
+			Id:       apiReqApproval.User.Id,
+			UserName: apiReqApproval.User.UserName,
+		}
+
+		var dataRequestInterface map[string]any
+		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestInterface); err != nil {
+			logger.Sugar().Errorf("Error unmarhsalling get request: %v", err)
+			return
+		}
+
+		dataRequestOptions := &api.DataRequestOptions{}
+		dataRequestOptions.Options = make(map[string]bool)
+		if err := json.Unmarshal(apiReqApproval.DataRequest, &dataRequestOptions); err != nil {
+			logger.Sugar().Errorf("Error unmMarshalling get apiReqApproval: %v", err)
+			return
+		}
 
 		dataRequestInterface["user"] = userPb
 
@@ -227,13 +226,37 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) ([]float64, error) {
 	var wg sync.WaitGroup
 	responses := map[string]string{}
+	var existingError error = nil
+	var sample_batch_indexes string
+	formattedEndpoint := "http://%s:8080/agent/v1/vflTrainRequest/%s"
 
+	serverTarget := strings.ToLower(serverAuth)
+	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
+
+	// Step 1: Send server for sample
+	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Requesting mini-batch samples")
+	dataRequest["type"] = "vflSampleBatchRequest"
+	dataRequest["data"] = map[string]any{
+		"sample_batch_size": 50,
+	}
+
+	responseData, err := sendRequest(serverEndpoint, dataRequest)
+
+	if err != nil {
+		logger.Sugar().Errorf("Error sending data, %v", err)
+	} else {
+		sample_batch_indexes = responseData.Data.AsMap()["sample_batch_indexes"].(string)
+	}
+
+	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Response OK")
+
+	// Step 2: Send the samples to clients to get the intermediate embeddings.
 	for auth, url := range clients {
 
-		logger.Sugar().Info("Sending training request to client: ", auth, " at url: ", url)
+		logger.Sugar().Info("[", auth, "] [vflTrainRequest] Requesting intermediate embeddings at url: ", url)
 
 		wg.Add(1)
 		target := strings.ToLower(auth)
@@ -243,30 +266,20 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 			url = ips[0].String()
 		}
 
-		endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", url, target)
-
-		dataRequest["type"] = "vflTrainRequest"
-
-		dataRequestJson, err := json.Marshal(dataRequest)
-		if err != nil {
-			logger.Sugar().Errorf("Error marshalling combined data: %v", err)
-			return 0., err
-		}
+		endpoint := fmt.Sprintf(formattedEndpoint, url, target)
 
 		go func() {
-			responseData, err := sendData(endpoint, dataRequestJson)
+			dataRequest["type"] = "vflTrainRequest"
+			dataRequest["data"] = map[string]any{
+				"sample_batch_indexes": sample_batch_indexes,
+			}
 
+			responseData, err := sendRequest(endpoint, dataRequest)
 			if err != nil {
+				existingError = err
 				logger.Sugar().Errorf("Error sending data, %v", err)
 			} else {
-				responseJson := &pb.MicroserviceCommunication{}
-				err = json.Unmarshal([]byte(responseData), responseJson)
-
-				if err != nil {
-					logger.Sugar().Error("Unmarshalling response did not go well: ", err)
-				}
-
-				dataJson := responseJson.Data.AsMap()
+				dataJson := responseData.Data.AsMap()
 				embeddings, ok := dataJson["embeddings"].(string)
 
 				if !ok {
@@ -284,17 +297,12 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 
 	wg.Wait()
 
-	target := strings.ToLower(serverAuth)
-	logger.Sugar().Info("Sending training request to server: ", target, " at url: ", serverUrl)
+	if existingError != nil {
+		return []float64{}, existingError
+	}
 
-	endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", serverUrl, target)
+	logger.Sugar().Info("[SERVER] [vflAggregateRequest] Sending the embeddings to server to calculate gradients")
 
-	dataRequest["type"] = "vflAggregateRequest"
-
-	// note: changed this to be dynamic based on the clients available
-	// dataRequest["data"] = map[string]any{
-	// 	"embeddings": []string{responses["clientone"], responses["clienttwo"], responses["clientthree"]},
-	// }
 	// Collect embeddings from all clients
 	embeddingList := []string{}
 	for approved_client := range clients {
@@ -303,32 +311,20 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 		}
 	}
 
-	// Prepare data for aggregation
+	// Step 3: Send intermediate embeddings to server to calculate gradients
 	dataRequest["type"] = "vflAggregateRequest"
 	dataRequest["data"] = map[string]any{
 		"embeddings":        embeddingList,
 		"trainingBacktrack": trainingBacktrack,
 	}
 
-	dataRequestJson, err := json.Marshal(dataRequest)
-	if err != nil {
-		logger.Sugar().Errorf("Error marshalling combined data: %v", err)
-		return 0., err
-	}
-
-	responseData, error := sendData(endpoint, dataRequestJson)
-	if error != nil {
-		logger.Sugar().Errorf("Error sending data to the server, %v", error)
-	}
-
-	serverResponse := &pb.MicroserviceCommunication{}
-	err = json.Unmarshal([]byte(responseData), serverResponse)
-
+	serverResponse, err := sendRequest(serverEndpoint, dataRequest)
 	if err != nil {
 		logger.Sugar().Error("Unmarshalling response did not go well: ", err)
+		return []float64{}, err
 	}
 
-	accuracy := serverResponse.Data.GetFields()["accuracy"].GetNumberValue()
+	// accuracy := serverResponse.Data.GetFields()["accuracy"].GetNumberValue()
 	gradientList := serverResponse.Data.GetFields()["gradients"].GetListValue().GetValues()
 
 	gradients := []string{}
@@ -336,39 +332,68 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 		gradients = append(gradients, val.GetStringValue())
 	}
 
-	// TODO: Send the gradients back to the client to update their models
+	logger.Sugar().Info("[SERVER] [vflAggregateRequest] Gradients received OK")
+
+	// Step 4: Given the gradients, the clients perform gradient descent.
 	index := 0
 	for auth, url := range clients {
 		wg.Add(1)
 		target := strings.ToLower(auth)
-		endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", url, target)
+		endpoint := fmt.Sprintf(formattedEndpoint, url, target)
 
-		dataRequest["type"] = "vflGradientDescentRequest"
-		dataRequest["data"] = map[string]any{
-			"gradients":     gradients[index],
-			"learning_rate": learning_rate,
-		}
-
-		index++
-
-		dataRequestJson, err := json.Marshal(dataRequest)
-		if err != nil {
-			logger.Sugar().Errorf("Error marshalling combined data: %v", err)
-			return 0., err
-		}
+		logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] Perform gradient descent for 20 times")
 
 		go func() {
-			response, err := sendData(endpoint, dataRequestJson)
+			dataRequest["type"] = "vflGradientDescentRequest"
+			dataRequest["data"] = map[string]any{
+				"gradients":               gradients[index],
+				"learning_rate":           learning_rate,
+				"communication_frequency": 20,
+			}
+
+			index++
+
+			response, err := sendRequest(endpoint, dataRequest)
 			if err != nil {
+				existingError = err
 				logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
 			}
 			wg.Done()
 		}()
 	}
 
+	logger.Sugar().Info("[SERVER] [vflLocalUpdateRequest] Perform local update for 20 times")
+
+	// Step 5: Server as well perform local update on its model given the intermediate embeddings.
+	dataRequest["type"] = "vflLocalUpdateRequest"
+	dataRequest["data"] = map[string]any{
+		"embeddings":              embeddingList,
+		"trainingBacktrack":       trainingBacktrack,
+		"communication_frequency": 20,
+	}
+
+	accuracies := []float64{}
+
+	serverResponse, err = sendRequest(serverEndpoint, dataRequest)
+	if err != nil {
+		logger.Sugar().Error("Unmarshalling response did not go well: ", err)
+	} else {
+		accuraciesList := serverResponse.Data.GetFields()["accuracies"].GetListValue().GetValues()
+
+		for _, val := range accuraciesList {
+			accuracies = append(accuracies, val.GetNumberValue())
+		}
+	}
+
 	wg.Wait()
 
-	return accuracy, nil
+	if existingError != nil {
+		return []float64{}, existingError
+	}
+
+	logger.Sugar().Info("[CLIENTS] [vflGradientDescentRequest] Finished OK")
+
+	return accuracies, nil
 }
 
 func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]string, jobId string, ctx context.Context, requestID string) []byte {
@@ -492,8 +517,10 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	wg.Wait()
 
+	iterations := cycles / 20
+
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
-	for round := range cycles {
+	for round := range iterations {
 		logger.Sugar().Info("Running VFL training round ", round)
 
 		numClients := -1          // default value in case of error
@@ -640,10 +667,10 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			numClients = len(clients)
 
 			logger.Sugar().Info("- Sending training request")
-			accuracy, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
-			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, " for round ", round)
-			finalAccuracy = accuracy
-			metadata_accuracy = accuracy // store accuracy from metadata for results
+			accuracies, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
+			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracies[len(accuracies)-1], " for round ", round)
+			finalAccuracy = accuracies[len(accuracies)-1]
+			metadata_accuracy = accuracies[len(accuracies)-1] // store accuracy from metadata for results
 
 			if err != nil {
 				logger.Sugar().Error("Training round returned an error.")
@@ -652,6 +679,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 		}
 
+		// This has to be changed.
 		result := map[string]any{
 			"timestamp":   time.Now().Format(time.RFC3339),
 			"train_round": round,
@@ -740,6 +768,33 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	logger.Sugar().Info("Training results: ", string(responseJson))
 	return cleanupAndMarshalResponse(response) // note this is not the same as responseJson
 }
+
+// #region vflTrainModelRequest - Helpers
+
+func sendRequest(endpoint string, dataRequest map[string]any) (*pb.MicroserviceCommunication, error) {
+	dataRequestJson, err := json.Marshal(dataRequest)
+	if err != nil {
+		logger.Sugar().Errorf("Error marshalling combined data: %v", err)
+		return nil, err
+	}
+
+	responseData, err := sendData(endpoint, dataRequestJson)
+	if err != nil {
+		logger.Sugar().Errorf("Error sending data to the server, %v", err)
+	}
+
+	serverResponse := &pb.MicroserviceCommunication{}
+	err = json.Unmarshal([]byte(responseData), serverResponse)
+
+	responseObj := &pb.MicroserviceCommunication{}
+	if err := json.Unmarshal([]byte(responseData), responseObj); err != nil {
+		return nil, fmt.Errorf("Error unmarshalling response: %w", err)
+	}
+
+	return responseObj, nil
+}
+
+// #endregion
 
 // Use the data request that was previously built and send it to the authorised providers
 // acquired from the request approval
