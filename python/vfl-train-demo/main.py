@@ -136,6 +136,8 @@ class VFLClient():
         self.data = data
         # self.labels = torch.tensor(data.values, dtype=torch.float32)
         
+        # scaled_values = StandardScaler().fit_transform(data)
+        # self.data = pd.DataFrame(scaled_values, index=data.index)
         self.model = ClientModel(self.data.shape[1])
         if model_state is not None:
             self.model.load_state_dict(model_state)
@@ -163,6 +165,7 @@ class VFLClient():
             logger.error("Optimiser is not defined.")
 
         try:
+            # Reset the gradients of all optimized tensors
             self.model.zero_grad()
             current_embedding = self.model(self.labels)
             current_embedding.backward(torch.from_numpy(gradients.copy()))
@@ -175,7 +178,6 @@ class VFLClient():
 def handle_vflShutdownRequest(msComm: msCommTypes.MicroserviceCommunication):
     global ms_config
 
-    logger.info("Received vflShutdownRequest, shutting down service.")
     ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     signal_continuation(stop_event, stop_microservice_condition)
 
@@ -242,7 +244,6 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
 def handle_vflPingRequest(msComm: msCommTypes.MicroserviceCommunication):
     global ms_config
     
-    logger.info("Received a vflPingRequest.")
     ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
 
 #endregion

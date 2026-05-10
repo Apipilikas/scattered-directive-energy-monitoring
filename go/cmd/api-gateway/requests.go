@@ -226,7 +226,7 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) ([]float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64, communication_frequency int64) ([]float64, error) {
 	var wg sync.WaitGroup
 	responses := map[string]string{}
 	var existingError error = nil
@@ -240,7 +240,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Requesting mini-batch samples")
 	dataRequest["type"] = "vflSampleBatchRequest"
 	dataRequest["data"] = map[string]any{
-		"sample_batch_size": 50,
+		"sample_batch_size": 256,
 	}
 
 	responseData, err := sendRequest(serverEndpoint, dataRequest)
@@ -292,6 +292,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 			}
 
 			wg.Done()
+			logger.Sugar().Info("[", auth, "] [vflTrainRequest] Response OK")
 		}()
 	}
 
@@ -304,12 +305,18 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	logger.Sugar().Info("[SERVER] [vflAggregateRequest] Sending the embeddings to server to calculate gradients")
 
 	// Collect embeddings from all clients
+	// There is a major bug here with the ordering and the way server receives the embeddings.
+	logger.Sugar().Info("[SERVER] Check embeddings ordering")
 	embeddingList := []string{}
-	for approved_client := range clients {
+	for _, approved_client := range []string{"clientone", "clienttwo", "clientthree"} {
 		if emb, ok := responses[strings.ToLower(approved_client)]; ok {
 			embeddingList = append(embeddingList, emb)
 		}
+
+		logger.Sugar().Debug("Embeddings for: ", approved_client)
 	}
+
+	logger.Sugar().Debug("The embeddings list: ", embeddingList)
 
 	// Step 3: Send intermediate embeddings to server to calculate gradients
 	dataRequest["type"] = "vflAggregateRequest"
@@ -341,14 +348,14 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 		target := strings.ToLower(auth)
 		endpoint := fmt.Sprintf(formattedEndpoint, url, target)
 
-		logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] Perform gradient descent for 20 times")
+		logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] Perform gradient descent for ", communication_frequency, " times")
 
 		go func() {
 			dataRequest["type"] = "vflGradientDescentRequest"
 			dataRequest["data"] = map[string]any{
 				"gradients":               gradients[index],
 				"learning_rate":           learning_rate,
-				"communication_frequency": 20,
+				"communication_frequency": communication_frequency,
 			}
 
 			index++
@@ -359,22 +366,30 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 				logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
 			}
 			wg.Done()
+			logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] Response OK")
 		}()
-	}
-
-	logger.Sugar().Info("[SERVER] [vflLocalUpdateRequest] Perform local update for 20 times")
-
-	// Step 5: Server as well perform local update on its model given the intermediate embeddings.
-	dataRequest["type"] = "vflLocalUpdateRequest"
-	dataRequest["data"] = map[string]any{
-		"embeddings":              embeddingList,
-		"trainingBacktrack":       trainingBacktrack,
-		"communication_frequency": 20,
 	}
 
 	accuracies := []float64{}
 
-	serverResponse, err = sendRequest(serverEndpoint, dataRequest)
+	logger.Sugar().Info("[SERVER] [vflLocalUpdateRequest] Perform local update for ", communication_frequency, " times")
+
+	// Step 5: Server as well perform local update on its model given the intermediate embeddings.
+	serverDataRequest := map[string]any{}
+
+	// Copy it for now.
+	for key, value := range dataRequest {
+		serverDataRequest[key] = value
+	}
+
+	serverDataRequest["type"] = "vflLocalUpdateRequest"
+	serverDataRequest["data"] = map[string]any{
+		"embeddings":              embeddingList,
+		"trainingBacktrack":       trainingBacktrack,
+		"communication_frequency": communication_frequency,
+	}
+
+	serverResponse, err = sendRequest(serverEndpoint, serverDataRequest)
 	if err != nil {
 		logger.Sugar().Error("Unmarshalling response did not go well: ", err)
 	} else {
@@ -385,13 +400,13 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 		}
 	}
 
+	logger.Sugar().Info("[SERVER] [vflLocalUpdateRequest] Response 0K")
+
 	wg.Wait()
 
 	if existingError != nil {
 		return []float64{}, existingError
 	}
-
-	logger.Sugar().Info("[CLIENTS] [vflGradientDescentRequest] Finished OK")
 
 	return accuracies, nil
 }
@@ -403,6 +418,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	var finalAccuracy float64
 	var wg sync.WaitGroup
 
+	var communication_frequency int64 = 10
 	var cycles int64 = 10
 	var learning_rate float64 = 0.05
 	var policy_removal int64 = -1
@@ -517,7 +533,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	wg.Wait()
 
-	iterations := cycles / 20
+	iterations := cycles / communication_frequency
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	for round := range iterations {
@@ -667,7 +683,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			numClients = len(clients)
 
 			logger.Sugar().Info("- Sending training request")
-			accuracies, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
+			accuracies, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack, communication_frequency)
 			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracies[len(accuracies)-1], " for round ", round)
 			finalAccuracy = accuracies[len(accuracies)-1]
 			metadata_accuracy = accuracies[len(accuracies)-1] // store accuracy from metadata for results

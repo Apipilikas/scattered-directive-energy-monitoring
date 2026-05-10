@@ -54,6 +54,8 @@ ms_config = None
 # --------------------------------
 
 
+#region Helpers
+
 def load_data(file_path):
     DATA_STEWARD_NAME = os.getenv("DATA_STEWARD_NAME").lower()
 
@@ -70,16 +72,6 @@ def load_data(file_path):
         return None
 
     return data
-
-
-class ClientModel(nn.Module):
-    def __init__(self, input_size):
-        super().__init__()
-        self.fc = nn.Linear(input_size, 4)
-
-    def forward(self, x):
-        return self.fc(x)
-
 
 def serialise_array(array):
     return json.dumps([
@@ -99,15 +91,56 @@ def deserialise_array(string, hook=None):
 
     return dataArray
 
+def extract_data(request: rabbitTypes.Request, property_name: str):
+    try:
+        return request.data[property_name]
+    except Exception as e:
+        logger.error(f"Problem occured while extracting [{property_name}]: {e}")
+        return None
+
+def extract_number_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    return prop.number_value if (prop != None) else None 
+
+def extract_array_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    
+    if (prop != None):
+        prop_str = prop.string_value
+        return deserialise_array(prop_str)
+    else:
+        return None
+
+#endregion
+
+
+class ClientModel(nn.Module):
+    def __init__(self, input_size):
+        super().__init__()
+        self.fc = nn.Linear(input_size, 4)
+
+    def forward(self, x):
+        return self.fc(x)
+
 
 class VFLClient():
     def __init__(self, data, learning_rate=0.01, model_state=None, optimiser_state=None):
-        self.data = torch.tensor(StandardScaler().fit_transform(data)).float()
+        self.data = data
         self.model = ClientModel(data.shape[1])
         if model_state is not None:
             self.model.load_state_dict(model_state)
 
         self.optimiser = None
+
+    def set_labels_from_sample(self, sample_indexes):
+        sample_data = self.data[self.data.index.isin(sample_indexes)]
+        self.set_labels(sample_data)
+
+    def set_labels(self, data):
+        try:
+            self.labels = torch.tensor(StandardScaler().fit_transform(data)).float()
+        except Exception as e:
+            logger.error(f"Error occurred while setting labels: {e}")
 
     def create_optimiser(self, learning_rate):
         if self.optimiser is None:
@@ -115,7 +148,7 @@ class VFLClient():
                 self.model.parameters(), lr=learning_rate)
 
     def train_model(self):
-        self.embedding = self.model(self.data)
+        self.embedding = self.model(self.labels)
         return serialise_array(self.embedding.detach().numpy())
 
     def gradient_descent(self, gradients):
@@ -124,35 +157,88 @@ class VFLClient():
 
         try:
             self.model.zero_grad()
-            # embedding = self.model(self.data)
-            self.embedding.backward(torch.from_numpy(gradients))
+            current_embedding = self.model(self.labels)
+            current_embedding.backward(torch.from_numpy(gradients))
             self.optimiser.step()
         except Exception as e:
             logger.error(f"Error occurred: {e}")
 
 
-# # Note: Gradients sent by server are for this client only to preserve privacy
-# def vfl_train(learning_rate, model_state, gradients):
-#
-#     optimiser = torch.optim.SGD(model.parameters(), lr=learning_rate)
-#
-#     if gradients is not None:
-#         vfl_evaluate(data, model, optimiser, gradients)
-#
-#     embeddings = train_model(data, model)
-#     model_state = model.state_dict()
-#
-#     buffer = io.BytesIO()
-#     torch.save(model_state, buffer)
-#
-#     data = Struct()
-#     data.update({"embeddings": serialise_array(embeddings),
-#                  "model_state": buffer.getvalue().decode("latin1")})
-#
-#     return data
+#region Request handlers
 
+def handle_vflShutdownRequest(msComm: msCommTypes.MicroserviceCommunication):
+    global ms_config
 
-# ---  DYNAMOS Interface code At the Bottom --------
+    ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
+    signal_continuation(stop_event, stop_microservice_condition)
+
+def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication, 
+                           request: rabbitTypes.Request):
+    global ms_config
+    global vfl_client
+    
+    try:
+        # sample_indexes = request.data["sample_batch_indexes"].string_value
+        sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
+        vfl_client.set_labels_from_sample(sample_indexes)
+    except Exception as e:
+        logger.error(f"Error occurred while getting sample indexes: {e}")
+
+    try:
+        embeddings = vfl_client.train_model()
+        data = Struct()
+        data.update({"embeddings":  embeddings})
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        data = Struct()
+
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+
+def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunication, 
+                                     request: rabbitTypes.Request):
+    global ms_config
+    global vfl_client
+
+    # Extract learning rate
+    try:
+        learning_rate = request.data["learning_rate"].number_value
+        vfl_client.create_optimiser(learning_rate)
+    except Exception:
+        vfl_client.create_optimiser(0.05)
+
+    # Extract gradients
+    try:
+        gradients = request.data["gradients"].string_value
+        gradients = deserialise_array(gradients)
+    except Exception as e:
+        logger.error(f"Gradients did not get parsed properly: {e}")
+        logger.info(msComm.data)
+        gradients = None
+
+    communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
+    cycle = -1
+
+    try:
+        for cycle in range(communication_frequency):
+            vfl_client.gradient_descent(gradients)
+    except Exception as e:
+        logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
+
+    try:
+        data = Struct()
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+
+def handle_vflPingRequest(msComm: msCommTypes.MicroserviceCommunication):
+    global ms_config
+    
+    ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
+
+#endregion
+
+#region DYNAMOS interface
 
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
@@ -174,69 +260,31 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
     if DATA_STEWARD_NAME == "server":
         if request.type == "vflShutdownRequest":
-            logger.info(
-                "Received vflShutdownRequest, shutting down service.")
-            ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
-            signal_continuation(stop_event, stop_microservice_condition)
+            handle_vflShutdownRequest(msComm)
         else:
             logger.info("This is the server (not client), relaying request.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     else:
         if request is not None:
+            logger.info(f"Received request: {request.type}. This is the client.")
             if request.type == "vflTrainRequest":
-                logger.info("Received a vflTrainRequest.")
-
-                try:
-                    embeddings = vfl_client.train_model()
-                    data = Struct()
-                    data.update({"embeddings":  embeddings})
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-                    data = Struct()
-
-                ms_config.next_client.ms_comm.send_data(msComm, data, {})
+                handle_vflTrainRequest(msComm, request)
+                
             elif request.type == "vflGradientDescentRequest":
-                try:
-                    learning_rate = request.data["learning_rate"].number_value
-                    vfl_client.create_optimiser(learning_rate)
-                except Exception:
-                    vfl_client.create_optimiser(0.05)
-
-                try:
-                    gradients = request.data["gradients"].string_value
-                    gradients = deserialise_array(gradients)
-                except Exception as e:
-                    logger.error(f"Gradients did not get parsed properly: {e}")
-                    logger.info(msComm.data)
-                    gradients = None
-
-                try:
-                    vfl_client.gradient_descent(gradients)
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-
-                try:
-                    data = Struct()
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-
-                ms_config.next_client.ms_comm.send_data(msComm, data, {})
+                handle_vflGradientDescentRequest(msComm, request)
 
             elif request.type == "vflShutdownRequest":
-                logger.info(
-                    "Received vflShutdownRequest, shutting down service.")
-                signal_continuation(stop_event, stop_microservice_condition)
+                handle_vflShutdownRequest(msComm)
 
             elif request.type == "vflPingRequest":
-                logger.info("Received a vflPingRequest.")
-                ms_config.next_client.ms_comm.send_data(
-                    msComm, msComm.data, {})
+                handle_vflPingRequest(msComm)
 
             else:
                 logger.error(f"An unknown request_type: {msComm.data.type}")
 
             return Empty()
 
+#endregion
 
 def main():
     global config
