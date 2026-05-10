@@ -8,7 +8,10 @@ PUSH ?= 1
 
 BUILD_BOTH ?= 0
 
-.PHONY: proto $(targets) dynamos
+.PHONY: proto $(targets) dynamos vfl vfl-demo
+
+vfl: vfl-train vfl-train-model
+vfl-demo: vfl-train-demo vfl-train-model-demo
 
 proto:
 	@python3 -m grpc_tools.protoc -I../proto-files --python_out=./dynamos-python-lib/protofiles --grpc_python_out=./dynamos-python-lib/protofiles ../proto-files/*.proto

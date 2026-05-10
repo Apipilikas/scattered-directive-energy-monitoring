@@ -226,7 +226,7 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64, communication_frequency int64) ([]float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64, communication_frequency int64, sample_batch_size int64) ([]float64, error) {
 	var wg sync.WaitGroup
 	responses := map[string]string{}
 	var existingError error = nil
@@ -240,7 +240,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Requesting mini-batch samples")
 	dataRequest["type"] = "vflSampleBatchRequest"
 	dataRequest["data"] = map[string]any{
-		"sample_batch_size": 256,
+		"sample_batch_size": sample_batch_size,
 	}
 
 	responseData, err := sendRequest(serverEndpoint, dataRequest)
@@ -411,6 +411,16 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	return accuracies, nil
 }
 
+func extractValueOrDefault[T ~int64 | ~float64](data map[string]any, propertyName string, defaultValue T) T {
+	value, ok := data[propertyName].(float64)
+	if ok {
+		return T(value)
+	}
+
+	logger.Sugar().Debug("Property [", propertyName, "] wasn't found on the request parameters. Default value [", defaultValue, "] is going to be used instead.")
+	return defaultValue
+}
+
 func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]string, jobId string, ctx context.Context, requestID string) []byte {
 	clients := map[string]string{}
 	var serverUrl string
@@ -418,6 +428,8 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	var finalAccuracy float64
 	var wg sync.WaitGroup
 
+	// Default parameters values
+	var sample_batch_size int64 = 64
 	var communication_frequency int64 = 10
 	var cycles int64 = 10
 	var learning_rate float64 = 0.05
@@ -431,35 +443,14 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	logger.Sugar().Info("Data from req: ", data)
 
 	if ok {
-		floatCycles, ok := data["cycles"].(float64)
-
-		if ok {
-			cycles = int64(floatCycles)
-		}
-
-		floatLearningRate, ok := data["learning_rate"].(float64)
-		if ok {
-			learning_rate = floatLearningRate
-		}
-
-		trainingBacktrackVal, ok := data["training_backtrack"].(float64)
-		if ok {
-			trainingBacktrack = int64(trainingBacktrackVal)
-		} else {
-			logger.Sugar().Debug("training_backtrack not set, defaulting to: ", trainingBacktrack)
-		}
-
-		policyRemoval, ok := data["policy_removal"].(float64)
-		if ok {
-			policy_removal = int64(policyRemoval)
-		}
-
-		reintroducePolicies, ok := data["policy_reintroduction"].(float64)
-		if ok {
-			policy_reintroduction = int64(reintroducePolicies)
-		}
-
-		logger.Sugar().Debug("policy_removal round: ", policy_removal, ", policy_reintroduction round: ", policy_reintroduction)
+		// Parameters extraction
+		sample_batch_size = extractValueOrDefault(data, "sample_batch_size", sample_batch_size)
+		communication_frequency = extractValueOrDefault(data, "communication_frequency", communication_frequency)
+		cycles = extractValueOrDefault(data, "cycles", cycles)
+		learning_rate = extractValueOrDefault(data, "learning_rate", learning_rate)
+		trainingBacktrack = extractValueOrDefault(data, "training_backtrack", trainingBacktrack)
+		policy_removal = extractValueOrDefault(data, "policy_removal", policy_removal)
+		policy_reintroduction = extractValueOrDefault(data, "policy_reintroduction", policy_reintroduction)
 	}
 
 	metadata := map[string]any{
@@ -683,7 +674,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			numClients = len(clients)
 
 			logger.Sugar().Info("- Sending training request")
-			accuracies, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack, communication_frequency)
+			accuracies, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack, communication_frequency, sample_batch_size)
 			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracies[len(accuracies)-1], " for round ", round)
 			finalAccuracy = accuracies[len(accuracies)-1]
 			metadata_accuracy = accuracies[len(accuracies)-1] // store accuracy from metadata for results
