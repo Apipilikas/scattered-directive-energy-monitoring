@@ -60,7 +60,10 @@ class VFLClient():
             self.model.load_state_dict(model_state)
 
         self.optimiser = None
-        self.create_optimiser(learning_rate)
+        self.saved_weights = None
+
+        self.scaler = StandardScaler()
+        self.scaler.fit(self.data)
 
     def create_optimiser(self, learning_rate):
         if self.optimiser is None:
@@ -72,14 +75,14 @@ class VFLClient():
         return serialise_array(self.embedding.detach().numpy())
 
     def set_labels_from_sample(self, sample_indexes):
-        sample_data = self.data[self.data.index.isin(sample_indexes)]
+        sample_data = self.data.loc[sample_indexes]
         self.set_labels(sample_data)
 
     def set_labels(self, data):
-        self.labels = torch.tensor(StandardScaler().fit_transform(data)).float()
+        scaled_data = self.scaler.transform(data)
+        self.labels = torch.tensor(scaled_data).float()
 
     def gradient_descent(self, gradients):
-        print("Start vfl_evaluate")
 
         if self.optimiser is None:
             print("Optimiser is not defined.")
@@ -89,7 +92,7 @@ class VFLClient():
             # Re-evaluates the forward pass using current weights.
             current_embedding = self.model(self.labels)
             # Backpropagation.
-            current_embedding.backward(torch.from_numpy(gradients))
+            current_embedding.backward(torch.from_numpy(gradients.copy()))
             self.optimiser.step()
         except Exception as e:
             print(f"Error occurred: {e}")
@@ -105,6 +108,12 @@ class VFLClient():
         self.model.train()
 
         return serialise_array(embedding.numpy())
+    
+    def _reserve_weights(self):
+        self.saved_weights = {
+            name: param.clone().detach() 
+            for name, param in self.model.named_parameters()
+        }
 
 
 np.set_printoptions(threshold=sys.maxsize)
@@ -131,11 +140,18 @@ class VFLServer():
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
         self.criterion = nn.BCELoss()
         self.data = data
+        self.saved_weights = None
         # self.labels = torch.tensor(
         #     data["Survived"].values).float().unsqueeze(1)
 
-    def sample_data(self):
-        data_sample = self.data.sample(64)
+    def _reserve_weights(self):
+        self.saved_weights = {
+            name: param.clone().detach() 
+            for name, param in self.model.named_parameters()
+        }
+
+    def sample_data(self, sample_size):
+        data_sample = self.data.sample(sample_size)
         self.set_labels(data_sample["Survived"].values)
 
         data = Struct()
@@ -147,9 +163,11 @@ class VFLServer():
         self.labels = torch.tensor(values).float().unsqueeze(1)
 
 
-    def _calculate_loss(self):
+    def _calculate_loss(self, perform_step = False):
         try:
-            # Passes the tensor through the server model.
+            # Clears the gradients to prepare for the next round.
+            self.optimizer.zero_grad()
+            # Passes the tensor through the server model. The output is basically the predictions of the model.
             output = self.model(self.embeddings)
             # Using BCE (Binary Cross Entropy), calculates the loss. Basically, compares its predictions against the true labels.
             loss = self.criterion(output, self.labels)
@@ -161,11 +179,8 @@ class VFLServer():
             print(f"{output}, {self.labels}")
 
         try:
-            # TOFIX
             # Uses optimizer to adjust weights. This way reduces the error.
-            self.optimizer.step()
-            # Clears the gradients to prepare for the next round.
-            self.optimizer.zero_grad()
+            if perform_step: self.optimizer.step()
         except Exception as e:
             print(f"Running gradient descent 3 failed: {e}")
         
@@ -191,7 +206,11 @@ class VFLServer():
         except Exception as e:
             print(f"Running gradient descent 1 failed: {e}")
 
-        self._calculate_loss()
+        output = self.model(self.embeddings)
+        loss = self.criterion(output, self.labels)
+        
+        self.optimizer.zero_grad()
+        loss.backward()
 
         # Chops gradients back to N x 4 chunks, one for each client.
         grads = self.embeddings.grad.split([4, 4, 4], dim=1)
@@ -201,7 +220,12 @@ class VFLServer():
         return np_gradients
 
     def local_update(self):
-        output = self._calculate_loss()
+        output = self.model(self.embeddings)
+        loss = self.criterion(output, self.labels)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         # Calculates the accuracy.
         with torch.no_grad():
@@ -249,25 +273,19 @@ def main():
     client2 = VFLClient(datac2)
     client3 = VFLClient(datac3)
     server = VFLServer(datas)
-
-    sample_indexes = deserialise_array(server.sample_data()["sample_indexes"])
-    print(sample_indexes)
     
     accs = []
+
+    # Variables
+    sample_batch_size = 256
+    iterations = 180
     q = 15
 
-    # If is time for sychronization, then send vflSampleBatchRequest to server
-	# Then send this to clients, perform a training. return intermediate embeddings to server.
-	# Server perform aggregation and send gradients back to clients. 
-    # Then clients perform for Q times gradient descent.
-	# The clients perform a independent gradient discend. They repeatedly refine their local parameters using 
-    # the exact mini batch dataset.
-	# When it is finished, they perform the same cycle once again.
     gradients = []
-    for i in range(180):
+    for i in range(iterations):
         if (i % q) == 0:
             # Sample a mini batch
-            sample_indexes = deserialise_array(server.sample_data()["sample_indexes"])
+            sample_indexes = deserialise_array(server.sample_data(sample_batch_size)["sample_indexes"])
 
             client1.set_labels_from_sample(sample_indexes)
             client2.set_labels_from_sample(sample_indexes)
@@ -284,10 +302,13 @@ def main():
 
             # Send them to the server. 
             gradients = server.get_gradients(embeddings)
-            
-
+        
+        lr = 0.05
+        client1.create_optimiser(lr)
         client1.gradient_descent(deserialise_array(gradients[0]))
+        client2.create_optimiser(lr)
         client2.gradient_descent(deserialise_array(gradients[1]))
+        client3.create_optimiser(lr)
         client3.gradient_descent(deserialise_array(gradients[2]))
 
         accuracy = server.local_update()
