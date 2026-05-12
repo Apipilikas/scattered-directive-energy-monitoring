@@ -13,9 +13,6 @@ spec:
       labels:
         app: loki
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: {{ .Values.node }}
-      nodeName: {{ .Values.node }}
       containers:
         - name: loki
           image: {{ .Values.loki.image }}
@@ -107,3 +104,4 @@ spec:
       targetPort: 3100
       nodePort: 30004
   type: NodePort
+
