@@ -261,6 +261,9 @@ def main():
         logger.debug("KeyboardInterrupt received, stopping server...")
         signal_continuation(stop_event, stop_microservice_condition)
 
+    if ms_config.next_client:
+        ms_config.next_client.rabbit.stop()
+
     ms_config.stop(2)
     logger.debug(f"Exiting {config.service_name}")
     sys.exit(0)
