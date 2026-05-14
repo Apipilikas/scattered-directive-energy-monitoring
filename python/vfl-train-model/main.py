@@ -188,7 +188,11 @@ class VFLServer():
         except Exception as e:
             logger.info(f"Running gradient descent failed: {e}")
 
-        self._calculate_loss()
+        output = self.model(self.embeddings)
+        loss = self.criterion(output, self.labels)
+        
+        self.optimizer.zero_grad()
+        loss.backward()
 
         try:
             gradients = self.embeddings.grad.split([4, 4, 4], dim=1)
@@ -202,7 +206,12 @@ class VFLServer():
         return data
     
     def local_update(self):
-        output = self._calculate_loss()
+        output = self.model(self.embeddings)
+        loss = self.criterion(output, self.labels)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         # Calculates the accuracy.
         with torch.no_grad():

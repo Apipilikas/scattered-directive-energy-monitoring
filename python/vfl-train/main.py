@@ -131,14 +131,17 @@ class VFLClient():
             self.model.load_state_dict(model_state)
 
         self.optimiser = None
+        self.scaler = StandardScaler()
+        self.scaler.fit(self.data)
 
     def set_labels_from_sample(self, sample_indexes):
-        sample_data = self.data[self.data.index.isin(sample_indexes)]
+        sample_data = self.data.loc[sample_indexes]
         self.set_labels(sample_data)
 
     def set_labels(self, data):
         try:
-            self.labels = torch.tensor(StandardScaler().fit_transform(data)).float()
+            scaled_data = self.scaler.transform(data)
+            self.labels = torch.tensor(scaled_data).float()
         except Exception as e:
             logger.error(f"Error occurred while setting labels: {e}")
 
@@ -308,6 +311,9 @@ def main():
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt received, stopping server...")
         signal_continuation(stop_event, stop_microservice_condition)
+
+    if ms_config.next_client:
+        ms_config.next_client.rabbit.stop()
 
     ms_config.stop(2)
     logger.debug(f"Exiting {config.service_name}")
