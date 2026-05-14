@@ -53,9 +53,10 @@ def deserialise_array(string, hook=None):
 
 
 class VFLClient():
-    def __init__(self, data, learning_rate=0.01, model_state=None, optimiser_state=None):
-        self.data = data
-        self.model = ClientModel(self.data.shape[1])
+    def __init__(self, train_data, test_data, learning_rate=0.01, model_state=None, optimiser_state=None):
+        self.train_data = train_data
+        self.test_data = test_data
+        self.model = ClientModel(self.train_data.shape[1])
         if model_state is not None:
             self.model.load_state_dict(model_state)
 
@@ -63,7 +64,7 @@ class VFLClient():
         self.saved_weights = None
 
         self.scaler = StandardScaler()
-        self.scaler.fit(self.data)
+        self.scaler.fit(self.train_data)
 
     def create_optimiser(self, learning_rate):
         if self.optimiser is None:
@@ -75,11 +76,12 @@ class VFLClient():
         return serialise_array(self.embedding.detach().numpy())
 
     def set_labels_from_sample(self, sample_indexes):
-        sample_data = self.data.loc[sample_indexes]
+        sample_data = self.train_data.loc[sample_indexes]
         self.set_labels(sample_data)
 
     def set_labels(self, data):
-        scaled_data = self.scaler.transform(data)
+        aligned_data = data[self.train_data.columns]
+        scaled_data = self.scaler.transform(aligned_data)
         self.labels = torch.tensor(scaled_data).float()
 
     def gradient_descent(self, gradients):
@@ -100,7 +102,7 @@ class VFLClient():
         return "100% accuracy, buddy!"
     
     def evaluate_model(self):
-        self.set_labels(self.data)
+        self.set_labels(self.test_data)
         self.model.eval()
 
         with torch.no_grad():
@@ -131,7 +133,7 @@ class ServerModel(nn.Module):
 
 
 class VFLServer():
-    def __init__(self, data):
+    def __init__(self, train_data, test_data):
         self.model = ServerModel(12)
         # self.initial_parameters = ndarrays_to_parameters(
         #     [val.cpu().numpy()
@@ -139,7 +141,8 @@ class VFLServer():
         # )
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
         self.criterion = nn.BCELoss()
-        self.data = data
+        self.train_data = train_data
+        self.test_data = test_data
         self.saved_weights = None
         # self.labels = torch.tensor(
         #     data["Survived"].values).float().unsqueeze(1)
@@ -151,7 +154,7 @@ class VFLServer():
         }
 
     def sample_data(self, sample_size):
-        data_sample = self.data.sample(sample_size)
+        data_sample = self.train_data.sample(sample_size)
         self.set_labels(data_sample["Survived"].values)
 
         data = Struct()
@@ -247,32 +250,45 @@ class VFLServer():
         try:
             embedding_results = [torch.from_numpy(deserialise_array(emb)) for emb in embeddings]
             embeddings_aggregated = torch.cat(embedding_results, dim=1)
-            labels_tensor = torch.tensor(self.data["Survived"].values).float().unsqueeze(1)
             
             with torch.no_grad():
                 output = self.model(embeddings_aggregated)
                 predicted = (output > 0.5).float()
-                correct = (predicted == labels_tensor).sum().item()
-                accuracy = (correct / len(labels_tensor)) * 100
+                survived_predictions = predicted.cpu().numpy().astype(int).flatten()
+    
+                # 2. Extract the IDs from your test dataset
+                # (Assuming your dataframe contains the standard 'PassengerId' column)
+                passenger_ids = self.test_data["PassengerId"].values
+                
+                # 3. Create a new pandas DataFrame with the exact headers expected
+                train_df = pd.DataFrame({
+                    "PassengerId": passenger_ids,
+                    "Survived": survived_predictions
+                })
+
+                train_df.to_csv("data/testData.csv", index=False)
                 
         except Exception as e:
             print(f"Evaluation failed: {e}")
-            return 0.0
             
         self.model.train()
-        return accuracy
 
     
 def main():
-    datac1 = pd.read_csv('../python/vfl-train/datasets/clientoneData.csv')
-    datac2 = pd.read_csv('../python/vfl-train/datasets/clienttwoData.csv')
-    datac3 = pd.read_csv('../python/vfl-train/datasets/clientthreeData.csv')
-    datas = pd.read_csv('../python/vfl-train-model/datasets/outcomeData.csv')
+    train_datac1 = pd.read_csv('data/train/clientoneData.csv')
+    train_datac2 = pd.read_csv('data/train/clienttwoData.csv')
+    train_datac3 = pd.read_csv('data/train/clientthreeData.csv')
+    train_datas = pd.read_csv('data/train/outcomeData.csv')
 
-    client1 = VFLClient(datac1)
-    client2 = VFLClient(datac2)
-    client3 = VFLClient(datac3)
-    server = VFLServer(datas)
+    test_datac1 = pd.read_csv('data/test/clientoneData.csv')
+    test_datac2 = pd.read_csv('data/test/clienttwoData.csv')
+    test_datac3 = pd.read_csv('data/test/clientthreeData.csv')
+    test_datas = pd.read_csv('data/test/outcomeData.csv')
+
+    client1 = VFLClient(train_datac1, test_datac1)
+    client2 = VFLClient(train_datac2, test_datac2)
+    client3 = VFLClient(train_datac3, test_datac3)
+    server = VFLServer(train_datas, test_datas)
     
     accs = []
 
@@ -320,10 +336,13 @@ def main():
         client3.evaluate_model()
     ]
 
-    final_accuracy = server.evaluate_model(test_embeddings)
-
+    server.evaluate_model(test_embeddings)
+    
+    print("------------------------------------------")
+    print("Intermediate accuracies:")
     print(accs)
-    print(final_accuracy)
+    print("------------------------------------------")
+
 
 if __name__ == "__main__":
     main()

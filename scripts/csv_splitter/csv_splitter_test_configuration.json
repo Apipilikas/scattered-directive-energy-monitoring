@@ -1,0 +1,27 @@
+{
+  "file": "data/test.csv",
+  "delimiter": ",",
+  "sensitive": ["Survived", "Name"],
+  "partitions": [
+    {
+      "name": "outcomeData",
+      "outputDirectory": "../algorithms/data/test/",
+      "columns": ["PassengerId"]
+    },
+    {
+      "name": "clientoneData",
+      "outputDirectory": "../algorithms/data/test/",
+      "columns": ["Cabin", "Parch", "Pclass"]
+    },
+    {
+      "name": "clienttwoData",
+      "outputDirectory": "../algorithms/data/test/",
+      "columns": ["Sex", "Title"]
+    },
+    {
+      "name": "clientthreeData",
+      "outputDirectory": "../algorithms/data/test/",
+      "columns": ["Age", "Embarked", "Fare", "SibSp"]
+    }
+  ]
+}
