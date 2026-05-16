@@ -256,11 +256,8 @@ class VFLServer():
                 predicted = (output > 0.5).float()
                 survived_predictions = predicted.cpu().numpy().astype(int).flatten()
     
-                # 2. Extract the IDs from your test dataset
-                # (Assuming your dataframe contains the standard 'PassengerId' column)
                 passenger_ids = self.test_data["PassengerId"].values
                 
-                # 3. Create a new pandas DataFrame with the exact headers expected
                 train_df = pd.DataFrame({
                     "PassengerId": passenger_ids,
                     "Survived": survived_predictions
