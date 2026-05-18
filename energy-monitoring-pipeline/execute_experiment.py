@@ -5,6 +5,7 @@ from prometheus_executor import execute_query
 import requests
 import json
 from collect_metrics import collect_metrics, save_metrics_to_csv
+import argparse
 
 # URLs
 API_BASE_URL = "http://localhost:8080/api/v1"
@@ -38,11 +39,21 @@ REQUEST_APPROVAL_HEADER = {
 }
 
 PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+PROM_SIDECAR_CONTAINER = "{container_name=\"sidecar\"}"
 PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({KEPLER_LABEL})"
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{PROM_DURATION}])) by ({KEPLER_LABEL})"
+PROM_SIDECAR_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_SIDECAR_CONTAINER}[2m])) by (pod_name)"
+
+run_baseline = False
+run_sidecar = False
 
 def main():
-    print("============= Execute experiment =============")
+    _resolve_args()
+    
+    baseline_str = "(baseline)" if run_baseline else ""
+    sidecar_str = "(sidecar)" if run_sidecar else ""
+    print(f"============= Execute experiment {baseline_str} {sidecar_str} =============")
+    
     execute_experiment()
 
 def _request_approval():
@@ -50,7 +61,6 @@ def _request_approval():
         REQUEST_APPROVAL_URL, json=REQUEST_APPROVAL_BODY, headers=REQUEST_APPROVAL_HEADER
         )
     
-    status_code = response.status_code
     response_content = response.json()
 
     id = ""
@@ -72,17 +82,8 @@ def _get_training_status(jobId : str):
     return response.json()
 
 def _get_energy_comsumption():
-    return execute_query(PROM_ENERGY_QUERY_RANGE)
-
-# def _save_results(results: dict):
-#     file_name = ""
-#     fieldnames = ["idle_energy_total", "active_energy_total", "total_energy_difference", "average_exec_time"]
-#     writer = csv.DictWriter(file, fieldnames=fieldnames)
-#     writer.writeheader()
-#     for result_no, result_data in results.items():
-#         total_idle_energy = sum(float(value) for value in result_data["idle_energy"].values())
-#         total_active_energy = sum(float(value) for value in result_data["active_energy"].values())
-#         total_difference = total_active_energy - total_idle_energy
+    query = PROM_SIDECAR_ENERGY_QUERY_RANGE if run_sidecar else PROM_ENERGY_QUERY_RANGE
+    return execute_query(query)
 
 def _calculate_total_energy(metrics: dict):
     return sum(float(value) for value in metrics.values())
@@ -109,22 +110,25 @@ def execute_experiment_run():
     total_idle_energy = _calculate_total_energy(idle_energy)
     print(f"Idle Energy: {idle_energy} (in J)")
 
+    accuracies = {}
+
     # Phase 2: Active period
     # Record the start time of the active period
     print("\n> Active period")
     active_start_time = time.time()
-    request_id = _request_approval()
+    if run_baseline:
+        time.sleep(180)
+    else:
+        request_id = _request_approval()
 
-    accuracies = {}
+        while True:
+            time.sleep(5)
+            response = _get_training_status(request_id)
+            is_training_done = response["status"] == "done"
 
-    while True:
-        time.sleep(5)
-        response = _get_training_status(request_id)
-        is_training_done = response["status"] == "done"
-
-        if is_training_done:
-            accuracies = response["results"]
-            break
+            if is_training_done:
+                accuracies = response["results"]
+                break
     
     active_energy = _get_energy_comsumption()
     total_active_energy = _calculate_total_energy(active_energy)
@@ -139,8 +143,12 @@ def execute_experiment_run():
     print(f"Experiment elapsed time: {experiment_elapsed_time} s ({_format_datetime(experiment_elapsed_time)})")
     print(f"Active period elapsed time: {active_elapsed_time} s ({_format_datetime(active_elapsed_time)})")
 
-    dfs = collect_metrics(experiment_start_time, experiment_end_time)
-    save_metrics_to_csv(dfs, "output/experiment_metrics.csv")
+    if run_sidecar:
+        dfs = collect_metrics(experiment_start_time, experiment_end_time, {"sidecar_energy" : PROM_SIDECAR_ENERGY_QUERY_RANGE})
+        save_metrics_to_csv(dfs, "output/experiment_sidecar_metrics.csv")
+    else:
+        dfs = collect_metrics(experiment_start_time, experiment_end_time)
+        save_metrics_to_csv(dfs, "output/experiment_metrics.csv")
 
     output = {
         "idle_energy": idle_energy,
@@ -156,6 +164,19 @@ def execute_experiment_run():
         json.dump(output, f, indent=2)
 
     return output
+
+def _resolve_args():
+    global run_baseline
+    global run_sidecar
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--baseline", action='store_true')
+    parser.add_argument("-s", "--sidecar", action='store_true')
+    
+    args = parser.parse_args()
+    
+    run_baseline = args.baseline
+    run_sidecar = args.sidecar
 
 if __name__ == '__main__':
     main()

@@ -12,10 +12,10 @@ def main():
     dfs = collect_metrics(start_time, end_time)
     save_metrics_to_csv(dfs)
 
-def collect_metrics(start_time: float, end_time: float):
+def collect_metrics(start_time: float, end_time: float, queries_dict: dict[str, str] = PROM_QUERIES):
     metrics = {}
     
-    for name, query in PROM_QUERIES.items():
+    for name, query in queries_dict.items():
         metrics[name] = execute_query_range(query, start_time, end_time)
     
     return _export_metrics(metrics)

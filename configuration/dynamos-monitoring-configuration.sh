@@ -31,6 +31,7 @@ helm upgrade -i kepler kepler/kepler \
     --version 0.5.12 \
     --set serviceMonitor.enabled=true \
     --set serviceMonitor.labels.release=prometheus \
+    --values ${monitoring_chart}/kepler-values.yaml \
 
 echo -e "\nSetting up additionally monitoring charts...\n"
 helm upgrade -i monitoring ${monitoring_chart} --namespace monitoring -f ${monitoring_chart}/values.yaml

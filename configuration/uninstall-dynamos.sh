@@ -10,6 +10,7 @@ helm uninstall nginx namespaces core orchestrator agents thirdparties api-gatewa
 
 echo -e "\nUninstalling monitoring namespaces...\n"
 helm uninstall prometheus kepler -n monitoring --ignore-not-found
+helm uninstall monitoring -n monitoring
 
 echo -e "\nUninstalling nginx...\n"
 helm uninstall nginx --ignore-not-found
