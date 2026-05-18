@@ -62,8 +62,13 @@ def _calculate_metrics_statistics(experiment_files):
 
     return metrics_mean_path, metrics_std_path
 
+def _align_experiments(dfs: list[pd.DataFrame]):
+    min_length = min(len(df) for df in dfs)
+    return [df.head(min_length) for df in dfs]
+
 def _read_experiment_metrics(experiment_files: list[str]):
     dfs = [pd.read_csv(file) for file in experiment_files]
+    dfs = _align_experiments(dfs)
     return pd.concat(dfs)
 
 def _read_experiments_file():
