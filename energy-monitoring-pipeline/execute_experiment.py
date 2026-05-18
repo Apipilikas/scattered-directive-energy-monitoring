@@ -99,7 +99,7 @@ def execute_experiment(runs_no: int):
         print(f"\n> Starting new experiment run {r}/{runs_no}")
         runs[r] = execute_experiment_run(r)
 
-    with open('output/experiments.json', 'w') as f:
+    with open(conf.EXPERIMENTS_OUTPUT_PATH, 'w') as f:
         json.dump(runs, f, indent=2)
 
 def execute_experiment_run(run_no: int):
@@ -134,11 +134,6 @@ def execute_experiment_run(run_no: int):
                 accuracies = response["results"]
                 break
     
-    active_energy = _get_energy_comsumption()
-    total_active_energy = _calculate_total_energy(active_energy)
-
-    total_energy_difference = total_active_energy - total_idle_energy
-    
     experiment_end_time = time.time()
     experiment_elapsed_time = experiment_end_time - experiment_start_time
     active_elapsed_time = time.time() - active_start_time
@@ -147,7 +142,13 @@ def execute_experiment_run(run_no: int):
 
     if remaining_time > 0:
         # To Change
+        print("Waiting for remaining active period...")
         time.sleep(remaining_time)
+
+    active_energy = _get_energy_comsumption()
+    total_active_energy = _calculate_total_energy(active_energy)
+
+    total_energy_difference = total_active_energy - total_idle_energy
 
     print("\n> Summary")
     print(f"Experiment elapsed time: {experiment_elapsed_time} s ({_format_datetime(experiment_elapsed_time)})")
@@ -158,7 +159,8 @@ def execute_experiment_run(run_no: int):
     else:
         dfs = collect_metrics(experiment_start_time, experiment_end_time)
 
-    save_metrics_to_csv(dfs, f"output/experiment_{run_no}_metrics.csv")
+    output_path = f"output/experiment_{run_no}_metrics.csv"
+    save_metrics_to_csv(dfs, output_path)
 
     output = {
         "idle_energy": idle_energy,
@@ -167,7 +169,7 @@ def execute_experiment_run(run_no: int):
         "total_active_energy": total_active_energy,
         "total_energy_difference": total_energy_difference,
         "accuracies": accuracies,
-        "metrics_path": "output/experiment_metrics.csv"
+        "metrics_path": output_path
     }
 
     with open(f"output/experiment_{run_no}.json", 'w') as f:
