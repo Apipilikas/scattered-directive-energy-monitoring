@@ -55,7 +55,7 @@ def main():
     print(f"============= Execute experiment {baseline_str} {sidecar_str} =============")
     
     iterations_no = int(iterations) if not iterations is None else conf.EXPERIMENT_RUNS_NO 
-    execute_experiment()
+    execute_experiment(iterations_no)
 
 def _request_approval():
     response = requests.post(
@@ -96,6 +96,7 @@ def execute_experiment(runs_no: int):
     runs = {}
 
     for r in range(runs_no):
+        print(f"\n> Starting new experiment run {r}/{runs_no}")
         runs[r] = execute_experiment_run(r)
 
     with open('output/experiments.json', 'w') as f:
