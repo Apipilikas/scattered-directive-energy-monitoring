@@ -117,7 +117,7 @@ def execute_experiment_run():
     print("\n> Active period")
     active_start_time = time.time()
     if run_baseline:
-        time.sleep(180)
+        time.sleep(ACTIVE_PERIOD)
     else:
         request_id = _request_approval()
 
@@ -138,6 +138,12 @@ def execute_experiment_run():
     experiment_end_time = time.time()
     experiment_elapsed_time = experiment_end_time - experiment_start_time
     active_elapsed_time = time.time() - active_start_time
+
+    remaining_time = ACTIVE_PERIOD - active_elapsed_time
+
+    if remaining_time > 0:
+        # To Change
+        time.sleep(remaining_time)
 
     print("\n> Summary")
     print(f"Experiment elapsed time: {experiment_elapsed_time} s ({_format_datetime(experiment_elapsed_time)})")
