@@ -1,6 +1,6 @@
 import datetime
 import time
-from configuration import *
+import configuration as conf
 from prometheus_executor import execute_query
 import requests
 import json
@@ -38,22 +38,23 @@ REQUEST_APPROVAL_HEADER = {
     "Host": "api-gateway.api-gateway.svc.cluster.local"
 }
 
-PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 PROM_SIDECAR_CONTAINER = "{container_name=\"sidecar\"}"
-PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({KEPLER_LABEL})"
-PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{PROM_DURATION}])) by ({KEPLER_LABEL})"
+PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
+PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_DURATION}])) by ({conf.KEPLER_LABEL})"
 PROM_SIDECAR_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_SIDECAR_CONTAINER}[2m])) by (pod_name)"
 
 run_baseline = False
 run_sidecar = False
 
 def main():
-    _resolve_args()
+    iterations = _resolve_args()
     
     baseline_str = "(baseline)" if run_baseline else ""
     sidecar_str = "(sidecar)" if run_sidecar else ""
     print(f"============= Execute experiment {baseline_str} {sidecar_str} =============")
     
+    iterations_no = int(iterations) if not iterations is None else conf.EXPERIMENT_RUNS_NO 
     execute_experiment()
 
 def _request_approval():
@@ -91,24 +92,26 @@ def _calculate_total_energy(metrics: dict):
 def _format_datetime(seconds) -> str:
     return str(datetime.timedelta(seconds=seconds))
 
-def execute_experiment():
+def execute_experiment(runs_no: int):
     runs = {}
 
-    for r in range(1):
-        runs[r] = execute_experiment_run()
+    for r in range(runs_no):
+        runs[r] = execute_experiment_run(r)
 
-def execute_experiment_run():
+    with open('output/experiments.json', 'w') as f:
+        json.dump(runs, f, indent=2)
+
+def execute_experiment_run(run_no: int):
     # Phase 1: Idle period
     # Wait idle period
     print("\n> Idle period")
     experiment_start_time = time.time()
     
     print("Waiting for idle period ...")
-    time.sleep(IDLE_PERIOD)
+    time.sleep(conf.IDLE_PERIOD)
     
     idle_energy = _get_energy_comsumption()
     total_idle_energy = _calculate_total_energy(idle_energy)
-    print(f"Idle Energy: {idle_energy} (in J)")
 
     accuracies = {}
 
@@ -117,7 +120,7 @@ def execute_experiment_run():
     print("\n> Active period")
     active_start_time = time.time()
     if run_baseline:
-        time.sleep(ACTIVE_PERIOD)
+        time.sleep(conf.ACTIVE_PERIOD)
     else:
         request_id = _request_approval()
 
@@ -139,7 +142,7 @@ def execute_experiment_run():
     experiment_elapsed_time = experiment_end_time - experiment_start_time
     active_elapsed_time = time.time() - active_start_time
 
-    remaining_time = ACTIVE_PERIOD - active_elapsed_time
+    remaining_time = conf.ACTIVE_PERIOD - active_elapsed_time
 
     if remaining_time > 0:
         # To Change
@@ -151,10 +154,10 @@ def execute_experiment_run():
 
     if run_sidecar:
         dfs = collect_metrics(experiment_start_time, experiment_end_time, {"sidecar_energy" : PROM_SIDECAR_ENERGY_QUERY_RANGE})
-        save_metrics_to_csv(dfs, "output/experiment_sidecar_metrics.csv")
     else:
         dfs = collect_metrics(experiment_start_time, experiment_end_time)
-        save_metrics_to_csv(dfs, "output/experiment_metrics.csv")
+
+    save_metrics_to_csv(dfs, f"output/experiment_{run_no}_metrics.csv")
 
     output = {
         "idle_energy": idle_energy,
@@ -166,7 +169,7 @@ def execute_experiment_run():
         "metrics_path": "output/experiment_metrics.csv"
     }
 
-    with open('output/experiment.json', 'w') as f:
+    with open(f"output/experiment_{run_no}.json", 'w') as f:
         json.dump(output, f, indent=2)
 
     return output
@@ -178,11 +181,14 @@ def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--baseline", action='store_true')
     parser.add_argument("-s", "--sidecar", action='store_true')
+    parser.add_argument("-i", "--iterations")
     
     args = parser.parse_args()
     
     run_baseline = args.baseline
     run_sidecar = args.sidecar
+
+    return args.iterations
 
 if __name__ == '__main__':
     main()
