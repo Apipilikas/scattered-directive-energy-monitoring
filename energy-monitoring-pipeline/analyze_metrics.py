@@ -54,7 +54,12 @@ def _convert_cpu_usage_to_percentage(df: pd.DataFrame):
 
 # Anomaly detection (AD)
 def _detect_anomalies():
-    df = pd.read_csv(conf.DATA_COLLECT_OUTPUT_PATH, index_col="timestamp", parse_dates=True)
+    df = pd.read_csv(conf.DATA_COLLECT_OUTPUT_PATH)
+
+    if "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df.set_index("timestamp", inplace=True)
+
     df = _convert_cpu_usage_to_percentage(df)
 
     for column_name in df.columns:
@@ -86,11 +91,13 @@ def _analyze_root_causes():
     ))
 
     train_df = pd.read_csv(conf.TRAINING_DATA_PATH)
-    train_df.drop(columns = conf.COLUMN_TO_DROP, inplace=True)
+    if "timestamp" in train_df.columns:
+        train_df.drop(columns = conf.COLUMN_TO_DROP, inplace=True)
     train_df = train_df.filter(like='_energy')
     
     test_df = pd.read_csv(conf.DATA_COLLECT_OUTPUT_PATH)
-    test_df.drop(columns = conf.COLUMN_TO_DROP, inplace=True)
+    if "timestamp" in test_df.columns:
+        test_df.drop(columns = conf.COLUMN_TO_DROP, inplace=True)
     test_df = test_df.filter(like='_energy')
     
     results = model.find_root_causes(train_df, test_df)

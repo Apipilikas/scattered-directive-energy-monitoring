@@ -96,7 +96,7 @@ def execute_experiment(runs_no: int):
     runs = {}
 
     for r in range(runs_no):
-        print(f"\n> Starting new experiment run {r}/{runs_no}")
+        print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
         runs[r] = execute_experiment_run(r)
 
     with open(conf.EXPERIMENTS_OUTPUT_PATH, 'w') as f:
