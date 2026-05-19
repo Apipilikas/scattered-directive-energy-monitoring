@@ -57,6 +57,7 @@ DEFAULT_WEIGHT_DECAY = 1e-4
 
 # --------------------------------
 
+#region Helpers
 
 def load_data(file_path):
     DATA_STEWARD_NAME = os.getenv("DATA_STEWARD_NAME").lower()
@@ -75,6 +76,45 @@ def load_data(file_path):
 
     return data
 
+def serialise_array(array):
+    return json.dumps([
+        str(array.dtype),
+        array.tobytes().decode("latin1"),
+        array.shape])
+
+def deserialise_array(string, hook=None):
+    encoded_data = json.loads(string, object_pairs_hook=hook)
+    # logger.info(string, encoded_data) # This line breaks the execution due to ''unsupported format character''
+    logger.info("%s %s", string, encoded_data)
+    dataType = np.dtype(encoded_data[0])
+    dataArray = np.frombuffer(encoded_data[1].encode("latin1"), dataType)
+
+    if len(encoded_data) > 2:
+        return dataArray.reshape(encoded_data[2])
+
+    return dataArray
+
+def extract_data(request: rabbitTypes.Request, property_name: str):
+    try:
+        return request.data[property_name]
+    except Exception as e:
+        logger.error(f"Problem occured while extracting [{property_name}]: {e}")
+        return None
+
+def extract_number_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    return prop.number_value if (prop != None) else None 
+
+def extract_array_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    
+    if (prop != None):
+        prop_str = prop.string_value
+        return deserialise_array(prop_str)
+    else:
+        return None
+
+#endregion
 
 class ClientModel(nn.Module):
     def __init__(self, input_size):
@@ -91,43 +131,33 @@ class ClientModel(nn.Module):
         x = self.fc2(x)
         return x
 
-
-def serialise_array(array):
-    return json.dumps([
-        str(array.dtype),
-        array.tobytes().decode("latin1"),
-        array.shape])
-
-
-def deserialise_array(string, hook=None):
-    encoded_data = json.loads(string, object_pairs_hook=hook)
-    # logger.info(string, encoded_data) # This line breaks the execution due to ''unsupported format character''
-    logger.info("%s %s", string, encoded_data)
-    dataType = np.dtype(encoded_data[0])
-    dataArray = np.frombuffer(encoded_data[1].encode("latin1"), dataType)
-
-    if len(encoded_data) > 2:
-        return dataArray.reshape(encoded_data[2])
-
-    return dataArray
-
-
 class VFLClient():
     def __init__(self, data, learning_rate=DEFAULT_LEARNING_RATE, model_state=None, optimiser_state=None):
-        self.data = torch.tensor(data.values, dtype=torch.float32)
+        self.data = data
+        # self.labels = torch.tensor(data.values, dtype=torch.float32)
         
-        self.model = ClientModel(data.shape[1])
+        # scaled_values = StandardScaler().fit_transform(data)
+        # self.data = pd.DataFrame(scaled_values, index=data.index)
+        self.model = ClientModel(self.data.shape[1])
         if model_state is not None:
             self.model.load_state_dict(model_state)
 
         self.optimiser = None
+
+    def set_labels(self, sample_indexes):
+        try:
+            sample_data = self.data[self.data.index.isin(sample_indexes)]
+            self.labels = torch.tensor(sample_data.values, dtype=torch.float32)
+        except Exception as e:
+            logger.error(f"Error occurred while setting labels: {e}")
+        # self.labels = torch.tensor(StandardScaler().fit_transform(sample_data)).float()
 
     def create_optimiser(self, learning_rate):
         if self.optimiser is None:
             self.optimiser = torch.optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=DEFAULT_WEIGHT_DECAY)   #  torch.optim.SGD(self.model.parameters(), lr=learning_rate)
 
     def train_model(self):
-        self.embedding = self.model(self.data)
+        self.embedding = self.model(self.labels)
         return serialise_array(self.embedding.detach().numpy())
 
     def gradient_descent(self, gradients):
@@ -135,15 +165,90 @@ class VFLClient():
             logger.error("Optimiser is not defined.")
 
         try:
+            # Reset the gradients of all optimized tensors
             self.model.zero_grad()
-            # embedding = self.model(self.data)
-            self.embedding.backward(torch.from_numpy(gradients))
+            current_embedding = self.model(self.labels)
+            current_embedding.backward(torch.from_numpy(gradients.copy()))
             self.optimiser.step()
         except Exception as e:
             logger.error(f"Error occurred: {e}")
 
+#region Request handlers
 
-# ---  DYNAMOS Interface code At the Bottom --------
+def handle_vflShutdownRequest(msComm: msCommTypes.MicroserviceCommunication):
+    global ms_config
+
+    ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
+    signal_continuation(stop_event, stop_microservice_condition)
+
+def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication, 
+                           request: rabbitTypes.Request):
+    global ms_config
+    global vfl_client
+    
+    try:
+        # sample_indexes = request.data["sample_batch_indexes"].string_value
+        sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
+        vfl_client.set_labels(sample_indexes)
+    except Exception as e:
+        logger.error(f"Error occurred while getting sample indexes: {e}")
+
+    try:
+        embeddings = vfl_client.train_model()
+        logger.debug(f"size of serialized array in bytes: {sys.getsizeof(embeddings)}")
+        data = Struct()
+        data.update({"embeddings":  embeddings})
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        data = Struct()
+
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+
+def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunication, 
+                                     request: rabbitTypes.Request):
+    global ms_config
+    global vfl_client
+
+    # Extract learning rate
+    try:
+        learning_rate = request.data["learning_rate"].number_value
+        vfl_client.create_optimiser(learning_rate)
+    except Exception:
+        vfl_client.create_optimiser(DEFAULT_LEARNING_RATE)
+
+    # Extract gradients
+    try:
+        gradients = request.data["gradients"].string_value
+        gradients = deserialise_array(gradients)
+    except Exception as e:
+        logger.error(f"Gradients did not get parsed properly: {e}")
+        logger.info(msComm.data)
+        gradients = None
+
+    communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
+    cycle = -1
+
+    try:
+        for cycle in range(communication_frequency):
+            vfl_client.gradient_descent(gradients)
+    except Exception as e:
+        logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
+
+    try:
+        data = Struct()
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+
+def handle_vflPingRequest(msComm: msCommTypes.MicroserviceCommunication):
+    global ms_config
+    
+    ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
+
+#endregion
+
+#region DYNAMOS interface
 
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
@@ -165,70 +270,31 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
     if DATA_STEWARD_NAME == "server":
         if request.type == "vflShutdownRequest":
-            logger.info(
-                "Received vflShutdownRequest, shutting down service.")
-            ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
-            signal_continuation(stop_event, stop_microservice_condition)
+            handle_vflShutdownRequest(msComm)
         else:
             logger.info(f"Received request: {request.type}. This is the server (not client), relaying request.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     else:
         if request is not None:
+            logger.info(f"Received request: {request.type}. This is the client.")
             if request.type == "vflTrainRequest":
-                logger.info("Received a vflTrainRequest.")
-
-                try:
-                    embeddings = vfl_client.train_model()
-                    logger.debug(f"size of serialized array in bytes: {sys.getsizeof(embeddings)}")
-                    data = Struct()
-                    data.update({"embeddings":  embeddings})
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-                    data = Struct()
-
-                ms_config.next_client.ms_comm.send_data(msComm, data, {})
+                handle_vflTrainRequest(msComm, request)
+                
             elif request.type == "vflGradientDescentRequest":
-                try:
-                    learning_rate = request.data["learning_rate"].number_value
-                    vfl_client.create_optimiser(learning_rate)
-                except Exception:
-                    vfl_client.create_optimiser(DEFAULT_LEARNING_RATE)
-
-                try:
-                    gradients = request.data["gradients"].string_value
-                    gradients = deserialise_array(gradients)
-                except Exception as e:
-                    logger.error(f"Gradients did not get parsed properly: {e}")
-                    logger.info(msComm.data)
-                    gradients = None
-
-                try:
-                    vfl_client.gradient_descent(gradients)
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-
-                try:
-                    data = Struct()
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-
-                ms_config.next_client.ms_comm.send_data(msComm, data, {})
+                handle_vflGradientDescentRequest(msComm, request)
 
             elif request.type == "vflShutdownRequest":
-                logger.info(
-                    "Received vflShutdownRequest, shutting down service.")
-                signal_continuation(stop_event, stop_microservice_condition)
+                handle_vflShutdownRequest(msComm)
 
             elif request.type == "vflPingRequest":
-                logger.info("Received a vflPingRequest.")
-                ms_config.next_client.ms_comm.send_data(
-                    msComm, msComm.data, {})
+                handle_vflPingRequest(msComm)
 
             else:
                 logger.error(f"An unknown request_type: {msComm.data.type}")
 
             return Empty()
 
+#endregion
 
 def main():
     global config
@@ -258,7 +324,6 @@ def main():
     sys.exit(0)
 
 # ---  END DYNAMOS Interface code At the Bottom -----------------
-
 
 if __name__ == "__main__":
     main()

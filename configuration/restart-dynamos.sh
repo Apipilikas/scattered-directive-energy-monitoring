@@ -6,13 +6,14 @@ source "${SCRIPT_DIR}/../dynamos.conf"
 echo -e "\n=============== Started restarting DYNAMOS ===============\n"
 
 echo -e "Restarting api-gateway ...\n"
-kubectl rollout restart deployment -n api-gateway
+kubectl rollout restart deployment api-gateway -n api-gateway
 
 echo -e "\nRestarting core ...\n"
 kubectl rollout restart deployment -n core
 
 echo -e "\nRestarting orchestrator ...\n"
-kubectl rollout restart deployment -n orchestrator
+kubectl rollout restart deployment orchestrator -n orchestrator
+kubectl rollout restart deployment policy-enforcer -n orchestrator
 
 #Config
 config_path="${DYNAMOS_ROOT}/configuration"
@@ -28,7 +29,7 @@ echo -e "\nRestarting agents ...\n"
 for agent in "${agents_array[@]}"
 do
     echo "- Restarting agent: ['$agent']"
-    kubectl rollout restart deployment -n "$agent"
+    kubectl rollout restart deployment "$agent" -n "$agent"
 done
 }
 

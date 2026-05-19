@@ -20,7 +20,6 @@ from opentelemetry.context.context import Context
 
 np.set_printoptions(threshold=sys.maxsize)
 
-# --- DYNAMOS Interface code At the TOP ---------------------------
 if os.getenv('ENV') == 'PROD':
     import config_prod as config
 else:
@@ -28,6 +27,8 @@ else:
 
 logger = InitLogger()
 # tracer = InitTracer(config.service_name, config.tracing_host)
+
+#region Events
 
 # Events to start the shutdown of this Microservice, can be used to call 'signal_shutdown'
 stop_event = threading.Event()
@@ -38,10 +39,14 @@ stop_microservice_condition = threading.Condition()
 wait_for_setup_event = threading.Event()
 wait_for_setup_condition = threading.Condition()
 
+#endregion
+
+#region Global variables
+
 ms_config = None
 vfl_server = None
 
-# --- END DYNAMOS Interface code At the TOP ----------------------
+#endregion
 
 # ---- LOCAL TEST SETUP OPTIONAL!
 
@@ -53,12 +58,15 @@ vfl_server = None
 
 # --------------------------------
 
-
 DEFAULT_LEARNING_RATE = 0.1 
 DEFAULT_NOF_CLIENTS = 3  # TODO: make it dynamic 
 SERVER_CHECKPOINT_PATH = "server_checkpoint.pth"
 
-def load_data(file_path):
+#region Helpers
+
+# Duplicate code everywhere. TODO: Change it!
+
+def load_data(file_path) -> pd.DataFrame:
     DATA_STEWARD_NAME = os.getenv("DATA_STEWARD_NAME").lower()
 
     file_name = f"{file_path}/outcomeData.csv"
@@ -76,13 +84,11 @@ def load_data(file_path):
 
     return data
 
-
 def serialise_array(array):
     return json.dumps([
         str(array.dtype),
         array.tobytes().decode("latin1"),
         array.shape])
-
 
 def deserialise_array(string, hook=None):
     encoded_data = json.loads(string, object_pairs_hook=hook)
@@ -94,6 +100,27 @@ def deserialise_array(string, hook=None):
 
     return dataArray
 
+def extract_data(request: rabbitTypes.Request, property_name: str):
+    try:
+        return request.data[property_name]
+    except Exception as e:
+        logger.error(f"Problem occured while extracting [{property_name}]: {e}")
+        return None
+
+def extract_number_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    return prop.number_value if (prop != None) else None 
+
+def extract_array_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    
+    if (prop != None):
+        prop_str = prop.string_value
+        return deserialise_array(prop_str)
+    else:
+        return None
+
+#endregion
 
 class ServerModel(nn.Module):
     def __init__(self, input_size):
@@ -112,9 +139,8 @@ class ServerModel(nn.Module):
         x = self.fc2(x)
         return x
 
-
 class VFLServer():
-    def __init__(self, data):
+    def __init__(self, data: pd.DataFrame):
         self.intermediate_neurons = 4  # Assuming each client outputs 4 features
         self.nof_clients = DEFAULT_NOF_CLIENTS
         self.model = ServerModel(self.intermediate_neurons * self.nof_clients) 
@@ -124,8 +150,24 @@ class VFLServer():
         # )
         self.optimizer = optim.Adam(self.model.parameters(), lr=DEFAULT_LEARNING_RATE, weight_decay=1e-4)  # optim.SGD(self.model.parameters(), lr=0.01)
         self.criterion = nn.MSELoss()
-        self.labels = torch.tensor(
-            data["REL_TOTALBTU"].values).float().unsqueeze(1)
+        self.data = data
+        # self.labels = torch.tensor(
+        #     data["REL_TOTALBTU"].values).float().unsqueeze(1)
+
+    def sample_data(self, sample_batch_size):
+        try:
+            data_sample = self.data.sample(int(sample_batch_size))
+            self.set_labels(data_sample["REL_TOTALBTU"].values)
+
+            data = Struct()
+            data.update({"sample_batch_indexes": serialise_array(np.array(data_sample.index))})
+
+            return data
+        except Exception as e:
+            logger.info(f"Error occurred while sampling data: {e}")
+
+    def set_labels(self, values):
+        self.labels = torch.tensor(values).float().unsqueeze(1)
 
     def shrink_server_model(self, new_nof_clients, backtrack):
         """
@@ -141,7 +183,6 @@ class VFLServer():
         # note: this is a completely new model with random weights
         self.model = ServerModel(self.intermediate_neurons * new_nof_clients)
         self.optimizer = optim.Adam(self.model.parameters(), lr=DEFAULT_LEARNING_RATE, weight_decay=1e-4)  # optim.SGD(self.model.parameters(), lr=0.01)
-
     
     def expand_server_model(self, new_nof_clients, backtrack):
         """
@@ -174,6 +215,88 @@ class VFLServer():
             logger.info(f"Number of clients increased from {old_nof_clients} to {new_nof_clients}, expanding model.")
             self.expand_server_model(new_nof_clients, backtrack)
 
+    def _calculate_loss(self):
+        try:
+            # Passes the tensor through the server model.
+            output = self.model(self.embeddings)
+            # Using BCE (Binary Cross Entropy), calculates the loss. Basically, compares its predictions against the true labels.
+            loss = self.criterion(output, self.labels)
+            # Calculates the gradient of the loss function with respect to the predicted probabilities, 
+            # enabling weight updates in binary classification tasks.
+            loss.backward()
+        except Exception as e:
+            logger.info(f"Running gradient descent 2 failed: {e}")
+            logger.info(f"{output}, {self.labels}")
+
+        try:
+            # Uses optimizer to adjust weights. This way reduces the error.
+            self.optimizer.step()
+            # Clears the gradients to prepare for the next round.
+            self.optimizer.zero_grad()
+        except Exception as e:
+            logger.info(f"Running gradient descent 3 failed: {e}")
+        
+        return output
+
+    def get_gradients(self, results, backtrack = False):
+        global server_configuration
+
+        new_nof_clients = len(results)
+        if new_nof_clients != self.nof_clients:
+            logger.info(f"Number of clients {new_nof_clients} does not match expected {self.nof_clients}, updating server architecture...")
+            self.update_server_model_architecture(self.nof_clients, new_nof_clients, backtrack)
+
+        try:
+            # Convert the embeddings to PyTorch tensors to build computational graphs.
+            embedding_results = [
+                torch.from_numpy(embedding.copy())
+                for embedding in results
+            ]
+        except Exception as e:
+            logger.info(f"Converting the results to torch failed: {e}")
+
+        try:
+            # Takes the three individual client tensors (N x 4) and concatenates them into a larger tensor N x 12
+            embeddings_aggregated = torch.cat(embedding_results, dim=1)
+            # Detaches tensors from clients to calculate gradients without knowing their roots.
+            self.embeddings = embeddings_aggregated.detach().requires_grad_()
+        except Exception as e:
+            logger.info(f"Running gradient descent 1 failed: {e}")
+
+        self._calculate_loss()
+
+        # Chops gradients back to N x 4 chunks, one for each client.
+        gradients = self.embeddings.grad.split([4]*self.nof_clients, dim=1)
+        # Converts to numpy.
+        np_gradients = [serialise_array(gradient.numpy()) for gradient in gradients]
+
+        data = Struct()
+        data.update({"gradients": np_gradients}) 
+
+        return data
+
+    def local_update(self):
+        output = self._calculate_loss()
+
+        # Calculates the accuracy.
+        with torch.no_grad():
+            # correct = 0
+            # predicted = (output > 0.5).float()
+
+            # correct += (predicted == self.labels).sum().item()
+
+            # accuracy = correct / len(self.labels) * 100
+            mse = nn.MSELoss()(output, self.labels).item()
+            rmse = torch.sqrt(torch.tensor(mse)).item()
+            mae = nn.L1Loss()(output, self.labels).item()
+            total_sum_of_squares = torch.sum((self.labels - self.labels.mean()) ** 2)
+            residual_sum_of_squares = torch.sum((self.labels - output) ** 2)
+            r2 = 1 - (residual_sum_of_squares / total_sum_of_squares)
+            r2_score = r2.item()
+
+        logger.info(f"R2 achieved: {r2_score}")
+
+        return r2_score
 
     def aggregate_fit(self, results,backtrack=False):
         global server_configuration
@@ -260,10 +383,13 @@ class VFLServer():
         self.optimizer.load_state_dict(state['optimizer_state_dict'])
         print(f"Server state loaded from {filepath}")
 
+#region Request handlers
 
 def handle_vflAggregateRequest(msComm):
     global ms_config
     global vfl_server
+
+    logger.info("Received a vflAggregateRequest.")
 
     request = rabbitTypes.Request()
     msComm.original_request.Unpack(request)
@@ -272,7 +398,6 @@ def handle_vflAggregateRequest(msComm):
     try:
         training_backtrack_flag = request.data["trainingBacktrack"]
         logger.debug(f"Training backtrack flag: {training_backtrack_flag}")
-        logger.debug(f"Training backtrack flag: {type(training_backtrack_flag)}")
         if training_backtrack_flag.number_value == 1:
             backtrack = True
             logger.debug(f"Training backtrack flag is 'True'")
@@ -281,14 +406,16 @@ def handle_vflAggregateRequest(msComm):
 
     try:
         data = request.data["embeddings"]
-        # logger.debug(f"Received data: {data}")
+        logger.debug(f"Received data: {data}")
         # logger.debug(f"Embedding len: {len(data)}")
         clients_embeddings = [deserialise_array(
-            embeddings.string_value) for embeddings in data.list_value.values]
+            embeddings.string_value
+            ) for embeddings in data.list_value.values]
+        
     except Exception as e:
         logger.error(f"Errored when deserialising client data: {e}")
 
-    data = vfl_server.aggregate_fit(clients_embeddings, backtrack)
+    data = vfl_server.get_gradients(clients_embeddings, backtrack)
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -299,7 +426,45 @@ def handle_vflShutdownRequest(msComm):
     ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     signal_continuation(stop_event, stop_microservice_condition)
 
-# ---  DYNAMOS Interface code At the Bottom --------
+def handle_vflPingRequest(msComm):
+    logger.info("Received a vflPingRequest.")
+    ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
+
+def handle_vflSampleBatchRequest(msComm, request):
+    global ms_config
+    global vfl_server
+    try:
+        sample_batch_size = extract_number_from_data(request, "sample_batch_size")
+
+        data = vfl_server.sample_data(sample_batch_size)
+
+        ms_config.next_client.ms_comm.send_data(msComm, data, {})
+    except Exception as e:
+        logger.info(f"Error occurred while handling vflSampleBatchRequest: {e}")
+
+def handle_vflLocalUpdateRequest(msComm, request):
+    global ms_config
+    global vfl_server
+
+    accuracies = []
+    communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
+    cycle = -1
+
+    try:
+        for cycle in range(communication_frequency):
+            accuracy = vfl_server.local_update()
+            accuracies.append(accuracy)
+    except Exception as e:
+        logger.info(f"Error occurred in cycle [{cycle}]: {e}")
+
+    data = Struct()
+    data.update({"accuracies": accuracies})
+
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+
+#endregion
+
+#region DYNAMOS interface
 
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
@@ -328,19 +493,25 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
 
     else:
+        logger.info(f"Received request: {request.type}. This is the server.")
         if request.type == "vflAggregateRequest":
-            logger.info("Received a vflAggregateRequest.")
             handle_vflAggregateRequest(msComm)
 
         elif request.type == "vflPingRequest":
-            logger.info("Received a vflPingRequest.")
-            ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
+            handle_vflPingRequest(msComm)
 
         elif request.type == "vflShutdownRequest":
             handle_vflShutdownRequest(msComm)
 
+        elif request.type == "vflSampleBatchRequest":
+            handle_vflSampleBatchRequest(msComm, request)
+
+        elif request.type == "vflLocalUpdateRequest":
+            handle_vflLocalUpdateRequest(msComm, request)
+
         return Empty()
 
+#endregion
 
 def main():
     global config
@@ -367,9 +538,6 @@ def main():
     ms_config.stop(2)
     logger.debug(f"Exiting {config.service_name}")
     sys.exit(0)
-
-# ---  END DYNAMOS Interface code At the Bottom -----------------
-
 
 if __name__ == "__main__":
     main()
