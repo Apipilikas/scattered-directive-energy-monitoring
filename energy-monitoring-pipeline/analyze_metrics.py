@@ -1,7 +1,7 @@
 from sklearn import ensemble as skl
 import argparse
 import pandas as pd
-from configuration import *
+import configuration as conf
 from utils import add_boolean_argument
 from pyrca.analyzers.rcd import RCD
 import csv
@@ -31,8 +31,8 @@ def _resolve_args():
 
     parser = argparse.ArgumentParser()
     
-    add_boolean_argument(parser, AD_ARGUMENT)
-    add_boolean_argument(parser, RCA_ARGUMENT)
+    add_boolean_argument(parser, conf.AD_ARGUMENT)
+    add_boolean_argument(parser, conf.RCA_ARGUMENT)
 
     args = parser.parse_args()
     ad_arg = args.anomaly_detection
@@ -54,7 +54,12 @@ def _convert_cpu_usage_to_percentage(df: pd.DataFrame):
 
 # Anomaly detection (AD)
 def _detect_anomalies():
-    df = pd.read_csv(DATA_COLLECT_OUTPUT_PATH, index_col="timestamp", parse_dates=True)
+    df = pd.read_csv(conf.DATA_COLLECT_OUTPUT_PATH)
+
+    if "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df.set_index("timestamp", inplace=True)
+
     df = _convert_cpu_usage_to_percentage(df)
 
     for column_name in df.columns:
@@ -72,25 +77,27 @@ def _detect_anomalies():
             anomaly_score_column_name = f"{column_name}_anomaly_score"
             df[anomaly_score_column_name] = model.decision_function(df_column)
 
-    df.to_csv(DATA_DA_OUTPUT_PATH)
-    print(f"Saved file to [{DATA_DA_OUTPUT_PATH}]!")
+    df.to_csv(conf.DATA_DA_OUTPUT_PATH)
+    print(f"Saved file to [{conf.DATA_DA_OUTPUT_PATH}]!")
 
 # Root cause analysis (RCA)
 def _analyze_root_causes():
     model = RCD(config=RCD.config_class(
         start_alpha=0.05,
-        k= RCD_K,
+        k= conf.RCD_K,
         bins=5,
         gamma=5,
         localized=True
     ))
 
-    train_df = pd.read_csv(TRAINING_DATA_PATH)
-    train_df.drop(columns = COLUMN_TO_DROP, inplace=True)
-    train_df = train_df.filter(like='_energy')    
+    train_df = pd.read_csv(conf.TRAINING_DATA_PATH)
+    if "timestamp" in train_df.columns:
+        train_df.drop(columns = conf.COLUMN_TO_DROP, inplace=True)
+    train_df = train_df.filter(like='_energy')
     
-    test_df = pd.read_csv(DATA_COLLECT_OUTPUT_PATH)
-    test_df.drop(columns = COLUMN_TO_DROP, inplace=True)
+    test_df = pd.read_csv(conf.DATA_COLLECT_OUTPUT_PATH)
+    if "timestamp" in test_df.columns:
+        test_df.drop(columns = conf.COLUMN_TO_DROP, inplace=True)
     test_df = test_df.filter(like='_energy')
     
     results = model.find_root_causes(train_df, test_df)
@@ -100,11 +107,11 @@ def print_results(results):
     # Extracting node names
     nodes_list = [node[0] for node in results['root_cause_nodes']]
 
-    with open(DATA_RCA_OUTPUT_PATH, mode='w', newline='') as file:
+    with open(conf.DATA_RCA_OUTPUT_PATH, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Root Cause'])
         writer.writerows([[node] for node in nodes_list])
-        print(f"Saved file to [{DATA_RCA_OUTPUT_PATH}]!")
+        print(f"Saved file to [{conf.DATA_RCA_OUTPUT_PATH}]!")
 
 if __name__ == '__main__':
     main()

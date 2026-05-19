@@ -4,13 +4,13 @@
 #   tag: "v0.11.4"
 #   pullPolicy: IfNotPresent
 
-# resources:
-#   limits:
-#     cpu: 100m
-#     memory: 400Mi
-#   requests:
-#     cpu: 100m
-#     memory: 200Mi
+resources:
+  limits:
+    cpu: 200m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
 
 # tolerations:
 #   - operator: Exists
@@ -21,6 +21,6 @@
 # Enable ServiceMonitor for Prometheus
 serviceMonitor:
   enabled: true
-  interval: 30s
-  # label:
-  #   release: prometheus
+  # interval: 30s
+  label:
+    release: prometheus

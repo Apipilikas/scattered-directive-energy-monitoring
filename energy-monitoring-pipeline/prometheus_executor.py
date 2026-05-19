@@ -79,6 +79,8 @@ def _filter_response(response: requests.Response, caller_name: str, process_resu
                 container = metric[CADVISOR_LABEL]
             elif KEPLER_LABEL in metric:
                 container = metric[KEPLER_LABEL]
+            elif "pod_name" in metric:
+                container = get_container_name_from_pod_name(str(metric["pod_name"]), containers)
 
             if not container is None and container in containers:
                 data[container] = process_result_fnc(result)
@@ -88,3 +90,10 @@ def _filter_response(response: requests.Response, caller_name: str, process_resu
             )
     
     return data
+
+def get_container_name_from_pod_name(pod_name: str, containers):
+    for container in containers:
+        if pod_name.startswith(container):
+            return container
+    
+    return None
