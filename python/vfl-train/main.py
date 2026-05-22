@@ -82,7 +82,7 @@ def serialise_array(array):
 
 def deserialise_array(string, hook=None):
     encoded_data = json.loads(string, object_pairs_hook=hook)
-    logger.info(string, encoded_data)
+    # logger.info(f"Raw string: {string} | Encoded data: {encoded_data}")
     dataType = np.dtype(encoded_data[0])
     dataArray = np.frombuffer(encoded_data[1].encode("latin1"), dataType)
 
@@ -124,7 +124,7 @@ class ClientModel(nn.Module):
 
 
 class VFLClient():
-    def __init__(self, data, learning_rate=0.01, model_state=None, optimiser_state=None):
+    def __init__(self, data, model_state=None):
         self.data = data
         self.model = ClientModel(data.shape[1])
         if model_state is not None:
@@ -133,6 +133,29 @@ class VFLClient():
         self.optimiser = None
         self.scaler = StandardScaler()
         self.scaler.fit(self.data)
+
+        self.gradient_descent_thread = None
+        self.current_cycle = 0
+        self.cycle_sync_condition = threading.Condition()
+
+    def check_cycle_sync(self, cycle):
+        with self.cycle_sync_condition:
+            while self.current_cycle != cycle:
+                logger.info(f"Cycle sync wait! Requested cycle: {cycle}")
+                self.cycle_sync_condition.wait()
+    
+    def sync_to_next_cycle(self):
+        with self.cycle_sync_condition:
+            self.current_cycle += 1
+            self.cycle_sync_condition.notify()
+            logger.info(f"Cycle sync notify! Cycle changed to {self.current_cycle}")
+
+    def is_gradient_descent_in_progress(self):
+        return not self.gradient_descent_thread is None and self.gradient_descent_thread.is_alive()
+
+    def wait_for_gradient_descent_to_finish(self):
+        if (self.is_gradient_descent_in_progress()):
+            self.gradient_descent_thread.join()
 
     def set_labels_from_sample(self, sample_indexes):
         sample_data = self.data.loc[sample_indexes]
@@ -154,7 +177,7 @@ class VFLClient():
         self.embedding = self.model(self.labels)
         return serialise_array(self.embedding.detach().numpy())
 
-    def gradient_descent(self, gradients):
+    def _gradient_descent(self, gradients):
         if self.optimiser is None:
             logger.error("Optimiser is not defined.")
 
@@ -166,6 +189,22 @@ class VFLClient():
         except Exception as e:
             logger.error(f"Error occurred: {e}")
 
+    def gradient_descent(self, gradients, communication_frequency = 1):
+        try:
+            for cycle in range(communication_frequency):
+                self._gradient_descent(gradients)
+
+            self.sync_to_next_cycle()
+        except Exception as e:
+            logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
+
+    def gradient_descent_async(self, gradients, communication_frequency):
+        if not self.is_gradient_descent_in_progress():
+            self.gradient_descent_thread = threading.Thread(
+                target=self.gradient_descent,
+                args=(gradients, communication_frequency,)
+            )
+            self.gradient_descent_thread.start()
 
 #region Request handlers
 
@@ -179,15 +218,18 @@ def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication,
                            request: rabbitTypes.Request):
     global ms_config
     global vfl_client
-    
+
     try:
-        # sample_indexes = request.data["sample_batch_indexes"].string_value
         sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
-        vfl_client.set_labels_from_sample(sample_indexes)
+        cycle = int(extract_number_from_data(request, "cycle"))
+        
+        vfl_client.check_cycle_sync(cycle)
+        vfl_client.wait_for_gradient_descent_to_finish()
     except Exception as e:
         logger.error(f"Error occurred while getting sample indexes: {e}")
 
     try:
+        vfl_client.set_labels_from_sample(sample_indexes)
         embeddings = vfl_client.train_model()
         data = Struct()
         data.update({"embeddings":  embeddings})
@@ -204,7 +246,10 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
 
     # Extract learning rate
     try:
-        learning_rate = request.data["learning_rate"].number_value
+        learning_rate = int(extract_number_from_data(request, "learning_rate"))
+        cycle = int(extract_number_from_data(request, "cycle"))
+
+        vfl_client.check_cycle_sync(cycle)
         vfl_client.create_optimiser(learning_rate)
     except Exception:
         vfl_client.create_optimiser(0.05)
@@ -219,13 +264,8 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
         gradients = None
 
     communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
-    cycle = -1
 
-    try:
-        for cycle in range(communication_frequency):
-            vfl_client.gradient_descent(gradients)
-    except Exception as e:
-        logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
+    vfl_client.gradient_descent_async(gradients, communication_frequency)
 
     try:
         data = Struct()
@@ -242,6 +282,22 @@ def handle_vflPingRequest(msComm: msCommTypes.MicroserviceCommunication):
 #endregion
 
 #region DYNAMOS interface
+
+def handle_request_async(msComm: msCommTypes.MicroserviceCommunication, request: rabbitTypes.Request):
+    if request.type == "vflTrainRequest":
+        handle_vflTrainRequest(msComm, request)
+        
+    elif request.type == "vflGradientDescentRequest":
+        handle_vflGradientDescentRequest(msComm, request)
+
+    elif request.type == "vflShutdownRequest":
+        handle_vflShutdownRequest(msComm)
+
+    elif request.type == "vflPingRequest":
+        handle_vflPingRequest(msComm)
+
+    else:
+        logger.error(f"An unknown request_type: {msComm.data.type}")
 
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
@@ -270,20 +326,8 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
     else:
         if request is not None:
             logger.info(f"Received request: {request.type}. This is the client.")
-            if request.type == "vflTrainRequest":
-                handle_vflTrainRequest(msComm, request)
-                
-            elif request.type == "vflGradientDescentRequest":
-                handle_vflGradientDescentRequest(msComm, request)
-
-            elif request.type == "vflShutdownRequest":
-                handle_vflShutdownRequest(msComm)
-
-            elif request.type == "vflPingRequest":
-                handle_vflPingRequest(msComm)
-
-            else:
-                logger.error(f"An unknown request_type: {msComm.data.type}")
+            thread = threading.Thread(target=handle_request_async, args=(msComm, request))
+            thread.start()
 
             return Empty()
 

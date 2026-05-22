@@ -11,6 +11,7 @@ from dynamos.ms_init import NewConfiguration
 from dynamos.signal_flow import signal_continuation, signal_wait
 from dynamos.logger import InitLogger
 import rabbitMQ_pb2 as rabbitTypes
+import io
 
 from google.protobuf.empty_pb2 import Empty
 import microserviceCommunication_pb2 as msCommTypes
@@ -69,6 +70,9 @@ def load_data(file_path) -> pd.DataFrame:
         return None
 
     return data
+
+def serialise_dictionary(dictionary):
+    return json.dumps(dictionary)
 
 def serialise_array(array):
     return json.dumps([
@@ -129,13 +133,22 @@ class VFLServer():
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
         self.criterion = nn.BCELoss()
         self.data = data
-        # self.labels = torch.tensor(
-        #     data["Survived"].values).float().unsqueeze(1)
+        self.accuracies = {}
+        self.current_cycle = 0
+
+        self.training_lock = threading.Lock()
+        self.training_thread = None
+
+    def is_training_in_progress(self):
+        return not self.training_thread is None and self.training_thread.is_alive()
+
+    def wait_for_training_to_finish(self):
+        if (self.is_training_in_progress()):
+            self.training_thread.join()
 
     def sample_data(self, sample_batch_size):
         try:
             data_sample = self.data.sample(int(sample_batch_size))
-            self.set_labels(data_sample["Survived"])
 
             data = Struct()
             data.update({"sample_batch_indexes": serialise_array(np.array(data_sample.index))})
@@ -143,6 +156,10 @@ class VFLServer():
             return data
         except Exception as e:
             logger.info(f"Error occurred while sampling data: {e}")
+
+    def set_labels_from_sample(self, sample_indexes):
+        sample_data = self.data.loc[sample_indexes]
+        self.set_labels(sample_data["Survived"])
 
     def set_labels(self, data):
         self.labels = torch.tensor(data.values).float().unsqueeze(1)
@@ -171,13 +188,13 @@ class VFLServer():
         
         return output
 
-    def aggregate_fit(self, results):
+    def aggregate_fit(self, embeddings):
         global server_configuration
 
         try:
             embedding_results = [
                 torch.from_numpy(embedding.copy())
-                for embedding in results
+                for embedding in embeddings
             ]
         except Exception as e:
             logger.info(f"Converting the results to torch failed: {e}")
@@ -201,11 +218,12 @@ class VFLServer():
             logger.info(f"Converting the gradients failed: {e}")
 
         data = Struct()
-        data.update({"gradients": np_gradients}) 
+        data.update({"gradients": np_gradients})
+        data.update({"accuracies": serialise_dictionary(self.accuracies)})
 
         return data
     
-    def local_update(self):
+    def _local_update(self):
         output = self.model(self.embeddings)
         loss = self.criterion(output, self.labels)
 
@@ -222,34 +240,54 @@ class VFLServer():
 
             accuracy = correct / len(self.labels) * 100
 
-        # data = Struct()
-        # data.update({"accuracy": accuracy})
-
         return accuracy
+    
+    def local_update(self, communication_frequency = 1):
+        try:
+            for cycle in range(communication_frequency):
+                accuracy = self._local_update()
+            
+            self.accuracies[self.current_cycle] = accuracy # Only the last accuracy
+        except Exception as e:
+            logger.info(f"Error occurred in cycle [{cycle}]: {e}")
+
+    def local_update_async(self, communication_frequency):
+        if not self.is_training_in_progress():
+            self.training_thread = threading.Thread(
+                target=self.local_update,
+                args=(communication_frequency,)
+            )
+            self.training_thread.start()
 
 #region Request handlers
 
-def handle_vflAggregateRequest(msComm):
+def handle_vflAggregateRequest(msComm, request):
     global ms_config
     global vfl_server
 
-    request = rabbitTypes.Request()
-    msComm.original_request.Unpack(request)
-
     try:
         data = request.data["embeddings"]
-        logger.debug(f"Received data: {data}")
-        # logger.debug(f"Embedding len: {len(data)}")
+
         clients_embeddings = [deserialise_array(
             embeddings.string_value
             ) for embeddings in data.list_value.values]
         
+        sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
+        communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
+        cycle = int(extract_number_from_data(request, "cycle"))
     except Exception as e:
         logger.error(f"Errored when deserialising client data: {e}")
 
+    vfl_server.wait_for_training_to_finish()
+
+    vfl_server.current_cycle = cycle
+
+    vfl_server.set_labels_from_sample(sample_indexes)
     data = vfl_server.aggregate_fit(clients_embeddings)
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
+
+    vfl_server.local_update_async(communication_frequency)
 
 def handle_vflShutdownRequest(msComm):
     global ms_config
@@ -265,6 +303,7 @@ def handle_vflPingRequest(msComm):
 def handle_vflSampleBatchRequest(msComm, request):
     global ms_config
     global vfl_server
+
     try:
         sample_batch_size = extract_number_from_data(request, "sample_batch_size")
 
@@ -274,25 +313,37 @@ def handle_vflSampleBatchRequest(msComm, request):
     except Exception as e:
         logger.info(f"Error occurred while handling vflSampleBatchRequest: {e}")
 
-def handle_vflLocalUpdateRequest(msComm, request):
+def handle_vflGetAccuraciesRequest(msComm):
     global ms_config
     global vfl_server
 
-    accuracies = []
-    communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
-    cycle = -1
-
     try:
-        for cycle in range(communication_frequency):
-            accuracy = vfl_server.local_update()
-            accuracies.append(accuracy)
+        data = Struct()
+        data.update({"accuracies": serialise_dictionary(vfl_server.accuracies)})
+
+        ms_config.next_client.ms_comm.send_data(msComm, data, {})
     except Exception as e:
-        logger.info(f"Error occurred in cycle [{cycle}]: {e}")
+        logger.error(f"Error occurred while handling vflGetAccuraciesRequest: {e}")
 
-    data = Struct()
-    data.update({"accuracies": accuracies})
+# def handle_vflLocalUpdateRequest(msComm, request):
+#     global ms_config
+#     global vfl_server
 
-    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+#     accuracies = []
+#     communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
+#     cycle = -1
+
+#     try:
+#         for cycle in range(communication_frequency):
+#             accuracy = vfl_server.local_update()
+#             accuracies.append(accuracy)
+#     except Exception as e:
+#         logger.info(f"Error occurred in cycle [{cycle}]: {e}")
+
+#     data = Struct()
+#     data.update({"accuracies": accuracies})
+
+#     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
 #endregion
 
@@ -326,7 +377,7 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
     else:
         if request.type == "vflAggregateRequest":
-            handle_vflAggregateRequest(msComm)
+            handle_vflAggregateRequest(msComm, request)
 
         elif request.type == "vflPingRequest":
             handle_vflPingRequest(msComm)
@@ -337,8 +388,9 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
         elif request.type == "vflSampleBatchRequest":
             handle_vflSampleBatchRequest(msComm, request)
 
-        elif request.type == "vflLocalUpdateRequest":
-            handle_vflLocalUpdateRequest(msComm, request)
+        # Obsolete - saving communication
+        elif request.type == "vflGetAccuraciesRequest":
+            handle_vflGetAccuraciesRequest(msComm)
 
         return Empty()
 

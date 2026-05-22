@@ -26,12 +26,13 @@ const (
 )
 
 var (
-	activeJobID      string
-	activeJobLock    sync.Mutex   // to allow only 1 active job at any time
-	trainingRequests = sync.Map{} // map[string]TrainingRequestData
+	activeJobID       string
+	activeJobLock     sync.Mutex   // to allow only 1 active job at any time
+	trainingRequests  = sync.Map{} // map[string]TrainingRequestData
+	formattedEndpoint = "http://%s:8080/agent/v1/vflTrainRequest/%s"
 )
 
-// #region vflTrainModelRequest
+// #region TrainingRequestData helpers
 
 type TrainingRequestData struct {
 	Status   string
@@ -40,18 +41,57 @@ type TrainingRequestData struct {
 	// add more fields as needed
 }
 
+func getTrainingRequest(jobId string) (TrainingRequestData, bool) {
+	v, ok := trainingRequests.Load(jobId)
+	if !ok {
+		logger.Sugar().Debug("Not found training request: ", jobId)
+		return TrainingRequestData{}, false
+	}
+
+	return v.(TrainingRequestData), true
+}
+
+func addAndUpdateTrainingRequest(jobId string, cycle int64, clientsNumber int, accuracies map[string]float64) {
+	result := map[string]any{
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"train_round": cycle,
+		"accuracy":    accuracies[fmt.Sprint(cycle)],
+		"clients":     clientsNumber,
+	}
+
+	reqData, _ := getTrainingRequest(jobId)
+	reqData.Results = append(reqData.Results, result)
+	trainingRequests.Store(jobId, reqData)
+
+	updateTrainingRequest(jobId, accuracies)
+}
+
+func updateTrainingRequest(jobId string, accuracies map[string]float64) {
+	reqData, _ := getTrainingRequest(jobId)
+	results := reqData.Results
+
+	for _, res := range results {
+		trainCycle := fmt.Sprintf("%v", res["train_round"])
+		res["accuracy"] = accuracies[trainCycle]
+	}
+
+	reqData.Results = results
+	trainingRequests.Store(jobId, reqData)
+}
+
+// #endregion
+
 func getTrainingStatusHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Sugar().Info("Starting getTrainingStatusHandler")
 		requestID := r.URL.Query().Get("id")
-		v, ok := trainingRequests.Load(requestID)
+		reqData, ok := getTrainingRequest(requestID)
 		if !ok {
 			http.Error(w, "Request ID not found", http.StatusNotFound)
 			return
 		}
 
 		logger.Sugar().Debug("Found training request: ", requestID)
-		reqData := v.(TrainingRequestData)
 		resp := map[string]any{
 			"request_id": requestID,
 			"status":     reqData.Status,
@@ -226,21 +266,202 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64, communication_frequency int64, sample_batch_size int64) ([]float64, error) {
-	var wg sync.WaitGroup
-	responses := map[string]string{}
-	var existingError error = nil
-	var sample_batch_indexes string
-	formattedEndpoint := "http://%s:8080/agent/v1/vflTrainRequest/%s"
+type TrainingRoundData struct {
+	cycle         int64
+	sampleIndexes string
+	embeddings    []string
+	gradients     []string
+}
 
+var (
+	sampleChan      chan *TrainingRoundData
+	embeddingsChan  chan *TrainingRoundData
+	gradientsChan   chan *TrainingRoundData
+	vflCompleteChan chan bool
+)
+
+func makeVFLChannels() {
+	sampleChan = make(chan *TrainingRoundData, 1)
+	embeddingsChan = make(chan *TrainingRoundData, 1)
+	gradientsChan = make(chan *TrainingRoundData, 1)
+	vflCompleteChan = make(chan bool)
+}
+
+func startVFLPipeline(dataRequest map[string]any, clients map[string]string, serverAuth string, learningRate float64, serverUrl string, trainingBacktrack int64, communicationFrequency int64, sample_batch_size int64, requestID string) {
+	serverTarget := strings.ToLower(serverAuth)
+	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
+
+	// Gets the embeddings
+	go func() {
+		var wg sync.WaitGroup
+		responses := map[string]string{}
+		var existingError error = nil
+
+		for data := range sampleChan {
+			logger.Sugar().Debug("Embeddings routine. Samples received! Cycle: ", data.cycle)
+
+			for auth, url := range clients {
+
+				logger.Sugar().Info("[", auth, "] [vflTrainRequest] [Cycle: ", data.cycle, "] Requesting intermediate embeddings at url: ", url)
+
+				wg.Add(1)
+				target := strings.ToLower(auth)
+
+				ips, err := net.LookupIP(url)
+				if err == nil && len(ips) != 0 {
+					url = ips[0].String()
+				}
+
+				endpoint := fmt.Sprintf(formattedEndpoint, url, target)
+
+				go func() {
+					dataRequest["type"] = "vflTrainRequest"
+					dataRequest["data"] = map[string]any{
+						"cycle":                data.cycle,
+						"sample_batch_indexes": data.sampleIndexes,
+					}
+
+					responseData, err := sendRequest(endpoint, dataRequest)
+					if err != nil {
+						existingError = err
+						logger.Sugar().Errorf("Error sending data, %v", err)
+					} else {
+						dataJson := responseData.Data.AsMap()
+						embeddings, ok := dataJson["embeddings"].(string)
+
+						if !ok {
+							logger.Sugar().Error("No embeddings found in the return data.")
+							embeddings = ""
+							// TODO: Handle disagreements?
+						}
+
+						responses[target] = embeddings
+					}
+
+					wg.Done()
+					logger.Sugar().Info("[", auth, "] [vflTrainRequest] [Cycle: ", data.cycle, "] Response OK.")
+				}()
+			}
+
+			wg.Wait()
+
+			if existingError != nil {
+				return
+			}
+			embeddingList := []string{}
+			for _, approved_client := range []string{"clientone", "clienttwo", "clientthree"} {
+				if emb, ok := responses[strings.ToLower(approved_client)]; ok {
+					embeddingList = append(embeddingList, emb)
+				}
+
+				logger.Sugar().Debug("Embeddings for: ", approved_client)
+			}
+
+			data.embeddings = embeddingList
+			logger.Sugar().Info("[CLIENTS] [vflTrainRequest] Pushing embeddings into embeddingsChan")
+			embeddingsChan <- data
+		}
+		close(embeddingsChan)
+	}()
+
+	// Gets the gradients
+	go func() {
+		for data := range embeddingsChan {
+			logger.Sugar().Debug("Gradients routine. Embeddings received! Cycle: ", data.cycle)
+
+			logger.Sugar().Info("[SERVER] [vflAggregateRequest] [Cycle: ", data.cycle, "] Requesting gradients.")
+
+			dataRequest["type"] = "vflAggregateRequest"
+			dataRequest["data"] = map[string]any{
+				"cycle":                   data.cycle,
+				"embeddings":              data.embeddings,
+				"trainingBacktrack":       trainingBacktrack,
+				"sample_batch_indexes":    data.sampleIndexes,
+				"communication_frequency": communicationFrequency,
+			}
+
+			serverResponse, err := sendRequest(serverEndpoint, dataRequest)
+			if err != nil {
+				logger.Sugar().Error("Unmarshalling response did not go well: ", err)
+				return
+			}
+
+			accuraciesStr := serverResponse.Data.GetFields()["accuracies"].GetStringValue()
+			gradientList := serverResponse.Data.GetFields()["gradients"].GetListValue().GetValues()
+
+			var accuracies map[string]float64
+			err = json.Unmarshal([]byte(accuraciesStr), &accuracies)
+			if err != nil {
+				logger.Sugar().Errorf("Failed to unmarshal accuracies JSON: %v", err)
+			}
+
+			addAndUpdateTrainingRequest(requestID, data.cycle, len(clients), accuracies)
+
+			gradients := []string{}
+			for _, val := range gradientList {
+				gradients = append(gradients, val.GetStringValue())
+			}
+
+			logger.Sugar().Info("[SERVER] [vflAggregateRequest] [Cycle: ", data.cycle, "] Response OK.")
+			logger.Sugar().Info("[SERVER] [vflAggregateRequest] Pushing gradients into gradientsChan")
+
+			data.gradients = gradients
+			gradientsChan <- data
+		}
+
+		close(gradientsChan)
+	}()
+
+	// Performs gradient descent
+	go func() {
+		for data := range gradientsChan {
+			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
+			var wg sync.WaitGroup
+			index := 0
+
+			for auth, url := range clients {
+				wg.Add(1)
+				target := strings.ToLower(auth)
+				endpoint := fmt.Sprintf(formattedEndpoint, url, target)
+
+				logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Perform gradient descent for ", communicationFrequency, " times")
+
+				go func() {
+					dataRequest["type"] = "vflGradientDescentRequest"
+					dataRequest["data"] = map[string]any{
+						"gradients":               data.gradients[index],
+						"cycle":                   data.cycle,
+						"learning_rate":           learningRate,
+						"communication_frequency": communicationFrequency,
+					}
+
+					index++
+
+					response, err := sendRequest(endpoint, dataRequest)
+					if err != nil {
+						logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
+					}
+					wg.Done()
+					logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Response OK.")
+				}()
+			}
+
+		}
+
+		logger.Sugar().Info("Gradients descent has finished!")
+		vflCompleteChan <- true
+	}()
+}
+
+func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64, communicationFrequency int64, sampleBatchSize int64, cycle int64) error {
 	serverTarget := strings.ToLower(serverAuth)
 	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
 
 	// Step 1: Send server for sample
-	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Requesting mini-batch samples")
+	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] [Cycle: ", cycle, "] Requesting mini-batch samples.")
 	dataRequest["type"] = "vflSampleBatchRequest"
 	dataRequest["data"] = map[string]any{
-		"sample_batch_size": sample_batch_size,
+		"sample_batch_size": sampleBatchSize,
 	}
 
 	responseData, err := sendRequest(serverEndpoint, dataRequest)
@@ -248,167 +469,36 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	if err != nil {
 		logger.Sugar().Errorf("Error sending data, %v", err)
 	} else {
-		sample_batch_indexes = responseData.Data.AsMap()["sample_batch_indexes"].(string)
+		sampleBatchIndexes := responseData.Data.AsMap()["sample_batch_indexes"].(string)
+
+		logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] [Cycle: ", cycle, "] Response OK.")
+		logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Pushing samples into sampleChan")
+		sampleChan <- &TrainingRoundData{cycle: cycle, sampleIndexes: sampleBatchIndexes}
 	}
 
-	logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] Response OK")
+	return nil
+}
 
-	// Step 2: Send the samples to clients to get the intermediate embeddings.
-	for auth, url := range clients {
+func getVFLAccuracies(dataRequest map[string]any, serverAuth string, serverUrl string) map[string]float64 {
+	serverTarget := strings.ToLower(serverAuth)
+	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
+	var accuracies map[string]float64
 
-		logger.Sugar().Info("[", auth, "] [vflTrainRequest] Requesting intermediate embeddings at url: ", url)
-
-		wg.Add(1)
-		target := strings.ToLower(auth)
-
-		ips, err := net.LookupIP(url)
-		if err == nil && len(ips) != 0 {
-			url = ips[0].String()
-		}
-
-		endpoint := fmt.Sprintf(formattedEndpoint, url, target)
-
-		go func() {
-			dataRequest["type"] = "vflTrainRequest"
-			dataRequest["data"] = map[string]any{
-				"sample_batch_indexes": sample_batch_indexes,
-			}
-
-			responseData, err := sendRequest(endpoint, dataRequest)
-			if err != nil {
-				existingError = err
-				logger.Sugar().Errorf("Error sending data, %v", err)
-			} else {
-				dataJson := responseData.Data.AsMap()
-				embeddings, ok := dataJson["embeddings"].(string)
-
-				if !ok {
-					logger.Sugar().Error("No embeddings found in the return data.")
-					embeddings = ""
-					// TODO: Handle disagreements?
-				}
-
-				responses[target] = embeddings
-			}
-
-			wg.Done()
-			logger.Sugar().Info("[", auth, "] [vflTrainRequest] Response OK")
-		}()
-	}
-
-	wg.Wait()
-
-	if existingError != nil {
-		return []float64{}, existingError
-	}
-
-	logger.Sugar().Info("[SERVER] [vflAggregateRequest] Sending the embeddings to server to calculate gradients")
-
-	// Collect embeddings from all clients
-	// There is a major bug here with the ordering and the way server receives the embeddings.
-	logger.Sugar().Info("[SERVER] Check embeddings ordering")
-	embeddingList := []string{}
-	for _, approved_client := range []string{"clientone", "clienttwo", "clientthree"} {
-		if emb, ok := responses[strings.ToLower(approved_client)]; ok {
-			embeddingList = append(embeddingList, emb)
-		}
-
-		logger.Sugar().Debug("Embeddings for: ", approved_client)
-	}
-
-	logger.Sugar().Debug("The embeddings list: ", embeddingList)
-
-	// Step 3: Send intermediate embeddings to server to calculate gradients
-	dataRequest["type"] = "vflAggregateRequest"
-	dataRequest["data"] = map[string]any{
-		"embeddings":        embeddingList,
-		"trainingBacktrack": trainingBacktrack,
-	}
+	dataRequest["type"] = "vflGetAccuraciesRequest"
 
 	serverResponse, err := sendRequest(serverEndpoint, dataRequest)
 	if err != nil {
 		logger.Sugar().Error("Unmarshalling response did not go well: ", err)
-		return []float64{}, err
-	}
-
-	// accuracy := serverResponse.Data.GetFields()["accuracy"].GetNumberValue()
-	gradientList := serverResponse.Data.GetFields()["gradients"].GetListValue().GetValues()
-
-	gradients := []string{}
-	for _, val := range gradientList {
-		gradients = append(gradients, val.GetStringValue())
-	}
-
-	logger.Sugar().Info("[SERVER] [vflAggregateRequest] Gradients received OK")
-
-	// Step 4: Given the gradients, the clients perform gradient descent.
-	index := 0
-	for auth, url := range clients {
-		wg.Add(1)
-		target := strings.ToLower(auth)
-		endpoint := fmt.Sprintf(formattedEndpoint, url, target)
-
-		logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] Perform gradient descent for ", communication_frequency, " times")
-
-		go func() {
-			dataRequest["type"] = "vflGradientDescentRequest"
-			dataRequest["data"] = map[string]any{
-				"gradients":               gradients[index],
-				"learning_rate":           learning_rate,
-				"communication_frequency": communication_frequency,
-			}
-
-			index++
-
-			response, err := sendRequest(endpoint, dataRequest)
-			if err != nil {
-				existingError = err
-				logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
-			}
-			wg.Done()
-			logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] Response OK")
-		}()
-	}
-
-	accuracies := []float64{}
-
-	logger.Sugar().Info("[SERVER] [vflLocalUpdateRequest] Perform local update for ", communication_frequency, " times")
-
-	// Step 5: Server as well perform local update on its model given the intermediate embeddings.
-	serverDataRequest := map[string]any{}
-
-	// Copy it for now.
-	for key, value := range dataRequest {
-		serverDataRequest[key] = value
-	}
-
-	serverDataRequest["type"] = "vflLocalUpdateRequest"
-	serverDataRequest["data"] = map[string]any{
-		"embeddings":              embeddingList,
-		"trainingBacktrack":       trainingBacktrack,
-		"communication_frequency": communication_frequency,
-	}
-
-	serverResponse, err = sendRequest(serverEndpoint, serverDataRequest)
-	if err != nil {
-		logger.Sugar().Error("Unmarshalling response did not go well: ", err)
 	} else {
-		accuraciesList := serverResponse.Data.GetFields()["accuracies"].GetListValue().GetValues()
+		accuraciesStr := serverResponse.Data.GetFields()["accuracies"].GetStringValue()
 
-		for _, val := range accuraciesList {
-			accuracies = append(accuracies, val.GetNumberValue())
+		err = json.Unmarshal([]byte(accuraciesStr), &accuracies)
+		if err != nil {
+			logger.Sugar().Errorf("Failed to unmarshal accuracies JSON: %v", err)
 		}
 	}
 
-	logger.Sugar().Info("[SERVER] [vflLocalUpdateRequest] Response 0K")
-
-	wg.Wait()
-
-	if existingError != nil {
-		return []float64{}, existingError
-	}
-
-	return accuracies, nil
+	return accuracies
 }
 
 func extractValueOrDefault[T ~int64 | ~float64](data map[string]any, propertyName string, defaultValue T) T {
@@ -502,11 +592,14 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		go func() {
 			// TODO: Repeat ping until no error, after 5 tries, cancel request
 			for i := range 5 {
+				logger.Sugar().Info("Sending ping to: ", target)
 				_, err := sendData(endpoint, dataRequestJson)
 
 				if err == nil {
 					break
 				}
+
+				logger.Sugar().Info("No response from: ", target)
 
 				if i == 4 {
 					noPing = true
@@ -526,12 +619,12 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	iterations := cycles / communication_frequency
 
+	makeVFLChannels()
+	startVFLPipeline(dataRequest, clients, serverAuth, learning_rate, serverUrl, trainingBacktrack, communication_frequency, sample_batch_size, requestID)
+
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	for round := range iterations {
 		logger.Sugar().Info("Running VFL training round ", round)
-
-		numClients := -1          // default value in case of error
-		metadata_accuracy := -1.0 // default value in case of error
 
 		// TODO: Implement policy change request
 		if policy_removal == round {
@@ -670,14 +763,14 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 				}
 			}
 
-			logger.Sugar().Debug("Clients: ", clients)
-			numClients = len(clients)
-
 			logger.Sugar().Info("- Sending training request")
-			accuracies, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack, communication_frequency, sample_batch_size)
-			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracies[len(accuracies)-1], " for round ", round)
-			finalAccuracy = accuracies[len(accuracies)-1]
-			metadata_accuracy = accuracies[len(accuracies)-1] // store accuracy from metadata for results
+
+			err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack, communication_frequency, sample_batch_size, round)
+
+			// logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracies[len(accuracies)-1], " for round ", round)
+
+			// finalAccuracy = accuracies[len(accuracies)-1]
+			// metadata_accuracy = accuracies[len(accuracies)-1] // store accuracy from metadata for results
 
 			if err != nil {
 				logger.Sugar().Error("Training round returned an error.")
@@ -686,24 +779,19 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 		}
 
-		// This has to be changed.
-		result := map[string]any{
-			"timestamp":   time.Now().Format(time.RFC3339),
-			"train_round": round,
-			"accuracy":    metadata_accuracy,
-			"clients":     numClients,
-		}
-		results = append(results, result)
-		v, _ := trainingRequests.Load(requestID)
-		reqData := v.(TrainingRequestData)
-		reqData.Results = results
-		trainingRequests.Store(requestID, reqData)
-
 		if trainingFailed {
 			break
 		}
 
 	}
+
+	close(sampleChan)
+	<-vflCompleteChan
+	logger.Sugar().Info("Last training has just completed.")
+
+	accuracies := getVFLAccuracies(dataRequest, serverAuth, serverUrl)
+	logger.Sugar().Debug("Accuracies: ", accuracies)
+	updateTrainingRequest(requestID, accuracies)
 
 	logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 	logger.Sugar().Info("Final accuracy achieved: ", finalAccuracy)
