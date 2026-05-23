@@ -162,6 +162,7 @@ class VFLClient():
         self.set_labels(sample_data)
 
     def set_labels(self, data):
+        logger.info(f"Labels changed at cycle {self.current_cycle}.")
         try:
             scaled_data = self.scaler.transform(data)
             self.labels = torch.tensor(scaled_data).float()
@@ -194,6 +195,7 @@ class VFLClient():
             for cycle in range(communication_frequency):
                 self._gradient_descent(gradients)
 
+            logger.info(f"Finished performing gradient descent for cycle {vfl_client.current_cycle}.")
             self.sync_to_next_cycle()
         except Exception as e:
             logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
@@ -233,6 +235,7 @@ def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication,
         embeddings = vfl_client.train_model()
         data = Struct()
         data.update({"embeddings":  embeddings})
+        logger.info(f"Embeddings sent for cycle {vfl_client.current_cycle}.")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         data = Struct()
@@ -326,7 +329,7 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
     else:
         if request is not None:
             logger.info(f"Received request: {request.type}. This is the client.")
-            thread = threading.Thread(target=handle_request_async, args=(msComm, request))
+            thread = threading.Thread(target=handle_request_async, args=(msComm, request,))
             thread.start()
 
             return Empty()

@@ -162,6 +162,7 @@ class VFLServer():
         self.set_labels(sample_data["Survived"])
 
     def set_labels(self, data):
+        logger.info(f"Labels changed at cycle {self.current_cycle}.")
         self.labels = torch.tensor(data.values).float().unsqueeze(1)
 
     def _calculate_loss(self):
@@ -189,6 +190,7 @@ class VFLServer():
         return output
 
     def aggregate_fit(self, embeddings):
+        logger.info(f"Aggregate fit for cycle {self.current_cycle}.")
         global server_configuration
 
         try:
@@ -248,8 +250,9 @@ class VFLServer():
                 accuracy = self._local_update()
             
             self.accuracies[self.current_cycle] = accuracy # Only the last accuracy
+            logger.info(f"Finished local update for cycle {self.current_cycle}.")
         except Exception as e:
-            logger.info(f"Error occurred in cycle [{cycle}]: {e}")
+            logger.error(f"Error occurred in cycle [{cycle}]: {e}")
 
     def local_update_async(self, communication_frequency):
         if not self.is_training_in_progress():
@@ -376,6 +379,7 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
 
     else:
+        logger.info(f"Received request: {request.type}. This is the server.")
         if request.type == "vflAggregateRequest":
             handle_vflAggregateRequest(msComm, request)
 
