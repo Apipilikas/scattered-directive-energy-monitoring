@@ -352,6 +352,23 @@ def handle_vflGetAccuraciesRequest(msComm):
 
 # ---  DYNAMOS Interface code At the Bottom --------
 
+def handle_request_async(msComm: msCommTypes.MicroserviceCommunication, request: rabbitTypes.Request):
+    if request.type == "vflAggregateRequest":
+        handle_vflAggregateRequest(msComm, request)
+
+    elif request.type == "vflPingRequest":
+        handle_vflPingRequest(msComm)
+
+    elif request.type == "vflShutdownRequest":
+        handle_vflShutdownRequest(msComm)
+    
+    elif request.type == "vflSampleBatchRequest":
+        handle_vflSampleBatchRequest(msComm, request)
+
+    # Obsolete - saving communication
+    elif request.type == "vflGetAccuraciesRequest":
+        handle_vflGetAccuraciesRequest(msComm)
+
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
     global ms_config
@@ -380,21 +397,8 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
     else:
         logger.info(f"Received request: {request.type}. This is the server.")
-        if request.type == "vflAggregateRequest":
-            handle_vflAggregateRequest(msComm, request)
-
-        elif request.type == "vflPingRequest":
-            handle_vflPingRequest(msComm)
-
-        elif request.type == "vflShutdownRequest":
-            handle_vflShutdownRequest(msComm)
-        
-        elif request.type == "vflSampleBatchRequest":
-            handle_vflSampleBatchRequest(msComm, request)
-
-        # Obsolete - saving communication
-        elif request.type == "vflGetAccuraciesRequest":
-            handle_vflGetAccuraciesRequest(msComm)
+        thread = threading.Thread(target=handle_request_async, args=(msComm, request,))
+        thread.start()
 
         return Empty()
 
