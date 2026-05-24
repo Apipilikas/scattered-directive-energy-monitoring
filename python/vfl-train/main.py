@@ -185,7 +185,7 @@ class VFLClient():
         try:
             self.model.zero_grad()
             current_embedding = self.model(self.labels)
-            current_embedding.backward(torch.from_numpy(gradients))
+            current_embedding.backward(torch.from_numpy(gradients.copy()))
             self.optimiser.step()
         except Exception as e:
             logger.error(f"Error occurred: {e}")
@@ -249,7 +249,7 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
 
     # Extract learning rate
     try:
-        learning_rate = int(extract_number_from_data(request, "learning_rate"))
+        learning_rate = float(extract_number_from_data(request, "learning_rate"))
         cycle = int(extract_number_from_data(request, "cycle"))
 
         vfl_client.check_cycle_sync(cycle)

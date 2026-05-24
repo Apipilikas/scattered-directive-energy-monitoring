@@ -378,7 +378,7 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 			}
 
 			data.embeddings = embeddingList
-			logger.Sugar().Info("[CLIENTS] [vflTrainRequest] Pushing embeddings into embeddingsChan")
+			logger.Sugar().Info("[CLIENTS] [vflTrainRequest] [Cycle: ", data.cycle, "] Pushing embeddings into embeddingsChan")
 			embeddingsChan <- data
 		}
 		close(embeddingsChan)
@@ -439,10 +439,8 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 	go func() {
 		for data := range gradientsChan {
 			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
-			var wg sync.WaitGroup
 
 			for index, client := range clients {
-				wg.Add(1)
 
 				target := strings.ToLower(client.Auth)
 				endpoint := fmt.Sprintf(formattedEndpoint, client.Url, target)
@@ -465,7 +463,6 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 					if err != nil {
 						logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
 					}
-					wg.Done()
 					logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Response OK.")
 				}()
 			}
@@ -661,11 +658,12 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	startVFLPipeline(dataRequest, clients, serverAuth, learning_rate, serverUrl, trainingBacktrack, communication_frequency, requestID)
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
-	for round := range iterations {
-		logger.Sugar().Info("Running VFL training round ", round)
+	var lastCycle int64 = -1
+	for cycle := range iterations {
+		logger.Sugar().Info("Running VFL training round ", cycle)
 
 		// TODO: Implement policy change request
-		if policy_removal == round {
+		if policy_removal == cycle {
 			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
 
@@ -690,7 +688,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		// TODO: Implement policy change request
-		if policy_reintroduction == round {
+		if policy_reintroduction == cycle {
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
@@ -819,7 +817,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 			logger.Sugar().Info("- Sending training request")
 
-			err := runVFLTrainingRound(dataRequest, serverAuth, serverUrl, sample_batch_size, round)
+			err := runVFLTrainingRound(dataRequest, serverAuth, serverUrl, sample_batch_size, cycle)
 
 			if err != nil {
 				logger.Sugar().Error("Training round returned an error.")
@@ -827,6 +825,8 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 				break
 			}
 		}
+
+		lastCycle = cycle
 
 		if trainingFailed {
 			break
@@ -840,6 +840,8 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	accuracies := getVFLAccuracies(dataRequest, serverAuth, serverUrl)
 	updateTrainingRequest(requestID, accuracies)
+
+	finalAccuracy = accuracies[fmt.Sprint(lastCycle)]
 
 	logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
 	logger.Sugar().Info("Final accuracy achieved: ", finalAccuracy)
