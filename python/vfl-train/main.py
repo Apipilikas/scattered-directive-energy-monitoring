@@ -13,6 +13,7 @@ from dynamos.ms_init import NewConfiguration
 from dynamos.signal_flow import signal_continuation, signal_wait
 from dynamos.logger import InitLogger
 import rabbitMQ_pb2 as rabbitTypes
+import queue
 
 from google.protobuf.empty_pb2 import Empty
 import microserviceCommunication_pb2 as msCommTypes
@@ -135,20 +136,31 @@ class VFLClient():
         self.scaler.fit(self.data)
 
         self.gradient_descent_thread = None
-        self.current_cycle = 0
-        self.cycle_sync_condition = threading.Condition()
+        self.training_lock = threading.Lock()
 
-    def check_cycle_sync(self, cycle):
-        with self.cycle_sync_condition:
-            while self.current_cycle != cycle:
-                logger.info(f"Cycle sync wait! Requested cycle: {cycle}")
-                self.cycle_sync_condition.wait()
-    
-    def sync_to_next_cycle(self):
-        with self.cycle_sync_condition:
-            self.current_cycle += 1
-            self.cycle_sync_condition.notify()
-            logger.info(f"Cycle sync notify! Cycle changed to {self.current_cycle}")
+        self.samples_queue = queue.Queue()
+        self.embeddings_queue = queue.Queue()
+        self.gradients_queue = queue.Queue()
+
+        self.labels = {}
+        threading.Thread(target=self._execute_training_process_async).start()
+
+    def _execute_training_process_async(self):
+        while True:
+            self._train_next_model()
+            
+            try:
+                cycle, gradients = self.gradients_queue.get()
+                self.gradient_descent(cycle, gradients, 15)
+            except queue.Empty:
+                pass
+
+            
+
+    def _train_next_model(self):
+        cycle, sample_indexes = self.samples_queue.get()
+        labels = self.set_labels_from_sample(cycle, sample_indexes)
+        self.train_model(cycle, labels)
 
     def is_gradient_descent_in_progress(self):
         return not self.gradient_descent_thread is None and self.gradient_descent_thread.is_alive()
@@ -157,15 +169,19 @@ class VFLClient():
         if (self.is_gradient_descent_in_progress()):
             self.gradient_descent_thread.join()
 
-    def set_labels_from_sample(self, sample_indexes):
+    def set_labels_from_sample(self, cycle, sample_indexes):
         sample_data = self.data.loc[sample_indexes]
-        self.set_labels(sample_data)
+        return self.set_labels(cycle, sample_data)
 
-    def set_labels(self, data):
-        logger.info(f"Labels changed at cycle {self.current_cycle}.")
+    def set_labels(self, cycle, data):
+        logger.info(f"Labels set for cycle {cycle}.")
         try:
             scaled_data = self.scaler.transform(data)
-            self.labels = torch.tensor(scaled_data).float()
+            calculated_labels = torch.tensor(scaled_data).float()
+
+            self.labels[cycle] = calculated_labels
+
+            return calculated_labels
         except Exception as e:
             logger.error(f"Error occurred while setting labels: {e}")
 
@@ -174,39 +190,62 @@ class VFLClient():
             self.optimiser = torch.optim.SGD(
                 self.model.parameters(), lr=learning_rate)
 
-    def train_model(self):
-        self.embedding = self.model(self.labels)
-        return serialise_array(self.embedding.detach().numpy())
+    def train_model(self, cycle, labels):
+        with self.training_lock:
+            current_embeddings = self.model(labels)
+            embeddings = serialise_array(current_embeddings.detach().numpy())
+            self.embeddings_queue.put((cycle, embeddings))
 
-    def _gradient_descent(self, gradients):
+        return embeddings
+
+    def _gradient_descent(self, labels, gradients):
         if self.optimiser is None:
             logger.error("Optimiser is not defined.")
 
         try:
-            self.model.zero_grad()
-            current_embedding = self.model(self.labels)
-            current_embedding.backward(torch.from_numpy(gradients))
-            self.optimiser.step()
+            with self.training_lock:
+                self.model.zero_grad()
+                current_embedding = self.model(labels)
+                current_embedding.backward(torch.from_numpy(gradients.copy()))
+                self.optimiser.step()
         except Exception as e:
             logger.error(f"Error occurred: {e}")
 
-    def gradient_descent(self, gradients, communication_frequency = 1):
+    def gradient_descent(self, cycle, gradients, communication_frequency = 1):
+        logger.info(f"Starting gradient descent for cycle {cycle}.")
         try:
-            for cycle in range(communication_frequency):
-                self._gradient_descent(gradients)
+            labels = self.labels[cycle]
 
-            logger.info(f"Finished performing gradient descent for cycle {vfl_client.current_cycle}.")
-            self.sync_to_next_cycle()
+            for c in range(communication_frequency):
+                self._gradient_descent(labels, gradients)
+
+            logger.info(f"Finished performing gradient descent for cycle {cycle}.")
         except Exception as e:
-            logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
+            logger.error(f"Unexpected error in cycle [{cycle}] and inner-cycle [{c}]: {e}")
 
-    def gradient_descent_async(self, gradients, communication_frequency):
-        if not self.is_gradient_descent_in_progress():
-            self.gradient_descent_thread = threading.Thread(
-                target=self.gradient_descent,
-                args=(gradients, communication_frequency,)
-            )
-            self.gradient_descent_thread.start()
+    def gradient_descent_async(self, cycle, gradients, communication_frequency):
+        self.wait_for_gradient_descent_to_finish()
+
+        self.gradient_descent_thread = threading.Thread(
+            target=self.gradient_descent,
+            args=(gradients, cycle, gradients, communication_frequency,)
+        )
+        self.gradient_descent_thread.start()
+
+    def get_latest_embeddings(self):
+        data = Struct()
+
+        try:
+            cycle, embeddings = self.embeddings_queue.get()
+            # vfl_client.set_labels_from_sample(sample_indexes)
+            # embeddings = vfl_client.train_model()
+            data.update({"cycle":  cycle})
+            data.update({"embeddings":  embeddings})
+            logger.info(f"Embeddings sent for cycle {cycle}.")
+        except queue.Empty:
+            logger.info(f"No embeddings found on the embeddings queue.")
+
+        return data
 
 #region Request handlers
 
@@ -225,20 +264,14 @@ def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication,
         sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
         cycle = int(extract_number_from_data(request, "cycle"))
         
-        vfl_client.check_cycle_sync(cycle)
-        vfl_client.wait_for_gradient_descent_to_finish()
+
+        vfl_client.samples_queue.put((cycle, sample_indexes))
+        # vfl_client.check_cycle_sync(cycle)
+        # vfl_client.wait_for_gradient_descent_to_finish()
     except Exception as e:
         logger.error(f"Error occurred while getting sample indexes: {e}")
 
-    try:
-        vfl_client.set_labels_from_sample(sample_indexes)
-        embeddings = vfl_client.train_model()
-        data = Struct()
-        data.update({"embeddings":  embeddings})
-        logger.info(f"Embeddings sent for cycle {vfl_client.current_cycle}.")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        data = Struct()
+    data = vfl_client.get_latest_embeddings()
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -249,10 +282,11 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
 
     # Extract learning rate
     try:
-        learning_rate = int(extract_number_from_data(request, "learning_rate"))
+        learning_rate = float(extract_number_from_data(request, "learning_rate"))
+        communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
         cycle = int(extract_number_from_data(request, "cycle"))
 
-        vfl_client.check_cycle_sync(cycle)
+        # vfl_client.check_cycle_sync(cycle)
         vfl_client.create_optimiser(learning_rate)
     except Exception:
         vfl_client.create_optimiser(0.05)
@@ -263,17 +297,12 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
         gradients = deserialise_array(gradients)
     except Exception as e:
         logger.error(f"Gradients did not get parsed properly: {e}")
-        logger.info(msComm.data)
-        gradients = None
+        # logger.info(msComm.data)
+        # gradients = None
 
-    communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
+    vfl_client.gradients_queue.put((cycle, gradients))
 
-    vfl_client.gradient_descent_async(gradients, communication_frequency)
-
-    try:
-        data = Struct()
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+    data = vfl_client.get_latest_embeddings()
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 

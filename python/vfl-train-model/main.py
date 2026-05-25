@@ -11,7 +11,7 @@ from dynamos.ms_init import NewConfiguration
 from dynamos.signal_flow import signal_continuation, signal_wait
 from dynamos.logger import InitLogger
 import rabbitMQ_pb2 as rabbitTypes
-import io
+import queue
 
 from google.protobuf.empty_pb2 import Empty
 import microserviceCommunication_pb2 as msCommTypes
@@ -139,6 +139,42 @@ class VFLServer():
         self.training_lock = threading.Lock()
         self.training_thread = None
 
+        self.labels = {}
+        self.embeddings = {}
+        self.embeddings_queue = queue.Queue()
+        self.gradients_queue = queue.Queue()
+
+        threading.Thread(target=self._execute_training_process_async).start()
+
+    def _execute_training_process_async(self):
+        while True:
+            try:
+                cycle = self.embeddings_queue.get_nowait()
+                gradients = self.aggregate_fit(cycle)
+                self.gradients_queue.put((cycle, gradients))
+                self.local_update(cycle, 15)
+            except queue.Empty:
+                pass
+            
+    def put_embeddings(self, cycle, embeddings):
+        try:
+            embedding_results = [
+                torch.from_numpy(embedding.copy())
+                for embedding in embeddings
+            ]
+
+        except Exception as e:
+            logger.info(f"Converting the results to torch failed: {e}")
+
+        try:
+            embeddings_aggregated = torch.cat(embedding_results, dim=1)
+            current_embeddings = embeddings_aggregated.detach().requires_grad_()
+        except Exception as e:
+            logger.info(f"Running gradient descent failed: {e}")
+
+        self.embeddings[cycle] = current_embeddings
+        self.embeddings_queue.put(cycle)
+
     def is_training_in_progress(self):
         return not self.training_thread is None and self.training_thread.is_alive()
 
@@ -157,111 +193,99 @@ class VFLServer():
         except Exception as e:
             logger.info(f"Error occurred while sampling data: {e}")
 
-    def set_labels_from_sample(self, sample_indexes):
+    def set_labels_from_sample(self, cycle, sample_indexes):
         sample_data = self.data.loc[sample_indexes]
-        self.set_labels(sample_data["Survived"])
+        return self.set_labels(cycle, sample_data["Survived"])
 
-    def set_labels(self, data):
-        logger.info(f"Labels changed at cycle {self.current_cycle}.")
-        self.labels = torch.tensor(data.values).float().unsqueeze(1)
+    def set_labels(self, cycle, data):
+        logger.info(f"Labels set for cycle {cycle}.")
 
-    def _calculate_loss(self):
-        try:
-            # Passes the tensor through the server model.
-            output = self.model(self.embeddings)
-            # Using BCE (Binary Cross Entropy), calculates the loss. Basically, compares its predictions against the true labels.
-            loss = self.criterion(output, self.labels)
-            # Calculates the gradient of the loss function with respect to the predicted probabilities, 
-            # enabling weight updates in binary classification tasks.
-            loss.backward()
-        except Exception as e:
-            print(f"Running gradient descent 2 failed: {e}")
-            print(f"{output}, {self.labels}")
+        calculated_labels = torch.tensor(data.values).float().unsqueeze(1)
+        self.labels[cycle] = calculated_labels
 
-        try:
-            # TOFIX
-            # Uses optimizer to adjust weights. This way reduces the error.
-            self.optimizer.step()
-            # Clears the gradients to prepare for the next round.
-            self.optimizer.zero_grad()
-        except Exception as e:
-            print(f"Running gradient descent 3 failed: {e}")
-        
-        return output
+        return calculated_labels
 
-    def aggregate_fit(self, embeddings):
+    def aggregate_fit(self, cycle):
         logger.info(f"Aggregate fit for cycle {self.current_cycle}.")
         global server_configuration
 
-        try:
-            embedding_results = [
-                torch.from_numpy(embedding.copy())
-                for embedding in embeddings
-            ]
-        except Exception as e:
-            logger.info(f"Converting the results to torch failed: {e}")
-
-        try:
-            embeddings_aggregated = torch.cat(embedding_results, dim=1)
-            self.embeddings = embeddings_aggregated.detach().requires_grad_()
-        except Exception as e:
-            logger.info(f"Running gradient descent failed: {e}")
-
-        output = self.model(self.embeddings)
-        loss = self.criterion(output, self.labels)
+        labels = self.labels[cycle]
+        embeddings = self.embeddings[cycle]
         
-        self.optimizer.zero_grad()
-        loss.backward()
+        with self.training_lock:
+            output = self.model(embeddings)
+            loss = self.criterion(output, labels)
+            
+            self.optimizer.zero_grad()
+            loss.backward()
 
         try:
-            gradients = self.embeddings.grad.split([4, 4, 4], dim=1)
+            gradients = embeddings.grad.split([4, 4, 4], dim=1)
             np_gradients = [serialise_array(grad.numpy()) for grad in gradients]
         except Exception as e:
             logger.info(f"Converting the gradients failed: {e}")
 
-        data = Struct()
-        data.update({"gradients": np_gradients})
-        data.update({"accuracies": serialise_dictionary(self.accuracies)})
+        # data = Struct()
+        # data.update({"gradients": np_gradients})
+        # data.update({"accuracies": serialise_dictionary(self.accuracies)})
 
-        return data
+        return np_gradients
     
-    def _local_update(self):
-        output = self.model(self.embeddings)
-        loss = self.criterion(output, self.labels)
+    def _local_update(self, embeddings, labels):
+        with self.training_lock:
+            output = self.model(embeddings)
+            loss = self.criterion(output, labels)
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
-        # Calculates the accuracy.
-        with torch.no_grad():
-            correct = 0
-            predicted = (output > 0.5).float()
+            # Calculates the accuracy.
+            with torch.no_grad():
+                correct = 0
+                predicted = (output > 0.5).float()
 
-            correct += (predicted == self.labels).sum().item()
+                correct += (predicted == labels).sum().item()
 
-            accuracy = correct / len(self.labels) * 100
+                accuracy = correct / len(labels) * 100
 
         return accuracy
     
-    def local_update(self, communication_frequency = 1):
+    def local_update(self, cycle, communication_frequency = 1):
+        labels = self.labels[cycle]
+        embeddings = self.embeddings[cycle]
+
         try:
-            for cycle in range(communication_frequency):
-                accuracy = self._local_update()
+            for _ in range(communication_frequency):
+                accuracy = self._local_update(embeddings, labels)
             
-            self.accuracies[self.current_cycle] = accuracy # Only the last accuracy
+            self.accuracies[cycle] = accuracy # Only the last accuracy
             logger.info(f"Finished local update for cycle {self.current_cycle}.")
         except Exception as e:
             logger.error(f"Error occurred in cycle [{cycle}]: {e}")
 
-    def local_update_async(self, communication_frequency):
+    def local_update_async(self, cycle, communication_frequency):
         if not self.is_training_in_progress():
             self.training_thread = threading.Thread(
                 target=self.local_update,
-                args=(communication_frequency,)
+                args=(cycle, communication_frequency,)
             )
             self.training_thread.start()
 
+    def get_latest_gradients(self):
+        data = Struct()
+
+        try:
+            cycle, gradients = self.gradients_queue.get_nowait()
+            logger.debug("Latest gradients have been fetched.")
+            data.update({"cycle": cycle})
+            data.update({"gradients": gradients})
+            data.update({"accuracies": serialise_dictionary(self.accuracies)})
+        except queue.Empty:
+            logger.debug("No gradients have been found!")
+
+        return data
+    
 #region Request handlers
 
 def handle_vflAggregateRequest(msComm, request):
@@ -281,16 +305,18 @@ def handle_vflAggregateRequest(msComm, request):
     except Exception as e:
         logger.error(f"Errored when deserialising client data: {e}")
 
-    vfl_server.wait_for_training_to_finish()
+    # vfl_server.wait_for_training_to_finish()
 
-    vfl_server.current_cycle = cycle
+    # vfl_server.current_cycle = cycle
 
-    vfl_server.set_labels_from_sample(sample_indexes)
-    data = vfl_server.aggregate_fit(clients_embeddings)
+    vfl_server.set_labels_from_sample(cycle, sample_indexes)
+    vfl_server.put_embeddings(cycle, clients_embeddings)
+
+    data = vfl_server.get_latest_gradients()
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
-    vfl_server.local_update_async(communication_frequency)
+    # vfl_server.local_update_async(communication_frequency)
 
 def handle_vflShutdownRequest(msComm):
     global ms_config
@@ -311,6 +337,9 @@ def handle_vflSampleBatchRequest(msComm, request):
         sample_batch_size = extract_number_from_data(request, "sample_batch_size")
 
         data = vfl_server.sample_data(sample_batch_size)
+        gradients_data = vfl_server.get_latest_gradients()
+
+        data.MergeFrom(gradients_data)
 
         ms_config.next_client.ms_comm.send_data(msComm, data, {})
     except Exception as e:

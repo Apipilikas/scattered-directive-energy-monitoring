@@ -31,6 +31,7 @@ var (
 	activeJobLock     sync.Mutex   // to allow only 1 active job at any time
 	trainingRequests  = sync.Map{} // map[string]TrainingRequestData
 	formattedEndpoint = "http://%s:8080/agent/v1/vflTrainRequest/%s"
+	cyclesCompleted   int64
 )
 
 // #region TrainingRequestData helpers
@@ -300,14 +301,73 @@ func cloneDataRequest(dataRequest map[string]any, requestType string, data map[s
 	return request
 }
 
+func extractGradients(response *pb.MicroserviceCommunication, data *TrainingRoundData) {
+	dataJson := response.Data.AsMap()
+	cycle, _ := dataJson["cycle"].(float64)
+	gradientList, ok := dataJson["gradients"]
+
+	if ok {
+		logger.Sugar().Info("[SERVER] [Cycle: ", cycle, "] Gradients found!")
+		gradients := []string{}
+		for _, val := range gradientList.([]any) {
+			gradients = append(gradients, val.(string))
+		}
+
+		logger.Sugar().Info("[SERVER] Pushing gradients into gradientsChan")
+		data.gradients = gradients
+		data.cycle = int64(cycle)
+		cyclesCompleted++
+		gradientsChan <- data
+	}
+}
+
+func extractEmbeddings(response *pb.MicroserviceCommunication, data *TrainingRoundData, target string, clients []ClientData, embeddings *map[string]map[string]any) {
+	dataJson := response.Data.AsMap()
+	cycle, _ := dataJson["cycle"].(float64)
+	v, exists := dataJson["embeddings"]
+	clientEmbeddings, ok := v.(string)
+
+	if !exists || !ok {
+		logger.Sugar().Error("No embeddings found in the return data.")
+		// embeddings = make(map[string]any)
+		// TODO: Handle disagreements?
+	} else {
+		cycleKey := fmt.Sprint(cycle)
+		if _, ok := (*embeddings)[cycleKey]; !ok {
+			(*embeddings)[cycleKey] = map[string]any{target: clientEmbeddings}
+			logger.Sugar().Debug("[", target, "] [Cycle: ", cycleKey, "] First time initializing embeddings.")
+			logger.Sugar().Debug("Length of embeddings: ", len((*embeddings)[cycleKey]))
+		} else {
+			(*embeddings)[cycleKey][target] = clientEmbeddings
+			logger.Sugar().Info("[", target, "] [Cycle: ", cycleKey, "] Collected embeddings.")
+			logger.Sugar().Debug("Length of embeddings: ", len((*embeddings)[cycleKey]))
+			logger.Sugar().Debug("Length of clients: ", len(clients))
+
+			if len((*embeddings)[cycleKey]) == len(clients) {
+				logger.Sugar().Info("[CLIENTS] [Cycle: ", cycleKey, "] All the embeddings are collected!")
+				embeddingList := []string{}
+				for _, client := range clients {
+					if emb, ok := (*embeddings)[cycleKey][strings.ToLower(client.Auth)]; ok {
+						embeddingList = append(embeddingList, fmt.Sprint(emb))
+					}
+				}
+
+				data.embeddings = embeddingList
+				logger.Sugar().Info("[CLIENTS] Pushing embeddings into embeddingsChan")
+				embeddingsChan <- data
+			}
+		}
+	}
+}
+
 func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAuth string, learningRate float64, serverUrl string, trainingBacktrack int64, communicationFrequency int64, requestID string) {
+	cyclesCompleted = 0
 	serverTarget := strings.ToLower(serverAuth)
 	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
+	embeddings := map[string]map[string]any{}
 
 	// Gets the embeddings
 	go func() {
-		var wg sync.WaitGroup
-		responses := map[string]string{}
 		var existingError error = nil
 		var mu sync.Mutex
 
@@ -320,7 +380,6 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 
 				logger.Sugar().Info("[", auth, "] [vflTrainRequest] [Cycle: ", data.cycle, "] Requesting intermediate embeddings at url: ", url)
 
-				wg.Add(1)
 				target := strings.ToLower(auth)
 
 				ips, err := net.LookupIP(url)
@@ -347,41 +406,20 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 						existingError = err
 						logger.Sugar().Errorf("Error sending data, %v", err)
 					} else {
-						dataJson := responseData.Data.AsMap()
-						embeddings, ok := dataJson["embeddings"].(string)
-
-						if !ok {
-							logger.Sugar().Error("No embeddings found in the return data.")
-							embeddings = ""
-							// TODO: Handle disagreements?
-						}
-
-						responses[target] = embeddings
+						extractEmbeddings(responseData, data, target, clients, &embeddings)
 					}
 					mu.Unlock()
 
-					wg.Done()
 					logger.Sugar().Info("[", auth, "] [vflTrainRequest] [Cycle: ", data.cycle, "] Response OK.")
 				}()
 			}
 
-			wg.Wait()
-
 			if existingError != nil {
 				return
 			}
-			embeddingList := []string{}
-			for _, client := range clients {
-				if emb, ok := responses[strings.ToLower(client.Auth)]; ok {
-					embeddingList = append(embeddingList, emb)
-				}
-			}
-
-			data.embeddings = embeddingList
-			logger.Sugar().Info("[CLIENTS] [vflTrainRequest] Pushing embeddings into embeddingsChan")
-			embeddingsChan <- data
 		}
-		close(embeddingsChan)
+		// logger.Sugar().Debug("Closing embeddingsChan ...")
+		// close(embeddingsChan)
 	}()
 
 	// Gets the gradients
@@ -409,40 +447,30 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 				return
 			}
 
-			accuraciesStr := serverResponse.Data.GetFields()["accuracies"].GetStringValue()
-			gradientList := serverResponse.Data.GetFields()["gradients"].GetListValue().GetValues()
+			// accuraciesStr := serverResponse.Data.GetFields()["accuracies"].GetStringValue()
+			extractGradients(serverResponse, data)
 
-			var accuracies map[string]float64
-			err = json.Unmarshal([]byte(accuraciesStr), &accuracies)
-			if err != nil {
-				logger.Sugar().Errorf("Failed to unmarshal accuracies JSON: %v", err)
-			}
+			// var accuracies map[string]float64
+			// err = json.Unmarshal([]byte(accuraciesStr), &accuracies)
+			// if err != nil {
+			// 	logger.Sugar().Errorf("Failed to unmarshal accuracies JSON: %v", err)
+			// }
 
-			addAndUpdateTrainingRequest(requestID, data.cycle, len(clients), accuracies)
-
-			gradients := []string{}
-			for _, val := range gradientList {
-				gradients = append(gradients, val.GetStringValue())
-			}
+			// addAndUpdateTrainingRequest(requestID, data.cycle, len(clients), accuracies)
 
 			logger.Sugar().Info("[SERVER] [vflAggregateRequest] [Cycle: ", data.cycle, "] Response OK.")
-			logger.Sugar().Info("[SERVER] [vflAggregateRequest] Pushing gradients into gradientsChan")
 
-			data.gradients = gradients
-			gradientsChan <- data
 		}
-
-		close(gradientsChan)
+		// logger.Sugar().Debug("Closing gradientsChan ...")
+		// close(gradientsChan)
 	}()
 
 	// Performs gradient descent
 	go func() {
 		for data := range gradientsChan {
 			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
-			var wg sync.WaitGroup
 
 			for index, client := range clients {
-				wg.Add(1)
 
 				target := strings.ToLower(client.Auth)
 				endpoint := fmt.Sprintf(formattedEndpoint, client.Url, target)
@@ -465,15 +493,18 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 					if err != nil {
 						logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
 					}
-					wg.Done()
+
+					extractEmbeddings(response, data, target, clients, &embeddings)
+
 					logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Response OK.")
 				}()
 			}
 
 		}
-
-		logger.Sugar().Info("Gradients descent has finished!")
-		vflCompleteChan <- true
+		if cyclesCompleted >= 11 {
+			logger.Sugar().Info("Gradients descent has finished!")
+			vflCompleteChan <- true
+		}
 	}()
 }
 
@@ -498,8 +529,15 @@ func runVFLTrainingRound(dataRequest map[string]any, serverAuth string, serverUr
 		sampleBatchIndexes := responseData.Data.AsMap()["sample_batch_indexes"].(string)
 
 		logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] [Cycle: ", cycle, "] Response OK.")
+
+		data := &TrainingRoundData{}
+
+		extractGradients(responseData, data)
+
+		data = &TrainingRoundData{cycle: cycle, sampleIndexes: sampleBatchIndexes}
+
 		logger.Sugar().Info("[SERVER] [vflSampleBatchRequest] [Cycle: ", cycle, "] Pushing samples into sampleChan")
-		sampleChan <- &TrainingRoundData{cycle: cycle, sampleIndexes: sampleBatchIndexes}
+		sampleChan <- data
 	}
 
 	return nil
