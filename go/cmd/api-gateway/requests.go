@@ -29,6 +29,7 @@ var (
 	activeJobID      string
 	activeJobLock    sync.Mutex   // to allow only 1 active job at any time
 	trainingRequests = sync.Map{} // map[string]TrainingRequestData
+	clientsMutex     = &sync.Mutex{}
 )
 
 type TrainingRequestData struct {
@@ -227,12 +228,14 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	responses := map[string]string{}
 
-	for auth, url := range clients {
+	for _, client := range clients {
+		auth := client.Auth
+		url := client.Url
 
 		logger.Sugar().Info("Sending training request to client: ", auth, " at url: ", url)
 
@@ -299,8 +302,8 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	// }
 	// Collect embeddings from all clients
 	embeddingList := []string{}
-	for approved_client := range clients {
-		if emb, ok := responses[strings.ToLower(approved_client)]; ok {
+	for _, client := range clients {
+		if emb, ok := responses[strings.ToLower(client.Auth)]; ok {
 			embeddingList = append(embeddingList, emb)
 		}
 	}
@@ -340,7 +343,10 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 
 	// TODO: Send the gradients back to the client to update their models
 	index := 0
-	for auth, url := range clients {
+	for _, client := range clients {
+		auth := client.Auth
+		url := client.Url
+
 		wg.Add(1)
 		target := strings.ToLower(auth)
 		endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", url, target)
@@ -373,8 +379,81 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	return accuracy, nil
 }
 
+// #endregion
+
+func getSafeClients(clients *[]ClientData) []ClientData {
+	clientsMutex.Lock()
+	currentClients := make([]ClientData, len(*clients))
+	copy(currentClients, *clients)
+	clientsMutex.Unlock()
+
+	return currentClients
+}
+
+func checkPolicyUpdate(clients *[]ClientData, user *pb.User) {
+	policyUpdateChan := make(chan PolicyUpdateResponse)
+
+	// There is a misalignment because there are static User.Ids in different parts of the code.
+	// This has to be changed in the future.
+	logger.Sugar().Debug("Updating policyUpdateMap with key: ", user.Id)
+	policyUpdateMutex.Lock()
+	policyUpdateMap[user.Id] = policyUpdateChan
+	policyUpdateMutex.Unlock()
+
+	go func() {
+
+		for policyUpdateResponse := range policyUpdateChan {
+			availableProviders, err := getAvailableProviders()
+
+			logger.Sugar().Debug("The available providers are: ", availableProviders)
+
+			if err != nil {
+				logger.Sugar().Errorf("A problem occurred while fetching providers GetAvailableProviders: ", err)
+			}
+
+			validDataproviders := policyUpdateResponse.GetValidDataproviders()
+
+			if len(*clients) != len(availableProviders) {
+				logger.Sugar().Debug("Clients before policy update: ", clients)
+
+				var activeClients []ClientData
+				for auth, agentDetail := range availableProviders {
+					if strings.ToLower(auth) == "server" {
+						continue
+					}
+
+					_, exists := validDataproviders[auth]
+
+					if !exists {
+						continue
+					}
+
+					activeClients = append(activeClients, ClientData{
+						Auth: auth,
+						Url:  agentDetail.Dns,
+					})
+				}
+
+				clientsMutex.Lock()
+				*clients = activeClients
+				clientsMutex.Unlock()
+				logger.Sugar().Debug("Clients after policy update: ", clients)
+			}
+		}
+
+		policyUpdateMutex.Lock()
+		delete(policyUpdateMap, user.Id)
+		policyUpdateMutex.Unlock()
+	}()
+}
+
+type ClientData struct {
+	Auth string
+	Url  string
+}
+
 func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]string, jobId string, ctx context.Context, requestID string) []byte {
-	clients := map[string]string{}
+	clients := &[]ClientData{}
 	var serverUrl string
 	var serverAuth string
 	var finalAccuracy float64
@@ -440,7 +519,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			serverUrl = url
 			serverAuth = auth
 		} else if url != "" {
-			clients[auth] = url
+			*clients = append(*clients, ClientData{Auth: auth, Url: url})
 		}
 
 		dataProviders = append(dataProviders, auth)
@@ -494,15 +573,20 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	wg.Wait()
 
+	// Checks if policy changes (from incoming messages)
+	checkPolicyUpdate(clients, user)
+
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
-	for round := range cycles {
-		logger.Sugar().Info("Running VFL training round ", round)
+	for cycle := range cycles {
+		logger.Sugar().Info("Running VFL training round ", cycle)
+
+		currentClients := getSafeClients(clients)
 
 		numClients := -1          // default value in case of error
 		metadata_accuracy := -1.0 // default value in case of error
 
 		// TODO: Implement policy change request
-		if policy_removal == round {
+		if policy_removal == cycle {
 			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
 
@@ -527,7 +611,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		// TODO: Implement policy change request
-		if policy_reintroduction == round {
+		if policy_reintroduction == cycle {
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
@@ -551,112 +635,25 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 		}
 
-		protoRequest := &pb.RequestApproval{
-			Type:             "vflTrainModelRequest",
-			User:             user,
-			DataProviders:    dataProviders,
-			DestinationQueue: "policyEnforcer-in",
-		}
+		logger.Sugar().Debug("Clients: ", currentClients)
+		numClients = len(currentClients)
 
-		// Create a channel to receive the response
-		responseChan := make(chan validation)
+		logger.Sugar().Info("- Sending training request")
+		accuracy, err := runVFLTrainingRound(dataRequest, currentClients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
+		logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, " for round ", cycle)
+		finalAccuracy = accuracy
+		metadata_accuracy = accuracy // store accuracy from metadata for results
 
-		requestApprovalMutex.Lock()
-		requestApprovalMap[protoRequest.User.Id] = responseChan
-		requestApprovalMutex.Unlock()
-
-		noValidation := false
-
-		logger.Sugar().Info("- Sending policy reverification request")
-		for i := range 5 {
-			_, err = c.SendRequestApproval(ctx, protoRequest)
-			if err != nil {
-				logger.Sugar().Warnf("error in sending/receiving requestApproval: %v", err)
-			}
-
-			if err == nil {
-				// on success we can continue
-				break
-			}
-
-			if i == 4 {
-				noValidation = true
-			}
-		}
-
-		if noValidation {
-			logger.Sugar().Error("No reverification approval received, error in network. Shutting down operation.")
+		if err != nil {
+			logger.Sugar().Error("Training round returned an error.")
 			trainingFailed = true
 			break
 		}
-
-		select {
-		case validationStruct := <-responseChan:
-			msg := validationStruct.response
-			logger.Sugar().Info("Received validation message: ", msg, ", with vstruct: ", validationStruct)
-
-			if msg.Type != "requestApprovalResponse" {
-				logger.Sugar().Errorf("Unexpected message received, type: %s", msg.Type)
-				return []byte{}
-			}
-
-			if msg.Error != "" {
-				logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-				logger.Sugar().Info("   Policy does not allow this training to continue.")
-				logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-				break
-			}
-
-			// logger.Sugar().Debug("AuthorizedProviders from policy response: ", msg.AuthorizedProviders)
-			// logger.Sugar().Debug("AuthorizedProviders originally requested: ", authorizedProviders)
-			// logger.Sugar().Debug("Current clients before sync: ", clients)
-			if len(msg.AuthorizedProviders) != len(authorizedProviders) {
-
-				// if len is different I can still allow training to continue with the authorised ones
-				// in that case remove the unauthorised ones from the clients map
-				// or add the authorised ones if they were not present before
-				for auth_provider := range authorizedProviders {
-					if _, ok := msg.AuthorizedProviders[auth_provider]; !ok {
-						logger.Sugar().Debug("Removing unauthorised provider: ", auth_provider, " from the training.")
-						delete(clients, auth_provider)
-					}
-				}
-			}
-
-			// maybe we can merge the above if into this one
-			if len(clients) != len(authorizedProviders) {
-				// add newly authorised clients that are not yet in the clients map
-				for auth_provider, url := range authorizedProviders {
-					if strings.ToLower(auth_provider) != "server" { // exclude server
-						if _, ok := msg.AuthorizedProviders[auth_provider]; ok {
-							if _, exists := clients[auth_provider]; !exists {
-								logger.Sugar().Debug("Adding newly authorised provider: ", auth_provider, " to the training.")
-								clients[auth_provider] = url
-							}
-						}
-					}
-				}
-			}
-
-			logger.Sugar().Debug("Clients: ", clients)
-			numClients = len(clients)
-
-			logger.Sugar().Info("- Sending training request")
-			accuracy, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
-			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, " for round ", round)
-			finalAccuracy = accuracy
-			metadata_accuracy = accuracy // store accuracy from metadata for results
-
-			if err != nil {
-				logger.Sugar().Error("Training round returned an error.")
-				trainingFailed = true
-				break
-			}
-		}
+		// }
 
 		result := map[string]any{
 			"timestamp":   time.Now().Format(time.RFC3339),
-			"train_round": round,
+			"train_round": cycle,
 			"accuracy":    metadata_accuracy,
 			"clients":     numClients,
 		}

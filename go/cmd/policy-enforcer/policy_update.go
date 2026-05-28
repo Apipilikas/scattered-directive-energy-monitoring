@@ -38,64 +38,10 @@ func checkPolicyUpdate(ctx context.Context, policyUpdate *pb.PolicyUpdate) {
 }
 
 func removePolicy() {
-	// var agreements []api.Agreement
-	//
-	// protoRequest := &pb.ValidationResponse{
-	// 	Type:        "policyRemoval",
-	// 	RequestType: policyUpdate.Type,
-	// 	User: &pb.User{
-	// 		Id:       policyUpdate.User.Id,
-	// 		UserName: policyUpdate.User.UserName,
-	// 	},
-	// 	RequestApproved: false,
-	// }
-	//
+	// Out of scope of this thesis. It would be nice to change to something more dynamic.
 	etcd.PutValueToEtcd(etcdClient, "/policyEnforcer/agreements/clientthree", "")
-
-	// getValidAgreements(policyUpdate.DataProviders, policyUpdate.User, &agreements, protoRequest)
-	// policyUpdate.ValidationResponse = &pb.ValidationResponse{}
-	// policyUpdate.RequestMetadata.DestinationQueue = "orchestrator-in"
-	// policyUpdate.ValidationResponse = protoRequest
-	//
-	// if len(agreements) == 0 || len(protoRequest.ValidDataproviders) == 0 {
-	// 	logger.Sugar().Warn("No more agreements exist for this user")
-	// 	c.SendPolicyUpdate(ctx, policyUpdate)
-	//
-	// }
-	//
-	// protoRequest.RequestApproved = len(protoRequest.ValidDataproviders) > 0
-	//
-	// c.SendPolicyUpdate(ctx, policyUpdate)
 }
 
-
 func reintroducePolicy() {
-	// var agreements []api.Agreement
-	//
-	// protoRequest := &pb.ValidationResponse{
-	// 	Type:        "policyRemoval",
-	// 	RequestType: policyUpdate.Type,
-	// 	User: &pb.User{
-	// 		Id:       policyUpdate.User.Id,
-	// 		UserName: policyUpdate.User.UserName,
-	// 	},
-	// 	RequestApproved: false,
-	// }
-	//
 	etcd.PutValueToEtcd(etcdClient, "/policyEnforcer/agreements/clientthree", "{\"name\":\"clientthree\",\"relations\":{\"jake.jongejans@student.uva.nl\":{\"ID\":\"GUID\",\"requestTypes\":[\"vflTrainRequest\"],\"dataSets\":null,\"allowedArchetypes\":[\"computeToData\"],\"allowedComputeProviders\":[\"clientthree\"]}},\"computeProviders\":[\"clientthree\"],\"archetypes\":[\"computeToData\"]}")
-
-	// getValidAgreements(policyUpdate.DataProviders, policyUpdate.User, &agreements, protoRequest)
-	// policyUpdate.ValidationResponse = &pb.ValidationResponse{}
-	// policyUpdate.RequestMetadata.DestinationQueue = "orchestrator-in"
-	// policyUpdate.ValidationResponse = protoRequest
-	//
-	// if len(agreements) == 0 || len(protoRequest.ValidDataproviders) == 0 {
-	// 	logger.Sugar().Warn("No more agreements exist for this user")
-	// 	c.SendPolicyUpdate(ctx, policyUpdate)
-	//
-	// }
-	//
-	// protoRequest.RequestApproved = len(protoRequest.ValidDataproviders) > 0
-	//
-	// c.SendPolicyUpdate(ctx, policyUpdate)
 }
