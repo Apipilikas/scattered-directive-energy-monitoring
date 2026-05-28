@@ -219,6 +219,44 @@ func GenericPutToEtcd[T any](w http.ResponseWriter, req *http.Request, etcdClien
 	w.Write([]byte("OK"))
 }
 
+func GenericDeleteFromEtcd[T any](w http.ResponseWriter, req *http.Request, etcdClient *clientv3.Client, etcdRoot string, target Named) {
+	trimmedPath := strings.TrimPrefix(req.URL.Path, etcdRoot) //fmt.Sprintf("%s/", etcdRoot))
+	fmt.Println("trimmedPath: " + trimmedPath)
+	fmt.Println("req.URL.Path: " + req.URL.Path)
+
+	key := fmt.Sprintf("%s%s", etcdRoot, trimmedPath)
+	fmt.Println(key)
+	_, err := etcd.GetAndUnmarshalJSON(etcdClient, key, &target)
+
+	if err != nil {
+		logger.Sugar().Infof("Unknown path: %s", trimmedPath)
+		http.Error(w, "Unknown request", http.StatusNotFound)
+		return
+	}
+
+	name := target.GetName()
+	if name == "" {
+		logger.Sugar().Errorw("Target name is empty after unmarshaling.")
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = etcdClient.Delete(ctx, key)
+
+	if err != nil {
+		logger.Sugar().Infof("Error deleting key from etcd: %s", err)
+		http.Error(w, "Error while deleting.", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Sugar().Infof("Deleted %s", key)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func PostRequest(url string, body string, extra_headers map[string]string) ([]byte, error) {
 	reqBody := bytes.NewBufferString(body)
 	req, err := http.NewRequest(http.MethodPost, url, reqBody)

@@ -360,7 +360,7 @@ func extractEmbeddings(response *pb.MicroserviceCommunication, data *TrainingRou
 	}
 }
 
-func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAuth string, learningRate float64, serverUrl string, trainingBacktrack int64, communicationFrequency int64, requestID string) {
+func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverAuth string, learningRate float64, serverUrl string, trainingBacktrack int64, communicationFrequency int64, requestID string) {
 	cyclesCompleted = 0
 	serverTarget := strings.ToLower(serverAuth)
 	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
@@ -374,7 +374,7 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 		for data := range sampleChan {
 			logger.Sugar().Debug("Embeddings routine. Samples received! Cycle: ", data.cycle)
 
-			for _, client := range clients {
+			for _, client := range *clients {
 				auth := client.Auth
 				url := client.Url
 
@@ -406,7 +406,7 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 						existingError = err
 						logger.Sugar().Errorf("Error sending data, %v", err)
 					} else {
-						extractEmbeddings(responseData, data, target, clients, &embeddings)
+						extractEmbeddings(responseData, data, target, *clients, &embeddings)
 					}
 					mu.Unlock()
 
@@ -470,7 +470,7 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 		for data := range gradientsChan {
 			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
 
-			for index, client := range clients {
+			for index, client := range *clients {
 
 				target := strings.ToLower(client.Auth)
 				endpoint := fmt.Sprintf(formattedEndpoint, client.Url, target)
@@ -494,7 +494,7 @@ func startVFLPipeline(dataRequest map[string]any, clients []ClientData, serverAu
 						logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
 					}
 
-					extractEmbeddings(response, data, target, clients, &embeddings)
+					extractEmbeddings(response, data, target, *clients, &embeddings)
 
 					logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Response OK.")
 				}()
@@ -583,13 +583,68 @@ func extractValueOrDefault[T ~int64 | ~float64](data map[string]any, propertyNam
 	return defaultValue
 }
 
+func checkPolicyUpdate(clients *[]ClientData, user *pb.User) {
+	policyUpdateChan := make(chan PolicyUpdateResponse)
+
+	// There is a misalignment because there are static User.Ids in different parts of the code.
+	// This has to be changed in the future.
+	logger.Sugar().Debug("Updating policyUpdateMap with key: ", user.Id)
+	policyUpdateMutex.Lock()
+	policyUpdateMap[user.Id] = policyUpdateChan
+	policyUpdateMutex.Unlock()
+
+	go func() {
+
+		for policyUpdateResponse := range policyUpdateChan {
+			availableProviders, err := getAvailableProviders()
+
+			logger.Sugar().Debug("The available providers are: ", availableProviders)
+
+			if err != nil {
+				logger.Sugar().Errorf("A problem occurred while fetching providers GetAvailableProviders: ", err)
+			}
+
+			validDataproviders := policyUpdateResponse.GetValidDataproviders()
+
+			if len(*clients) != len(availableProviders) {
+				logger.Sugar().Debug("Clients before policy update: ", clients)
+
+				var activeClients []ClientData
+				for auth, agentDetail := range availableProviders {
+					if strings.ToLower(auth) == "server" {
+						continue
+					}
+
+					_, exists := validDataproviders[auth]
+
+					if !exists {
+						continue
+					}
+
+					activeClients = append(activeClients, ClientData{
+						Auth: auth,
+						Url:  agentDetail.Dns,
+					})
+				}
+
+				*clients = activeClients
+				logger.Sugar().Debug("Clients after policy update: ", clients)
+			}
+		}
+
+		policyUpdateMutex.Lock()
+		delete(policyUpdateMap, user.Id)
+		policyUpdateMutex.Unlock()
+	}()
+}
+
 type ClientData struct {
 	Auth string
 	Url  string
 }
 
 func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]string, jobId string, ctx context.Context, requestID string) []byte {
-	clients := []ClientData{}
+	clients := &[]ClientData{}
 	var serverUrl string
 	var serverAuth string
 	var finalAccuracy float64
@@ -636,7 +691,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			serverUrl = url
 			serverAuth = auth
 		} else if url != "" {
-			clients = append(clients, ClientData{Auth: auth, Url: url})
+			*clients = append(*clients, ClientData{Auth: auth, Url: url})
 		}
 
 		dataProviders = append(dataProviders, auth)
@@ -695,15 +750,21 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	iterations := cycles / communication_frequency
 
+	// Creates VFL channels
 	makeVFLChannels()
+
+	// Initializes VFL pipeline
 	startVFLPipeline(dataRequest, clients, serverAuth, learning_rate, serverUrl, trainingBacktrack, communication_frequency, requestID)
 
+	// Checks if policy changes (from incoming messages)
+	checkPolicyUpdate(clients, user)
+
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
-	for round := range iterations {
-		logger.Sugar().Info("Running VFL training round ", round)
+	for cycle := range iterations {
+		logger.Sugar().Info("Running VFL training round ", cycle)
 
 		// TODO: Implement policy change request
-		if policy_removal == round {
+		if policy_removal == cycle {
 			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
 
@@ -728,7 +789,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		// TODO: Implement policy change request
-		if policy_reintroduction == round {
+		if policy_reintroduction == cycle {
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
@@ -752,119 +813,16 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 		}
 
-		protoRequest := &pb.RequestApproval{
-			Type:             "vflTrainModelRequest",
-			User:             user,
-			DataProviders:    dataProviders,
-			DestinationQueue: "policyEnforcer-in",
-		}
+		logger.Sugar().Info("- Sending training request")
 
-		// Create a channel to receive the response
-		responseChan := make(chan validation)
+		err := runVFLTrainingRound(dataRequest, serverAuth, serverUrl, sample_batch_size, cycle)
 
-		requestApprovalMutex.Lock()
-		requestApprovalMap[protoRequest.User.Id] = responseChan
-		requestApprovalMutex.Unlock()
-
-		noValidation := false
-
-		logger.Sugar().Info("- Sending policy reverification request")
-		for i := range 5 {
-			_, err = c.SendRequestApproval(ctx, protoRequest)
-			if err != nil {
-				logger.Sugar().Warnf("error in sending/receiving requestApproval: %v", err)
-			}
-
-			if err == nil {
-				// on success we can continue
-				break
-			}
-
-			if i == 4 {
-				noValidation = true
-			}
-		}
-
-		if noValidation {
-			logger.Sugar().Error("No reverification approval received, error in network. Shutting down operation.")
+		if err != nil {
+			logger.Sugar().Error("Training round returned an error.")
 			trainingFailed = true
 			break
 		}
-
-		select {
-		case validationStruct := <-responseChan:
-			msg := validationStruct.response
-			logger.Sugar().Info("Received validation message: ", msg, ", with vstruct: ", validationStruct)
-
-			if msg.Type != "requestApprovalResponse" {
-				logger.Sugar().Errorf("Unexpected message received, type: %s", msg.Type)
-				return []byte{}
-			}
-
-			if msg.Error != "" {
-				logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-				logger.Sugar().Info("   Policy does not allow this training to continue.")
-				logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-				break
-			}
-
-			// logger.Sugar().Debug("AuthorizedProviders from policy response: ", msg.AuthorizedProviders)
-			// logger.Sugar().Debug("AuthorizedProviders originally requested: ", authorizedProviders)
-			// logger.Sugar().Debug("Current clients before sync: ", clients)
-			if len(msg.AuthorizedProviders) != len(authorizedProviders) {
-
-				// if len is different I can still allow training to continue with the authorised ones
-				// in that case remove the unauthorised ones from the clients map
-				// or add the authorised ones if they were not present before
-				var activeClients []ClientData
-				for _, client := range clients {
-					if _, ok := msg.AuthorizedProviders[client.Auth]; ok {
-						activeClients = append(activeClients, client)
-					} else {
-						logger.Sugar().Debug("Removing unauthorised provider: ", client.Auth, " from the training.")
-					}
-				}
-
-				clients = activeClients
-			}
-
-			// maybe we can merge the above if into this one
-			if len(clients) != len(authorizedProviders) {
-				// add newly authorised clients that are not yet in the clients map
-				for auth_provider, url := range authorizedProviders {
-					if strings.ToLower(auth_provider) != "server" { // exclude server
-						if _, ok := msg.AuthorizedProviders[auth_provider]; ok {
-							exists := false
-							for _, activeClient := range clients {
-								if activeClient.Auth == auth_provider {
-									exists = true
-									break
-								}
-							}
-
-							// If they don't exist in the slice yet, append them
-							if !exists {
-								logger.Sugar().Debug("Adding newly authorised provider: ", auth_provider, " to the training.")
-								clients = append(clients, ClientData{
-									Auth: auth_provider,
-									Url:  url,
-								})
-							}
-						}
-					}
-				}
-			}
-
-			logger.Sugar().Info("- Sending training request")
-
-			err := runVFLTrainingRound(dataRequest, serverAuth, serverUrl, sample_batch_size, round)
-
-			if err != nil {
-				logger.Sugar().Error("Training round returned an error.")
-				trainingFailed = true
-				break
-			}
-		}
+		// }
 
 		if trainingFailed {
 			break
