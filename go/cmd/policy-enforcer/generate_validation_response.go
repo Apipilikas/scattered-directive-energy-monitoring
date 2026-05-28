@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/Jorrit05/DYNAMOS/pkg/api"
 	"github.com/Jorrit05/DYNAMOS/pkg/etcd"
@@ -64,7 +65,15 @@ func getValidAgreements(dataProviders []string, requestUser *pb.User, agreements
 	protoRequest.ValidDataproviders = make(map[string]*pb.DataProvider)
 
 	for _, steward := range dataProviders {
-		output, err := etcd.GetValueFromEtcd(etcdClient, "/policyEnforcer/agreements/"+steward)
+
+		// Changed options so that we can get instant policyUpdate messages when a policy changes.
+		output, err := etcd.GetValueFromEtcd(
+			etcdClient,
+			"/policyEnforcer/agreements/"+steward,
+			etcd.WithInitialInterval(1*time.Second),
+			etcd.WithMaxInterval(1*time.Second),
+			etcd.WithMaxElapsedTime(1*time.Second),
+		)
 		if err != nil {
 			logger.Sugar().Errorf("Error retrieving from etcd: %v", err)
 		}
@@ -93,8 +102,18 @@ func getValidAgreements(dataProviders []string, requestUser *pb.User, agreements
 			invalidDataproviders = append(invalidDataproviders, steward)
 			continue
 		}
-		protoRequest.ValidArchetypes.UserName = requestUser.UserName
-		protoRequest.ValidArchetypes.Archetypes[steward] = &pb.UserAllowedArchetypes{Archetypes: matchedArchetypes}
+
+		if protoRequest.ValidArchetypes == nil {
+			protoRequest.ValidArchetypes = &pb.UserArchetypes{
+				UserName: requestUser.UserName,
+				Archetypes: map[string]*pb.UserAllowedArchetypes{
+					steward: {Archetypes: matchedArchetypes},
+				},
+			}
+		} else {
+			protoRequest.ValidArchetypes.UserName = requestUser.UserName
+			protoRequest.ValidArchetypes.Archetypes[steward] = &pb.UserAllowedArchetypes{Archetypes: matchedArchetypes}
+		}
 
 		// Initalize after checking valid archetypes.
 		protoRequest.ValidDataproviders[steward] = &pb.DataProvider{}

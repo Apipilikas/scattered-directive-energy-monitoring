@@ -21,21 +21,10 @@ func handleIncomingMessages(ctx context.Context, grpcMsg *pb.SideCarMessage) err
 
 	switch grpcMsg.Type {
 	case "requestApprovalResponse":
-		// Return the approval response to the client
-		requestApprovalResponse := &pb.RequestApprovalResponse{}
-		if err := grpcMsg.Body.UnmarshalTo(requestApprovalResponse); err != nil {
-			logger.Sugar().Fatalf("Failed to unmarshal message: %v", err)
-		}
-		requestApprovalMutex.Lock()
-		// Look up the corresponding channel in the request map
-		approvalRequest, ok := requestApprovalMap[requestApprovalResponse.User.Id]
-		if ok {
-			approvalRequest <- validation{response: requestApprovalResponse, localContext: ctx}
-			delete(requestApprovalMap, requestApprovalResponse.User.Id)
-		} else {
-			logger.Sugar().Error("No sessions found for this requestApprovalResponse flow: ", requestApprovalResponse, ", ", requestApprovalMap[requestApprovalResponse.User.Id])
-		}
-		requestApprovalMutex.Unlock()
+		handleRequestApprovalResponseMessage(ctx, grpcMsg)
+	case "policyUpdate":
+		logger.Sugar().Debug("Policy update received!")
+		handlePolicyUpdateMessage(ctx, grpcMsg)
 	default:
 		logger.Sugar().Errorf("Unknown message type: %s", grpcMsg.Type)
 		return fmt.Errorf("unknown message type: %s", grpcMsg.Type)
@@ -43,4 +32,42 @@ func handleIncomingMessages(ctx context.Context, grpcMsg *pb.SideCarMessage) err
 	// logger.Debug("end orchestrator handleIncomingMessages")
 
 	return nil
+}
+
+// Incoming messages handlers
+
+func handleRequestApprovalResponseMessage(ctx context.Context, grpcMsg *pb.SideCarMessage) {
+	// Return the approval response to the client
+	requestApprovalResponse := &pb.RequestApprovalResponse{}
+	if err := grpcMsg.Body.UnmarshalTo(requestApprovalResponse); err != nil {
+		logger.Sugar().Fatalf("Failed to unmarshal message: %v", err)
+	}
+	requestApprovalMutex.Lock()
+	// Look up the corresponding channel in the request map
+	approvalRequest, ok := requestApprovalMap[requestApprovalResponse.User.Id]
+	if ok {
+		approvalRequest <- validation{response: requestApprovalResponse, localContext: ctx}
+		delete(requestApprovalMap, requestApprovalResponse.User.Id)
+	} else {
+		logger.Sugar().Error("No sessions found for this requestApprovalResponse flow: ", requestApprovalResponse, ", ", requestApprovalMap[requestApprovalResponse.User.Id])
+	}
+	requestApprovalMutex.Unlock()
+}
+
+func handlePolicyUpdateMessage(ctx context.Context, grpcMsg *pb.SideCarMessage) {
+	policyUpdate := &pb.PolicyUpdate{}
+	if err := grpcMsg.Body.UnmarshalTo(policyUpdate); err != nil {
+		logger.Sugar().Errorf("Failed to unmarshal message: %v", err)
+	}
+
+	policyUpdateMutex.Lock()
+	key := policyUpdate.User.Id
+	policyUpdateRequest, ok := policyUpdateMap[key]
+	policyUpdateMutex.Unlock()
+
+	if ok {
+		policyUpdateRequest <- PolicyUpdateResponse{response: policyUpdate, localContext: ctx}
+	} else {
+		logger.Sugar().Error("No job information available for this policyUpdate with key: ", key)
+	}
 }

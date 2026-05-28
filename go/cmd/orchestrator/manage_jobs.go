@@ -281,6 +281,11 @@ func processPolicyUpdate(ctx context.Context, agentsWithThisJob map[string]*pb.C
 	}
 }
 
+func propagatePolicyUpdate(ctx context.Context, policyUpdate *pb.PolicyUpdate) {
+	policyUpdate.RequestMetadata.DestinationQueue = "api-gateway-in"
+	c.SendPolicyUpdate(ctx, policyUpdate)
+}
+
 func getJobAcrossAgents(ctx context.Context, targetMap map[string]*pb.CompositionRequest, jobName string, userName string) context.Context {
 
 	var agents *lib.AgentDetails

@@ -23,13 +23,14 @@ func handleIncomingMessages(ctx context.Context, grpcMsg *pb.SideCarMessage) err
 			logger.Sugar().Fatalf("Failed to unmarshal message: %v", err)
 		}
 
-		if requestApproval.Type == "policyRemoval" {
+		switch requestApproval.Type {
+		case "policyRemoval":
 			removePolicy()
 			logger.Sugar().Infof("Policy removal")
-		} else if requestApproval.Type == "policyReintroduction" {
+		case "policyReintroduction":
 			reintroducePolicy()
 			logger.Sugar().Infof("Reintroduction of policy")
-		} else {
+		default:
 			logger.Sugar().Infof("User name: %s", requestApproval.User.UserName)
 			checkRequestApproval(ctx, &requestApproval)
 		}
