@@ -25,13 +25,23 @@ var (
 	receiveMutex         = &sync.Mutex{}
 	requestApprovalMap   = make(map[string]chan validation)
 	requestApprovalMutex = &sync.Mutex{}
-	policyUpdateMap      = make(map[string]map[string]*pb.CompositionRequest)
+	policyUpdateMap      = make(map[string]chan PolicyUpdateResponse)
+	policyUpdateMutex    = &sync.Mutex{}
 	c                    pb.RabbitMQClient
 )
 
 type validation struct {
 	response     *pb.RequestApprovalResponse
 	localContext context.Context
+}
+
+type PolicyUpdateResponse struct {
+	response     *pb.PolicyUpdate
+	localContext context.Context
+}
+
+func (x *PolicyUpdateResponse) GetValidDataproviders() map[string]*pb.DataProvider {
+	return x.response.ValidationResponse.ValidDataproviders
 }
 
 // Sequence of steps:
