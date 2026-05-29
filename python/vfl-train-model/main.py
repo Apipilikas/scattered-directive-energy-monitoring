@@ -40,6 +40,8 @@ wait_for_setup_condition = threading.Condition()
 ms_config = None
 vfl_server = None
 
+SERVER_CHECKPOINT_PATH = "server_checkpoint.pth"
+
 # --- END DYNAMOS Interface code At the TOP ----------------------
 
 # ---- LOCAL TEST SETUP OPTIONAL!
@@ -103,18 +105,28 @@ class ServerModel(nn.Module):
 
 class VFLServer():
     def __init__(self, data):
-        self.model = ServerModel(12)
-        # self.initial_parameters = ndarrays_to_parameters(
-        #     [val.cpu().numpy()
-        #      for _, val in server_configuration.model.state_dict().items()]
-        # )
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
+        self.intermediate_neurons = 4
+        self.nof_clients = 3
+
+        self._update_model()
         self.criterion = nn.BCELoss()
         self.labels = torch.tensor(
             data["Survived"].values).float().unsqueeze(1)
 
-    def aggregate_fit(self, results):
+    def _update_model(self):
+        self.model = ServerModel(self.intermediate_neurons * self.nof_clients)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
+
+    def aggregate_fit(self, results, backtrack=False):
         global server_configuration
+
+        new_nof_clients = len(results)
+        if new_nof_clients != self.nof_clients:
+            print(f"Number of clients in results: {new_nof_clients}")
+            print(f"Current number of clients: {self.nof_clients}")
+            logger.info(f"Number of clients {new_nof_clients} does not match expected {self.nof_clients}, updating server architecture...")
+            # TODO: update the architecture of the model
+            self.update_server_model_architecture(new_nof_clients, backtrack)
 
         try:
             embedding_results = [
@@ -137,7 +149,7 @@ class VFLServer():
             logger.info(f"Running gradient descent failed: {e}")
 
         try:
-            grads = embedding_server.grad.split([4, 4, 4], dim=1)
+            grads = embedding_server.grad.split([4]*self.nof_clients, dim=1)
             np_gradients = [serialise_array(grad.numpy()) for grad in grads]
         except Exception as e:
             logger.info(f"Converting the gradients failed: {e}")
@@ -157,6 +169,66 @@ class VFLServer():
         logger.info(f"Accuracy achieved: {accuracy}")
 
         return data
+    
+    def shrink_server_model(self, new_clients_no, backtrack):
+        """
+        Creates a new ServerModel with fewer input neurons and copies over the trained weights
+        from the old model for the first new_input_size neurons.
+        """
+        if backtrack and new_clients_no==2:  # for now hardcoded to work only when reducing size from 3 to 2 clients
+            # save model state to file
+            logger.info("Saving server state before shrinking...")
+            self.save_state(SERVER_CHECKPOINT_PATH)
+        self.nof_clients = new_clients_no
+        # Create the new model
+        # note: this is a completely new model with random weights
+        self._update_model()
+    
+    def expand_server_model(self, new_clients_no, backtrack):
+        """
+        Creates a new ServerModel with fewer input neurons and copies over the trained weights
+        from the old model for the first new_input_size neurons.
+        """
+        self.nof_clients = new_clients_no
+        if backtrack and self.nof_clients==3:  # for now hardcoded to work only for 3 clients
+            # save model state to file
+            self._update_model()
+            logger.info("Loading previous server state...")
+            self.load_state(SERVER_CHECKPOINT_PATH)
+        else:
+            # Create the new model
+            # note: this is a completely new model with random weights
+            self._update_model()
+    
+    def update_server_model_architecture(self, new_clients_no, backtrack):
+        if new_clients_no == self.nof_clients:
+            # No change needed
+            logger.debug("Number of clients unchanged, no model architecture update needed.")
+        
+        if new_clients_no < self.nof_clients:
+            logger.info(f"Number of clients decreased from {self.nof_clients} to {new_clients_no}, shrinking model.")
+            self.shrink_server_model(new_clients_no, backtrack)
+        
+        if new_clients_no > self.nof_clients:
+            logger.info(f"Number of clients increased from {self.nof_clients} to {new_clients_no}, expanding model.")
+            self.expand_server_model(new_clients_no, backtrack)
+
+    def save_state(self, filepath):
+        """Save the state dicts for both model and optimizer to disk."""
+        torch.save({
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict()
+        }, filepath)
+        print(f"Server state saved to {filepath}")
+
+    def load_state(self, filepath):
+        """Load the state dicts for both model and optimizer from disk."""
+        state = torch.load(filepath)
+        self.model.load_state_dict(state['model_state_dict'])
+        self.optimizer.load_state_dict(state['optimizer_state_dict'])
+        print(f"Server state loaded from {filepath}")
+
+#region Request handlers
 
 
 def handleAggregateRequest(msComm):
@@ -165,6 +237,17 @@ def handleAggregateRequest(msComm):
 
     request = rabbitTypes.Request()
     msComm.original_request.Unpack(request)
+
+    backtrack = False
+    try:
+        training_backtrack_flag = request.data["trainingBacktrack"]
+        logger.debug(f"Training backtrack flag: {training_backtrack_flag}")
+        logger.debug(f"Training backtrack flag: {type(training_backtrack_flag)}")
+        if training_backtrack_flag.number_value == 1:
+            backtrack = True
+            logger.debug(f"Training backtrack flag is 'True'")
+    except Exception as e:
+        logger.warning(f"Error when retrieving training backtrack flag: {e}")
 
     try:
         data = request.data["embeddings"]
@@ -182,12 +265,12 @@ def handleAggregateRequest(msComm):
     #         f"Errored when deserialising client model state: {e}")
 
     # Hardcoded the number of clients for now
-    data = vfl_server.aggregate_fit(clients_embeddings)
+    data = vfl_server.aggregate_fit(clients_embeddings, backtrack)
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
 
-# ---  DYNAMOS Interface code At the Bottom --------
+#region DYNAMOS interface
 
 def request_handler(msComm: msCommTypes.MicroserviceCommunication,
                     ctx: Context = None):
@@ -234,6 +317,7 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
         return Empty()
 
+#endregion
 
 def main():
     global config
