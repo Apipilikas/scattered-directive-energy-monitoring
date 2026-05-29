@@ -31,6 +31,7 @@ var (
 	activeJobLock     sync.Mutex   // to allow only 1 active job at any time
 	trainingRequests  = sync.Map{} // map[string]TrainingRequestData
 	formattedEndpoint = "http://%s:8080/agent/v1/vflTrainRequest/%s"
+	clientsMutex      = &sync.Mutex{}
 )
 
 // #region TrainingRequestData helpers
@@ -300,6 +301,15 @@ func cloneDataRequest(dataRequest map[string]any, requestType string, data map[s
 	return request
 }
 
+func getSafeClients(clients *[]ClientData) []ClientData {
+	clientsMutex.Lock()
+	currentClients := make([]ClientData, len(*clients))
+	copy(currentClients, *clients)
+	clientsMutex.Unlock()
+
+	return currentClients
+}
+
 func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverAuth string, learningRate float64, serverUrl string, trainingBacktrack int64, communicationFrequency int64, requestID string) {
 	serverTarget := strings.ToLower(serverAuth)
 	serverEndpoint := fmt.Sprintf(formattedEndpoint, serverUrl, serverTarget)
@@ -314,7 +324,7 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 		for data := range sampleChan {
 			logger.Sugar().Debug("Embeddings routine. Samples received! Cycle: ", data.cycle)
 
-			for _, client := range *clients {
+			for _, client := range getSafeClients(clients) {
 				auth := client.Auth
 				url := client.Url
 
@@ -371,7 +381,7 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 				return
 			}
 			embeddingList := []string{}
-			for _, client := range *clients {
+			for _, client := range getSafeClients(clients) {
 				if emb, ok := responses[strings.ToLower(client.Auth)]; ok {
 					embeddingList = append(embeddingList, emb)
 				}
@@ -440,7 +450,7 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 		for data := range gradientsChan {
 			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
 
-			for index, client := range *clients {
+			for index, client := range getSafeClients(clients) {
 
 				target := strings.ToLower(client.Auth)
 				endpoint := fmt.Sprintf(formattedEndpoint, client.Url, target)
@@ -557,15 +567,14 @@ func checkPolicyUpdate(clients *[]ClientData, user *pb.User) {
 		for policyUpdateResponse := range policyUpdateChan {
 			availableProviders, err := getAvailableProviders()
 
-			logger.Sugar().Debug("The available providers are: ", availableProviders)
-
 			if err != nil {
 				logger.Sugar().Errorf("A problem occurred while fetching providers GetAvailableProviders: ", err)
 			}
 
 			validDataproviders := policyUpdateResponse.GetValidDataproviders()
 
-			if len(*clients) != len(availableProviders) {
+			// We exclude server from valid data providers
+			if len(*clients) != len(validDataproviders)-1 {
 				logger.Sugar().Debug("Clients before policy update: ", clients)
 
 				var activeClients []ClientData
@@ -574,9 +583,9 @@ func checkPolicyUpdate(clients *[]ClientData, user *pb.User) {
 						continue
 					}
 
-					_, exists := validDataproviders[auth]
+					_, isValid := validDataproviders[auth]
 
-					if !exists {
+					if !isValid {
 						continue
 					}
 
@@ -586,7 +595,9 @@ func checkPolicyUpdate(clients *[]ClientData, user *pb.User) {
 					})
 				}
 
+				clientsMutex.Lock()
 				*clients = activeClients
+				clientsMutex.Unlock()
 				logger.Sugar().Debug("Clients after policy update: ", clients)
 			}
 		}
