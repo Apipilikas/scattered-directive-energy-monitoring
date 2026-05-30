@@ -142,10 +142,12 @@ class VFLServer():
 
         self.labels = {}
         self.embeddings = {}
+        self.communications = {}
         self.embeddings_queue = queue.Queue()
         self.gradients_queue = queue.Queue()
 
         threading.Thread(target=self._execute_training_process_async).start()
+        threading.Thread(target=self._execute_communication_process_async).start()
 
     def _execute_training_process_async(self):
         while True:
@@ -156,8 +158,30 @@ class VFLServer():
                 self.local_update(cycle, 15)
             except queue.Empty:
                 pass
-            
+
+    def _execute_communication_process_async(self):
+        while True:
+            try:
+                cycle, gradients = self.gradients_queue.get_nowait()
+                data = Struct()
+                logger.debug("Latest gradients have been fetched.")
+                data.update({"cycle": cycle})
+                data.update({"gradients": gradients})
+                data.update({"accuracies": serialise_dictionary(self.accuracies)})
+                msComm = self.communications[cycle]
+                logger.debug("------------------------------------------")
+                ms_config.next_client.ms_comm.send_data(msComm, data, {})
+                logger.debug("------------------------------------------")
+            except queue.Empty:
+                pass
+
     def put_embeddings(self, cycle, embeddings):
+
+        # new_clients_no = len(embeddings)
+
+        # if new_clients_no != self.clients_no:
+        #     logger.info(f"Number of clients {new_clients_no} does not match expected {self.clients_no}, updating server architecture...")
+        #     self.update_server_model_architecture(new_clients_no, backtrack)
         try:
             embedding_results = [
                 torch.from_numpy(embedding.copy())
@@ -175,6 +199,7 @@ class VFLServer():
 
         self.embeddings[cycle] = current_embeddings
         self.embeddings_queue.put(cycle)
+    
     def _update_model(self):
         self.model = ServerModel(self.intermediate_neurons * self.clients_no)
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
@@ -210,34 +235,11 @@ class VFLServer():
         return calculated_labels
 
     def aggregate_fit(self, cycle, backtrack = False):
-        logger.info(f"Aggregate fit for cycle {self.current_cycle}.")
+        logger.info(f"Aggregate fit for cycle {cycle}.")
         global server_configuration
 
         labels = self.labels[cycle]
         embeddings = self.embeddings[cycle]
-
-        new_clients_no = len(embeddings)
-
-        if new_clients_no != self.clients_no:
-            logger.info(f"Number of clients {new_clients_no} does not match expected {self.clients_no}, updating server architecture...")
-            self.update_server_model_architecture(new_clients_no, backtrack)
-
-        try:
-            embedding_results = [
-                torch.from_numpy(embedding.copy())
-                for embedding in embeddings
-            ]
-        except Exception as e:
-            logger.info(f"Converting the results to torch failed: {e}")
-
-        try:
-            embeddings_aggregated = torch.cat(embedding_results, dim=1)
-            self.embeddings = embeddings_aggregated.detach().requires_grad_()
-        except Exception as e:
-            logger.info(f"Running gradient descent failed: {e}")
-
-        output = self.model(self.embeddings)
-        loss = self.criterion(output, self.labels)
         
         with self.training_lock:
             output = self.model(embeddings)
@@ -248,7 +250,7 @@ class VFLServer():
 
         try:
             split_size = [self.intermediate_neurons] * self.clients_no
-            gradients = self.embeddings.grad.split(split_size, dim=1)
+            gradients = embeddings.grad.split(split_size, dim=1)
             np_gradients = [serialise_array(grad.numpy()) for grad in gradients]
         except Exception as e:
             logger.info(f"Converting the gradients failed: {e}")
@@ -289,6 +291,7 @@ class VFLServer():
             
             self.accuracies[cycle] = accuracy # Only the last accuracy
             logger.info(f"Finished local update for cycle {self.current_cycle}.")
+            logger.debug(f"Accuracies: {self.accuracies}")
         except Exception as e:
             logger.error(f"Error occurred in cycle [{cycle}]: {e}")
 
@@ -303,14 +306,11 @@ class VFLServer():
     def get_latest_gradients(self):
         data = Struct()
 
-        try:
-            cycle, gradients = self.gradients_queue.get_nowait()
-            logger.debug("Latest gradients have been fetched.")
-            data.update({"cycle": cycle})
-            data.update({"gradients": gradients})
-            data.update({"accuracies": serialise_dictionary(self.accuracies)})
-        except queue.Empty:
-            logger.debug("No gradients have been found!")
+        cycle, gradients = self.gradients_queue.get_nowait()
+        logger.debug("Latest gradients have been fetched.")
+        data.update({"cycle": cycle})
+        data.update({"gradients": gradients})
+        data.update({"accuracies": serialise_dictionary(self.accuracies)})
 
         return data
     
@@ -398,12 +398,14 @@ def handle_vflAggregateRequest(msComm, request):
 
     # vfl_server.current_cycle = cycle
 
+    vfl_server.communications[cycle] = msComm
     vfl_server.set_labels_from_sample(cycle, sample_indexes)
     vfl_server.put_embeddings(cycle, clients_embeddings)
 
-    data = vfl_server.get_latest_gradients()
+    # vfl_server.comm = msComm
+    # data = vfl_server.get_latest_gradients()
 
-    ms_config.next_client.ms_comm.send_data(msComm, data, {})
+    # ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
     # vfl_server.local_update_async(communication_frequency)
 
@@ -426,9 +428,9 @@ def handle_vflSampleBatchRequest(msComm, request):
         sample_batch_size = extract_number_from_data(request, "sample_batch_size")
 
         data = vfl_server.sample_data(sample_batch_size)
-        gradients_data = vfl_server.get_latest_gradients()
+        # gradients_data = vfl_server.get_latest_gradients()
 
-        data.MergeFrom(gradients_data)
+        # data.MergeFrom(gradients_data)
 
         ms_config.next_client.ms_comm.send_data(msComm, data, {})
     except Exception as e:

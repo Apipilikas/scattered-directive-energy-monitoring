@@ -147,10 +147,10 @@ class VFLClient():
 
     def _execute_training_process_async(self):
         while True:
-            self._train_next_model()
             
             try:
-                cycle, gradients = self.gradients_queue.get()
+                self._train_next_model()
+                cycle, gradients = self.gradients_queue.get_nowait()
                 self.gradient_descent(cycle, gradients, 15)
             except queue.Empty:
                 pass
@@ -158,7 +158,7 @@ class VFLClient():
             
 
     def _train_next_model(self):
-        cycle, sample_indexes = self.samples_queue.get()
+        cycle, sample_indexes = self.samples_queue.get_nowait()
         labels = self.set_labels_from_sample(cycle, sample_indexes)
         self.train_model(cycle, labels)
 
@@ -236,7 +236,7 @@ class VFLClient():
         data = Struct()
 
         try:
-            cycle, embeddings = self.embeddings_queue.get()
+            cycle, embeddings = self.embeddings_queue.get_nowait()
             # vfl_client.set_labels_from_sample(sample_indexes)
             # embeddings = vfl_client.train_model()
             data.update({"cycle":  cycle})

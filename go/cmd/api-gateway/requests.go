@@ -329,7 +329,7 @@ func extractEmbeddings(response *pb.MicroserviceCommunication, data *TrainingRou
 	clientEmbeddings, ok := v.(string)
 
 	if !exists || !ok {
-		logger.Sugar().Error("No embeddings found in the return data.")
+		logger.Sugar().Debug("No embeddings found in the return data.")
 		// embeddings = make(map[string]any)
 		// TODO: Handle disagreements?
 	} else {
