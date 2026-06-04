@@ -118,7 +118,9 @@ class VFLActiveParty(VFLParty):
         super().__init__(data)
 
     def _update_partial_model(self):
-        return -np.array(self.batch)
+        # Exclude labels from calculation
+        return np.zeros(len(self.batch))
+        # return -np.array(self.batch)
 
     def extract_sample_dimension(self):
         # Server holds labels, so it skips Phase 2 (SIFE)
@@ -285,16 +287,24 @@ def main():
             u_k = aggregator.decrypt_features_dimension(C_fd_ordered, dk_v_mife_k)
             u.append(u_k)
 
-        u_raw = np.array(u) / 100.0 
+        # Reverse the scaling
+        z_raw = np.array(u) / VFLParty.features_scale 
         
-        batch_loss = np.mean(u_raw ** 2)
+        predictions = 1 / (1 + np.exp(-z_raw))
         
-        correct_predictions = np.sum(np.abs(u_raw) < 0.5)
+        true_labels = server.batch
+        
+        logistic_error = predictions - true_labels
+
+        batch_loss = np.mean(np.abs(logistic_error)) 
+        correct_predictions = np.sum((predictions >= 0.5) == true_labels)
         batch_accuracy = correct_predictions / sample_batch_size
         
         print(f"> Loss: {batch_loss:.4f} | Accuracy: {batch_accuracy * 100:.2f}%")
         
         accs.append(batch_accuracy)
+
+        u = [int(val) for val in np.round(logistic_error * 100.0)]
 
         # Send authority vflSIFEDKGenRequest
         dk_u_sife = authority.generate_sife_decryption_key(u)
