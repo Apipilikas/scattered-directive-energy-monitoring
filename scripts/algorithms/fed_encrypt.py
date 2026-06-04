@@ -125,6 +125,17 @@ class VFLActiveParty(VFLParty):
     def extract_sample_dimension(self):
         # Server holds labels, so it skips Phase 2 (SIFE)
         return None
+    
+    def calculate_accuracy(self, predictions):
+        true_labels = self.batch
+        
+        logistic_error = predictions - true_labels
+
+        batch_loss = np.mean(np.abs(logistic_error)) 
+        correct_predictions = np.sum((predictions >= 0.5) == true_labels)
+        batch_accuracy = correct_predictions / len(self.batch)
+
+        return batch_loss, batch_accuracy, logistic_error
 
 class VFLPassiveParty(VFLParty):
     def __init__(self, data):
@@ -292,13 +303,7 @@ def main():
         
         predictions = 1 / (1 + np.exp(-z_raw))
         
-        true_labels = server.batch
-        
-        logistic_error = predictions - true_labels
-
-        batch_loss = np.mean(np.abs(logistic_error)) 
-        correct_predictions = np.sum((predictions >= 0.5) == true_labels)
-        batch_accuracy = correct_predictions / sample_batch_size
+        batch_loss, batch_accuracy, logistic_error = server.calculate_accuracy(predictions)
         
         print(f"> Loss: {batch_loss:.4f} | Accuracy: {batch_accuracy * 100:.2f}%")
         
