@@ -48,6 +48,9 @@ class VFLAuthority:
         return SIFE.keygen(y, self._sife_key)
 
 class VFLParty(ABC):
+    features_scale = 100
+    samples_scale = 100
+
     def __init__(self, data):
         self.data = data
         self.features_size = 0
@@ -56,8 +59,6 @@ class VFLParty(ABC):
         self.mife_sk = None # Encryption key / Secret key / sk_MIFE_pi
         self.sife_pk = None # Encryption key / Public key / pk_SIFE
 
-        self.features_scale = 100
-        self.samples_scale = 100
         self.learning_rate = 0.1
 
     def set_keys(self, mife_sk, sife_pk):
@@ -303,7 +304,7 @@ def main():
         for party_id, ct_sds in C_sd.items():
             # Send aggragator vflSampleDecRequest
             party_gradients = aggregator.decrypt_samples_dimension(ct_sds, dk_u_sife)
-            float_gradients = [g / (client1.features_scale * client1.samples_scale * sample_batch_size) for g in party_gradients]
+            float_gradients = [g / (VFLParty.features_scale * VFLParty.samples_scale * sample_batch_size) for g in party_gradients]
             gradients[party_id] = float_gradients
 
             # Send vflGradientDescentRequest
