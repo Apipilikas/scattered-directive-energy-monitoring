@@ -210,9 +210,9 @@ def main():
     train_datac3 = pd.read_csv('data/train/clientthreeData.csv')
     train_datas = pd.read_csv('data/train/outcomeData.csv')["Survived"].astype(int)
 
-    test_datac1 = pd.read_csv('data/test/clientoneData.csv')
-    test_datac2 = pd.read_csv('data/test/clienttwoData.csv')
-    test_datac3 = pd.read_csv('data/test/clientthreeData.csv')
+    test_datac1 = pd.read_csv('data/test/clientoneData.csv').fillna(0)
+    test_datac2 = pd.read_csv('data/test/clienttwoData.csv').fillna(0)
+    test_datac3 = pd.read_csv('data/test/clientthreeData.csv').fillna(0)
     test_datas = pd.read_csv('data/test/outcomeData.csv')
 
     features_size = len(train_datac1.columns) + len(train_datac2.columns) + len(train_datac3.columns)
@@ -319,13 +319,77 @@ def main():
 
             # Send vflGradientDescentRequest
             parties[party_id].update_weights(float_gradients)
-        
     
     print("------------------------------------------")
     print("Intermediate accuracies:")
     print(accs)
     print("------------------------------------------")
 
+    # > Test the model
+    test_size = len(test_datac1)
+    scaled_test = client1.scaler.transform(test_datac1[client1.data.columns])
+    client1.batch = scaled_test
+    scaled_test = client2.scaler.transform(test_datac2[client2.data.columns])
+    client2.batch = scaled_test
+    scaled_test = client3.scaler.transform(test_datac3[client3.data.columns])
+    client3.batch = scaled_test
+
+    server.batch = np.zeros(test_size)
+
+    authority_test = VFLAuthority()
+    authority_test.clients_size = clients_size
+    authority_test.batch_size = test_size
+    authority_test.generate_keys()
+
+    # Distribute the Inference Keys to the clients and aggregator
+    idx = 0
+    for party_id, party in parties.items():
+        party.set_keys(authority_test.get_mife_encryption_key(idx), authority_test.get_sife_public_key())
+        idx += 1
+    aggregator.batch_size = test_size
+    aggregator.mife_pk = authority_test.get_mife_public_key()
+
+    C_fd_test = {}
+    C_sd_test = {}
+    for party_id, party in parties.items():
+        # Send aggregator vflGetWeightsRequest
+        # Send parties vflExtractCiphertextsRequest (sample_indexes, local_weights)
+        # party.set_training_batch(sample_indexes)
+            
+        ct_fd, ct_sds = party.extract_ciphertexts()
+            
+        C_fd_test[party_id] = ct_fd
+        if C_sd_test is not None:
+            C_sd_test[party_id] = ct_sds
+
+    C_fd_ordered_test = [C_fd_test["clientone"], C_fd_test["clienttwo"], C_fd_test["clientthree"], C_fd_test["server"]]
+
+    u_test = []
+        
+    for k in range(test_size):
+        # Everything is 0, except the k-th column which is 1.
+        v_k = [[1 if j == k else 0 for j in range(test_size)] for _ in range(clients_size)]
+        
+        # Send authority vflMIFEDKGenRequest
+        dk_v_mife_k = authority_test.generate_mife_decryption_key(v_k)
+        
+        # Send aggragator vflFeaturesDecRequest
+        u_k = aggregator.decrypt_features_dimension(C_fd_ordered_test, dk_v_mife_k)
+        u_test.append(u_k)
+
+    test_z_raw = np.array(u_test) / 100.0
+    test_probabilities = 1 / (1 + np.exp(-test_z_raw))
+
+    survived_predictions = (test_probabilities >= 0.5).astype(int)
+
+    passenger_ids = test_datas["PassengerId"].values
+                
+    train_df = pd.DataFrame({
+        "PassengerId": passenger_ids,
+        "Survived": survived_predictions
+    })
+
+    train_df.to_csv("data/testData.csv", index=False)
 
 
 if __name__ == "__main__":
