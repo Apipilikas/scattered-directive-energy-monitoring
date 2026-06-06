@@ -15,7 +15,6 @@ from abc import ABC, abstractmethod
 class VFLAuthority:
     def __init__(self):
         self.clients_size = 4
-        self.features_size = 5
         self.batch_size = 256
         self._mife_key = None
         self._sife_key = None
@@ -54,6 +53,7 @@ class VFLParty(ABC):
     def __init__(self, data):
         self.data = data
         self.features_size = 0
+        self.batch_size = 0
         self.batch = None
         self.weights = None
         self.mife_sk = None # Encryption key / Secret key / sk_MIFE_pi
@@ -79,9 +79,11 @@ class VFLParty(ABC):
     
     def set_training_batch(self, sample_indexes):
         self.batch = self.get_training_batch(sample_indexes)
+        self.batch_size = len(self.batch)
 
     def update_weights(self, gradients):
-        self.weights = self.weights - self.learning_rate * np.array(gradients)
+        float_gradients = [g / (self.features_scale * self.samples_scale * self.batch_size) for g in gradients]
+        self.weights = self.weights - self.learning_rate * np.array(float_gradients)
     
     @abstractmethod
     def _update_partial_model(self):
@@ -97,13 +99,13 @@ class VFLParty(ABC):
         return MIFE.encrypt(rounded_model, self.mife_sk)
 
     def extract_sample_dimension(self):
-        cts = []
+        cts = [] # features_size dim
         
         for i in range(self.batch.shape[1]):
             column = self.batch[:, i]
             scaled_column = np.round(column * self.samples_scale)
             lst = scaled_column.astype(int).tolist()
-            ct = SIFE.encrypt(lst, self.sife_pk)
+            ct = SIFE.encrypt(lst, self.sife_pk) # lst: batch_size dim
             cts.append(ct)
 
         return cts
@@ -126,7 +128,11 @@ class VFLActiveParty(VFLParty):
         # Server holds labels, so it skips Phase 2 (SIFE)
         return None
     
-    def calculate_accuracy(self, predictions):
+    def calculate_accuracy(self, u):
+        z_raw = np.array(u) / VFLParty.features_scale 
+        
+        predictions = 1 / (1 + np.exp(-z_raw))
+
         true_labels = self.batch
         
         logistic_error = predictions - true_labels
@@ -247,35 +253,41 @@ def main():
 
     # Initialize Authority
     authority = VFLAuthority()
+    # Send authority vflInitializeRequest return the keys
     authority.clients_size = clients_size
     authority.batch_size = sample_batch_size
-    authority.features_size = features_size
     authority.generate_keys()
 
     # Initialize Aggregator
     aggregator = VFLAggregator()
     aggregator.clients_size = clients_size
     aggregator.batch_size = sample_batch_size
+    # Send aggregator vflInitializeRequest
     aggregator.set_public_keys(authority.get_sife_public_key(), authority.get_mife_public_key())
     
     accs = []
 
     idx = 0
-    # Initialization
+
+    # Initialize parties
     for party_id, party in parties.items():
+        # Send party vflInitializeRequest
         party.set_keys(authority.get_mife_encryption_key(idx), authority.get_sife_public_key())
         idx += 1
 
     gradients = []
     for i in range(iterations):
         print(f"----------------------- Run {i + 1} / {iterations} -----------------------")
+        # Server is responsible for sampling. Send vflSampleBatchRequest
         sample_indexes = deserialise_array(server.sample_data(sample_batch_size)["sample_batch_indexes"])
 
         C_fd = {}
         C_sd = {}
+
+        # Orchestrator : HANDLES ORDER
+        # Orchestrator : looping through clients
         for party_id, party in parties.items():
-            # Send aggregator vflGetWeightsRequest
-            # Send parties vflExtractCiphertextsRequest (sample_indexes, local_weights)
+            # Send parties vflExtractCiphertextsRequest (sample_indexes)
             party.set_training_batch(sample_indexes)
             
             ct_fd, ct_sds = party.extract_ciphertexts()
@@ -287,23 +299,23 @@ def main():
         C_fd_ordered = [C_fd["clientone"], C_fd["clienttwo"], C_fd["clientthree"], C_fd["server"]]
         u = []
         
+        # Orchestrator : looping through samples
+        # To save requests, we are going to split the above to two parts: 
+        # A) vflMIFEDKGenerationRequest v_k creation in authority and returns list[dk_v_mife]
+        # B) vflFeaturesDexRequest (list[dk_v_mife]) returns the u (list[u_k])
         for k in range(sample_batch_size):
             # Everything is 0, except the k-th column which is 1.
             v_k = [[1 if j == k else 0 for j in range(sample_batch_size)] for _ in range(clients_size)]
             
-            # Send authority vflMIFEDKGenRequest
+            # Send authority vflMIFEDKGenerationRequest
             dk_v_mife_k = authority.generate_mife_decryption_key(v_k)
             
-            # Send aggragator vflFeaturesDecRequest
+            # Send aggragator vflFeaturesDecryptionRequest | returns u
             u_k = aggregator.decrypt_features_dimension(C_fd_ordered, dk_v_mife_k)
             u.append(u_k)
-
-        # Reverse the scaling
-        z_raw = np.array(u) / VFLParty.features_scale 
         
-        predictions = 1 / (1 + np.exp(-z_raw))
-        
-        batch_loss, batch_accuracy, logistic_error = server.calculate_accuracy(predictions)
+        # Send party (SERVER) vflCalculateAccuracyRequest
+        batch_loss, batch_accuracy, logistic_error = server.calculate_accuracy(u)
         
         print(f"> Loss: {batch_loss:.4f} | Accuracy: {batch_accuracy * 100:.2f}%")
         
@@ -311,19 +323,20 @@ def main():
 
         u = [int(val) for val in np.round(logistic_error * 100.0)]
 
-        # Send authority vflSIFEDKGenRequest
+        # Send authority vflSIFEDKGenerationRequest
         dk_u_sife = authority.generate_sife_decryption_key(u)
 
         gradients = {}
 
+        # Orchestrator: looping through sample dimensions
         for party_id, ct_sds in C_sd.items():
-            # Send aggragator vflSampleDecRequest
+            # Send aggragator vflSamplesDecryptionRequest | returns gradients
             party_gradients = aggregator.decrypt_samples_dimension(ct_sds, dk_u_sife)
-            float_gradients = [g / (VFLParty.features_scale * VFLParty.samples_scale * sample_batch_size) for g in party_gradients]
-            gradients[party_id] = float_gradients
+            # float_gradients = [g / (VFLParty.features_scale * VFLParty.samples_scale * sample_batch_size) for g in party_gradients]
+            gradients[party_id] = party_gradients
 
-            # Send vflGradientDescentRequest
-            parties[party_id].update_weights(float_gradients)
+            # Send party vflGradientDescentRequest
+            parties[party_id].update_weights(party_gradients)
     
     print("------------------------------------------")
     print("Intermediate accuracies:")

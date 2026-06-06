@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-targets := sql-query vfl-train-model vfl-train vfl-train-demo vfl-train-model-demo
+targets := sql-query vfl-party vfl-aggregator vfl-authority
 datasets := "../configuration/datasets/"
 branch_name := $(shell git rev-parse --abbrev-ref HEAD)
 dockerhub_account := $(shell bash -c 'source ../dynamos.conf && echo $$DOCKERHUB_ACCOUNT')
@@ -10,8 +10,7 @@ BUILD_BOTH ?= 0
 
 .PHONY: proto $(targets) dynamos vfl vfl-demo
 
-vfl: vfl-train vfl-train-model
-vfl-demo: vfl-train-demo vfl-train-model-demo
+vfl: vfl-party vfl-aggregator vfl-authority
 
 proto:
 	@python3 -m grpc_tools.protoc -I../proto-files --python_out=./dynamos-python-lib/protofiles --grpc_python_out=./dynamos-python-lib/protofiles ../proto-files/*.proto
