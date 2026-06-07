@@ -21,7 +21,7 @@ from google.protobuf.struct_pb2 import Struct, ListValue, Value
 from mife.multi.damgard import FeDamgardMulti as MIFE
 from mife.single.selective.ddh import FeDDH as SIFE
 from abc import ABC, abstractmethod
-import pickle
+import dill
 import base64
 
 np.set_printoptions(threshold=sys.maxsize)
@@ -119,15 +119,23 @@ def extract_array_from_data(request: rabbitTypes.Request, property_name: str):
     else:
         return None
 
+def extract_list_from_data(request: rabbitTypes.Request, property_name: str):
+    prop = extract_data(request, property_name)
+    
+    if (prop != None):
+        return prop.list_value.values
+    else:
+        return None
+
 def serialize_crypto_object(key) -> str:
     """Serializes key into a string."""
-    raw_bytes = pickle.dumps(key)
+    raw_bytes = dill.dumps(key)
     return base64.b64encode(raw_bytes).decode('utf-8')
 
 def deserialize_crypto_object(exported_key: str):
     """Deserializes key into the actual key object."""
     raw_bytes = base64.b64decode(exported_key.encode('utf-8'))
-    return pickle.loads(raw_bytes)
+    return dill.loads(raw_bytes)
 
 
 #endregion
@@ -228,8 +236,8 @@ def handle_vflInitializeRequest(msComm, request):
         parties_size = extract_number_from_data(request, "parties_size")
         batch_size = extract_number_from_data(request, "batch_size")
 
-        vfl_authority.parties_size = parties_size
-        vfl_authority.batch_size = batch_size
+        vfl_authority.parties_size = int(parties_size)
+        vfl_authority.batch_size = int(batch_size)
 
         vfl_authority.generate_keys()
 
@@ -243,7 +251,7 @@ def handle_vflInitializeRequest(msComm, request):
         data.update({"mife_public_key": mife_public_key_str})
         data.update({"mife_encryption_keys": mife_encryption_keys})
     except Exception as e:
-        logger.info(f"Error occurred while handling vflSampleBatchRequest: {e}")
+        logger.exception(f"Error occurred while handling vflInitializeRequest: {e}")
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -264,7 +272,7 @@ def handle_vflMIFEDKGenerationRequest(msComm, request):
 
         data.update({"dks_features_mife": dks_v_mife})
     except Exception as e:
-        logger.info(f"Error occurred while handling vflSampleBatchRequest: {e}")
+        logger.exception(f"Error occurred while handling vflMIFEDKGenerationRequest: {e}")
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -275,15 +283,16 @@ def handle_vflSIFEDKGenerationRequest(msComm, request):
     data = Struct()
 
     try:
-        logistic_error = extract_data(request, "logistic_error")
+        logistic_error = extract_list_from_data(request, "logistic_error")
+        logistic_error = [val.number_value for val in logistic_error]
 
-        u = [int(val) for val in np.round(logistic_error * 100.0)]
+        u = [int(val) for val in np.round(np.array(logistic_error) * 100.0)]
 
         dk_u_sife = vfl_authority.generate_sife_decryption_key(u)
         
         data.update({"dk_samples_sife": serialize_crypto_object(dk_u_sife)})
     except Exception as e:
-        logger.error(f"Error occurred while handling vflGetAccuraciesRequest: {e}")
+        logger.exception(f"Error occurred while handling vflSIFEDKGenerationRequest: {e}")
     
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -359,6 +368,9 @@ def main():
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt received, stopping server...")
         signal_continuation(stop_event, stop_microservice_condition)
+
+    if ms_config.next_client:
+        ms_config.next_client.rabbit.stop()
 
     ms_config.stop(2)
     logger.debug(f"Exiting {config.service_name}")

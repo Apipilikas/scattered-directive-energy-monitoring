@@ -64,6 +64,8 @@ func requestHandler() http.HandlerFunc {
 		// Generate correlationID for this request
 		correlationId := uuid.New().String()
 
+		logger.Sugar().Debug("Sending new request: ", request.Type, "for correlationId: ", correlationId)
+
 		// Switch on the role we have in this data request
 		if strings.EqualFold(compositionRequest.Role, "computeProvider") {
 			ctx, err = handleComputeProvider(ctx, compositionRequest.LocalJobName, compositionRequest, request, correlationId)
@@ -93,6 +95,8 @@ func requestHandler() http.HandlerFunc {
 		mutex.Lock()
 		responseMap[correlationId] = responseChan
 		mutex.Unlock()
+
+		logger.Sugar().Debug("Waiting for response for correlationId: ", correlationId)
 
 		select {
 		case dataResponseStruct := <-responseChan:

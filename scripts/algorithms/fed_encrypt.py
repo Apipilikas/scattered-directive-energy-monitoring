@@ -159,6 +159,7 @@ class VFLPassiveParty(VFLParty):
         sample_data = self.get_training_batch(sample_indexes)
         scaled_data = self.scaler.transform(sample_data)
         self.batch = scaled_data
+        self.batch_size = len(self.batch)
 
     def _update_partial_model(self):
         return np.dot(self.batch, self.weights)

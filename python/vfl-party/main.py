@@ -21,7 +21,7 @@ from google.protobuf.struct_pb2 import Struct, ListValue, Value
 from mife.multi.damgard import FeDamgardMulti as MIFE
 from mife.single.selective.ddh import FeDDH as SIFE
 from abc import ABC, abstractmethod
-import pickle
+import dill
 import base64
 
 
@@ -137,13 +137,13 @@ def extract_list_from_data(request: rabbitTypes.Request, property_name: str):
 
 def serialize_crypto_object(key) -> str:
     """Serializes key into a string."""
-    raw_bytes = pickle.dumps(key)
+    raw_bytes = dill.dumps(key)
     return base64.b64encode(raw_bytes).decode('utf-8')
 
 def deserialize_crypto_object(exported_key: str):
     """Deserializes key into the actual key object."""
     raw_bytes = base64.b64decode(exported_key.encode('utf-8'))
-    return pickle.loads(raw_bytes)
+    return dill.loads(raw_bytes)
 
 #endregion
 
@@ -180,7 +180,8 @@ class VFLParty(ABC):
         self.batch = self.get_training_batch(sample_indexes)
 
     def update_weights(self, gradients):
-        self.weights = self.weights - self.learning_rate * np.array(gradients)
+        float_gradients = [g / (self.features_scale * self.samples_scale * self.batch_size) for g in gradients]
+        self.weights = self.weights - self.learning_rate * np.array(float_gradients)
     
     @abstractmethod
     def _update_partial_model(self):
@@ -226,8 +227,8 @@ class VFLActiveParty(VFLParty):
         # Server holds labels, so it skips Phase 2 (SIFE)
         return None
     
-    def calculate_accuracy(self, decrypted_dimensions_dimension):
-        z_raw = np.array(decrypted_dimensions_dimension) / VFLParty.features_scale 
+    def calculate_accuracy(self, decrypted_features_dimension):
+        z_raw = np.array(decrypted_features_dimension) / VFLParty.features_scale 
         
         predictions = 1 / (1 + np.exp(-z_raw))
 
@@ -257,6 +258,7 @@ class VFLPassiveParty(VFLParty):
         sample_data = self.get_training_batch(sample_indexes)
         scaled_data = self.scaler.transform(sample_data)
         self.batch = scaled_data
+        self.batch_size = len(self.batch)
 
     def _update_partial_model(self):
         return np.dot(self.batch, self.weights)
@@ -285,12 +287,13 @@ def handle_vflExtractCiphertextsRequest(msComm: msCommTypes.MicroserviceCommunic
         ct_fd, ct_sds = vfl_party.extract_ciphertexts()
 
         feature_dimension_str = serialize_crypto_object(ct_fd)
-        sample_dimension = [serialize_crypto_object(ct_sd) for ct_sd in ct_sds]
-
         data.update({"feature_dimension": feature_dimension_str})
-        data.update({"sample_dimension": sample_dimension})
+
+        if ct_sds is not None:
+            sample_dimension = [serialize_crypto_object(ct_sd) for ct_sd in ct_sds]
+            data.update({"sample_dimension": sample_dimension})
     except Exception as e:
-        logger.error(f"Error occurred while handling vflExtractCiphertextsRequest: {e}")
+        logger.exception(f"Error occurred while handling vflExtractCiphertextsRequest: {e}")
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -300,11 +303,12 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
     global vfl_party
 
     try:
-        gradients = extract_array_from_data(request, "gradients")
+        gradients = extract_list_from_data(request, "gradients")
+        gradients = [int(val.number_value) for val in gradients]
+        
         vfl_party.update_weights(gradients)
     except Exception as e:
-        logger.error(f"Error occurred while handling vflGradientDescentRequest: {e}")
-
+        logger.exception(f"Error occurred while handling vflGradientDescentRequest: {e}")
 
     ms_config.next_client.ms_comm.send_data(msComm, Struct(), {})
 
@@ -323,9 +327,8 @@ def handle_vflInitializeRequest(msComm: msCommTypes.MicroserviceCommunication,
         sife_public_key = deserialize_crypto_object(sife_public_key_str)
 
         vfl_party.set_keys(mife_encryption_key, sife_public_key)
-        logger.debug("Keys have been initialized successfully.")
     except Exception as e:
-        logger.error(f"Error occurred while handling vflInitializeRequest: {e}")
+        logger.exception(f"Error occurred while handling vflInitializeRequest: {e}")
 
     ms_config.next_client.ms_comm.send_data(msComm, Struct(), {})
 
@@ -345,7 +348,7 @@ def handle_vflSampleBatchRequest(msComm: msCommTypes.MicroserviceCommunication,
 
         ms_config.next_client.ms_comm.send_data(msComm, data, {})
     except Exception as e:
-        logger.info(f"Error occurred while handling vflSampleBatchRequest: {e}")
+        logger.exception(f"Error occurred while handling vflSampleBatchRequest: {e}")
 
 def handle_vflCalculateAccuracyRequest(msComm: msCommTypes.MicroserviceCommunication,
                                        request: rabbitTypes.Request):
@@ -355,16 +358,18 @@ def handle_vflCalculateAccuracyRequest(msComm: msCommTypes.MicroserviceCommunica
     data = Struct()
 
     try:
-        # This is a list[int]
-        decrypted_dimensions_dimension = extract_list_from_data(request, "decrypted_dimensions_dimension")
+        # list[int]
+        decrypted_features_dimension = extract_list_from_data(request, "decrypted_features_dimension")
+        decrypted_features_dimension = [int(val.number_value) for val in decrypted_features_dimension]
 
-        batch_loss, batch_accuracy, logistic_error = vfl_party.calculate_accuracy(decrypted_dimensions_dimension)
+        # float, float, list[float]
+        batch_loss, batch_accuracy, logistic_error = vfl_party.calculate_accuracy(decrypted_features_dimension)
 
         data.update({"batch_loss": batch_loss})
         data.update({"batch_accuracy": batch_accuracy})
-        data.update({"logistic_error": logistic_error})
+        data.update({"logistic_error": np.array(logistic_error).tolist()})
     except Exception as e:
-        logger.info(f"Error occurred while handling vflSampleBatchRequest: {e}")
+        logger.exception(f"Error occurred while handling vflCalculateAccuracyRequest: {e}")
     
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -392,11 +397,11 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
         if request.type == "vflShutdownRequest":
             handle_vflShutdownRequest(msComm)
         else:
-            logger.info("This is the server (not client), relaying request.")
+            logger.info("This is the party, relaying request.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     else:
         if request is not None:
-            logger.info(f"Received request: {request.type}. This is the client.")
+            logger.info(f"Received request: {request.type}. This is the party.")
             
             if request.type == "vflInitializeRequest":
                 handle_vflInitializeRequest(msComm, request)
@@ -434,7 +439,7 @@ def main():
     try:
         data = load_data(config.dataset_filepath)
         if DATA_STEWARD_NAME == "server":
-            vfl_party = VFLActiveParty(data)
+            vfl_party = VFLActiveParty(data["Survived"].astype(int))
         else:
             vfl_party = VFLPassiveParty(data)
             

@@ -163,3 +163,9 @@ you could view the traces after performing requests in Jaegar:
 # Run Jaegar:
 kubectl port-forward -n linkerd-jaeger service/jaeger 16686:16686
 # Access at http://localhost:16686/
+```
+
+# Docker pull limitation
+```sh
+TOKEN=$(curl --silent "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | grep -o '"token":"[^"]*"' | cut -d'"' -f4) && curl --head -H "Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest
+```
