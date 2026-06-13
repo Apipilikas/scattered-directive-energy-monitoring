@@ -175,9 +175,12 @@ def execute_experiment_run(run_no: int):
     active_energy = _get_energy_comsumption()
     total_active_energy = _calculate_total_energy(active_energy)
 
+    experiment_elapsed_datetime = _format_datetime(experiment_elapsed_time)
+    active_elapsed_datetime = _format_datetime(active_elapsed_time)
+
     print("\n> Summary")
-    print(f"Experiment elapsed time: {experiment_elapsed_time} s ({_format_datetime(experiment_elapsed_time)})")
-    print(f"Active period elapsed time: {active_elapsed_time} s ({_format_datetime(active_elapsed_time)})")
+    print(f"Experiment elapsed time: {experiment_elapsed_time} s ({experiment_elapsed_datetime})")
+    print(f"Active period elapsed time: {active_elapsed_time} s ({active_elapsed_datetime})")
 
     if run_custom:
         dfs = collect_metrics(experiment_start_time, experiment_end_time, {f"{custom_container}_energy" : _get_custom_container_energy_query_range(True)})
@@ -207,6 +210,8 @@ def execute_experiment_run(run_no: int):
         "active_energy": active_energy,
         "request_approval_status_code": status_code,
         "request_approval_execution_time": execution_time,
+        "experiment_elapsed_time": experiment_elapsed_datetime,
+        "active_elapsed_time": active_elapsed_datetime,
         "accuracies": accuracies,
         "total_metrics_path": output_total_metrics_path,
         "metrics_path": output_metrics_path
