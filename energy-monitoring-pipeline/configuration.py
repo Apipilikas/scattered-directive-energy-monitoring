@@ -20,6 +20,9 @@ EXPERIMENT_OUTPUT_FOLDER = "experiments"
 EXPERIMENTS_OUTPUT_FILE_NAME = "experiments.json"
 AVERAGE_EXPERIMENTS_FILE_NAME = "average_experiments.json"
 
+# Plots constants
+PLOT_OUTPUT_FOLDER = "plots"
+
 # Kepler constants
 KEPLER_WATT_PER_SECOND_TO_KWH = 1/3600000
 KEPLER_COAL = 0.4
