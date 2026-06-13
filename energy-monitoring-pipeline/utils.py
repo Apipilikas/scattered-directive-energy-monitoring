@@ -1,6 +1,9 @@
 import time
 import json
 import argparse
+import configuration as conf
+import pandas as pd
+import os
 
 def get_time_range(minutes_before: int) -> tuple[float, float]:
 
@@ -9,27 +12,36 @@ def get_time_range(minutes_before: int) -> tuple[float, float]:
 
     return start_time, end_time
 
+def _align_experiments(dfs: list[pd.DataFrame]):
+    min_length = min(len(df) for df in dfs)
+    return [df.head(min_length) for df in dfs]
 
-def extract_property_from_json(file_path: str, property_name: str):
-    lst = []
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            
-            if isinstance(data, list):
-                for item in data:
-                    if property_name in item:
-                        lst.append(item[property_name])
+def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd.DataFrame, pd.DataFrame]:
+    with open(f"{file_path}/{conf.EXPERIMENTS_OUTPUT_FILE_NAME}", 'r') as file:
+        experiments_data = json.load(file)
 
-            
-        return lst
+    total_metrics_dfs = []
+    metrics_dfs = []
 
-    except FileNotFoundError:
-        print(f"Error: The file '{file_path}' was not found.")
-    except json.JSONDecodeError:
-        print(f"Error: '{file_path}' is not a valid JSON file.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    for run, data in experiments_data.items():
+        total_metrics_dfs.append(pd.read_csv(data["total_metrics_path"]))
+        metrics_dfs.append(pd.read_csv(data["metrics_path"]))
+   
+    return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs))
+
+def resolve_experiment_path(output_prefix, raise_ex = True) -> str:
+    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{output_prefix}"
+
+    if os.path.exists(output_path):
+        return output_path
+    else:
+        if raise_ex:
+            raise Exception(f"File path {output_path} does not exist in {conf.EXPERIMENT_OUTPUT_FOLDER} folder.")
+        else:
+            return None
+
+def get_experiments_directories():
+    return os.listdir(conf.EXPERIMENT_OUTPUT_FOLDER)
 
 def add_boolean_argument(parser: argparse.ArgumentParser, arg_tuple: tuple[str, str, str]):
     arg_flag = arg_tuple[0]

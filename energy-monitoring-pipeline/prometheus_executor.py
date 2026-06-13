@@ -12,7 +12,7 @@ def _merge(x, y):
     return data
 
 def execute_query(query: str):
-    print(f"Executing [query_range] query [{query}].")
+    print(f"Executing [query] query [{query}].")
 
     params = {
         "query": query
