@@ -58,6 +58,8 @@ PROM_QUERIES = {
 AD_ARGUMENT = '-ad', '--anomaly-detection', 'Run only anomaly detection algorithm'
 RCA_ARGUMENT = '-rca', '--root-cause-analysis', 'Run only root cause analysis algorithm'
 CM_ARGUMENT = '-cm', '--collect-metrics', 'Run only anomaly detection algorithm'
+L_ARGUMENT = '-l', '--local-mode', 'Execute experiment locally'
+F_ARGUMENT = '-f', '--fabric-mode', 'Execute experiment on FABRIC'
 
 # AD and RCA parameters
 TRAINING_DATA_PATH = f"{DATA_OUTPUT_FOLDER}/baseline_data_metrics.csv"

@@ -8,6 +8,7 @@ from collect_metrics import collect_metrics, save_metrics_to_csv
 import argparse
 import csv
 import os
+import utils
 
 # URLs
 API_BASE_URL = "http://localhost:8080/api/v1"
@@ -40,7 +41,7 @@ REQUEST_APPROVAL_HEADER = {
     "Host": "api-gateway.api-gateway.svc.cluster.local"
 }
 
-PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+PROM_CONTAINERS = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
 
@@ -48,11 +49,12 @@ def _get_duration(is_active = False):
     return conf.PROM_ACTIVE_DURATION if is_active else conf.PROM_IDLE_DURATION
 
 def _get_energy_query_range(is_active = False):
-    return f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{_get_duration(is_active)}])) by ({conf.KEPLER_LABEL})"
+    containers_filter = PROM_CONTAINERS
 
-def _get_custom_container_energy_query_range(is_active = False):
-    custom_container_prop = "{container_name=\"" + custom_container + "\"}"
-    return f"sum(increase(kepler_container_joules_total{custom_container_prop}[{_get_duration(is_active)}])) by (pod_name)"
+    if run_custom:
+        containers_filter = "{container_name=\"" + custom_container + "\"}"
+
+    return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by (pod_name)"
 
 run_baseline = False
 run_custom = False
@@ -98,11 +100,7 @@ def _get_training_status(jobId : str):
     return response.json()
 
 def _get_energy_comsumption(is_active = False):
-    if run_custom:
-        query = _get_custom_container_energy_query_range(is_active) 
-    else:
-        query = _get_energy_query_range(is_active) 
-        
+    query = _get_energy_query_range(is_active) 
     return execute_query(query)
 
 def _calculate_total_energy(metrics: dict):
@@ -147,19 +145,22 @@ def execute_experiment_run(run_no: int):
     if run_baseline:
         time.sleep(conf.ACTIVE_PERIOD)
     else:
-        request_id, status_code, execution_time = _request_approval()
+        try:
+            request_id, status_code, execution_time = _request_approval()
 
-        if status_code != 202:
-            print("Request approval status code was not expected!")
-        else:
-            while True:
-                time.sleep(5)
-                response = _get_training_status(request_id)
-                is_training_done = response["status"] == "done"
+            if status_code != 202:
+                print("Request approval status code was not expected!")
+            else:
+                while True:
+                    time.sleep(5)
+                    response = _get_training_status(request_id)
+                    is_training_done = response["status"] == "done"
 
-                if is_training_done:
-                    accuracies = response["results"]
-                    break
+                    if is_training_done:
+                        accuracies = response["results"]
+                        break
+        except Exception as e:
+            print(f"Error occurred while fetching data.\n {e}")
     
     experiment_end_time = time.time()
     experiment_elapsed_time = experiment_end_time - experiment_start_time
@@ -183,7 +184,7 @@ def execute_experiment_run(run_no: int):
     print(f"Active period elapsed time: {active_elapsed_time} s ({active_elapsed_datetime})")
 
     if run_custom:
-        dfs = collect_metrics(experiment_start_time, experiment_end_time, {f"{custom_container}_energy" : _get_custom_container_energy_query_range(True)})
+        dfs = collect_metrics(experiment_start_time, experiment_end_time, {f"{custom_container}_energy" : _get_energy_query_range(True)})
     else:
         dfs = collect_metrics(experiment_start_time, experiment_end_time)
 
@@ -230,12 +231,14 @@ def _delete_experiment_files(runs_no: int):
         if os.path.exists(file_name):
             os.remove(file_name)
 
-def _resolve_output_path(arg):
+def _resolve_output_path(arg, is_local = True):
     timestamp = datetime.datetime.now().strftime("%y%m%d_%H%M")
     output_prefix = f"{arg}_" if arg is not None else ""
     folder_name = f"{output_prefix}experiment_{timestamp}"
 
-    output_path = os.path.join(conf.EXPERIMENT_OUTPUT_FOLDER, folder_name)
+    experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
+
+    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{folder_name}"
     os.makedirs(output_path, exist_ok=True)
 
     return output_path
@@ -252,12 +255,13 @@ def _resolve_args():
     parser.add_argument("-op", "--output-prefix")
     parser.add_argument("-c", "--custom")
     parser.add_argument("-i", "--iterations")
+    utils.add_boolean_argument(parser, conf.F_ARGUMENT)
     
     args = parser.parse_args()
     
-    output_path = _resolve_output_path(args.output_prefix)
     run_baseline = args.baseline
     run_custom = args.custom is not None
+    output_path = _resolve_output_path(args.output_prefix, not args.fabric_mode)
 
     if run_custom:
         custom_container = str(args.custom)

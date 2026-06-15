@@ -1,5 +1,5 @@
 import pandas as pd
-import os
+import configuration as conf
 import argparse
 from scipy.stats import shapiro
 import utils
@@ -32,10 +32,12 @@ def test_normality(df: pd.DataFrame):
 def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-ep", "--experiment-path")
+    utils.add_boolean_argument(parser, conf.F_ARGUMENT)
 
     args = parser.parse_args()
+    is_local = not args.fabric_mode
 
-    return utils.resolve_experiment_path(args.experiment_path)
+    return utils.resolve_experiment_path(args.experiment_path, is_local)
 
 
 def main():

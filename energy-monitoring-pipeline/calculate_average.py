@@ -5,14 +5,15 @@ import pandas as pd
 import utils
 
 def main():
-    output_path = _resolve_args()
+    output_path, is_local = _resolve_args()
     print(f"============= Average experiments =============")
-    _process_statistics(output_path)
+    _process_statistics(output_path, is_local)
 
-def _process_statistics(output_path):
+def _process_statistics(output_path, is_local = True):
     if output_path is None:
-        for dir in utils.get_experiments_directories():
-            experiment_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{dir}"
+        for dir in utils.get_experiments_directories(is_local):
+            experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
+            experiment_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{dir}"
             _calculate_statistics(experiment_path)
     else:
         _calculate_statistics(output_path)
@@ -83,9 +84,11 @@ def _calculate_metrics_statistics(metrics: pd.DataFrame, output_path:str):
 def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-ep", "--experiment-path")
-
+    utils.add_boolean_argument(parser, conf.F_ARGUMENT)
+    
     args = parser.parse_args()
-    return utils.resolve_experiment_path(args.experiment_path, False)
+    is_local = not args.fabric_mode
+    return utils.resolve_experiment_path(args.experiment_path, is_local, False), is_local
 
 if __name__ == '__main__':
     main()

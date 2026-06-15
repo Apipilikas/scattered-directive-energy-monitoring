@@ -29,8 +29,8 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
    
     return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs))
 
-def resolve_experiment_path(output_prefix, raise_ex = True) -> str:
-    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{output_prefix}"
+def resolve_experiment_path(output_prefix, is_local = True, raise_ex = True) -> str:
+    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}/{output_prefix}"
 
     if os.path.exists(output_path):
         return output_path
@@ -40,8 +40,11 @@ def resolve_experiment_path(output_prefix, raise_ex = True) -> str:
         else:
             return None
 
-def get_experiments_directories():
-    return os.listdir(conf.EXPERIMENT_OUTPUT_FOLDER)
+def get_experiments_directories(is_local = True):
+    return os.listdir(f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}")
+
+def get_experiment_mode_folder(is_local = True):
+    return "local" if is_local else "fabric"
 
 def add_boolean_argument(parser: argparse.ArgumentParser, arg_tuple: tuple[str, str, str]):
     arg_flag = arg_tuple[0]
