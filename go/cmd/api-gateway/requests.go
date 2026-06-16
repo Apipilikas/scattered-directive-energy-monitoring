@@ -319,7 +319,12 @@ func findAuthorizedProvider(authorizedProviders map[string]string, targetedAuth 
 	return "", ""
 }
 
-func initializeVFLServices(dataRequest map[string]any, clients []ClientData, authorizedProviders map[string]string, sampleBatchSize int64) error {
+type ClientFeature struct {
+	PartyId      string `json:"party_id"`
+	FeaturesSize any    `json:"features_size"`
+}
+
+func initializeVFLServices(dataRequest map[string]any, clients []ClientData, weights *[]any, authorizedProviders map[string]string, sampleBatchSize int64) error {
 
 	// Initialize authority
 	responseData, err := cloneAndSendDataRequest(dataRequest, authorizedProviders,
@@ -339,24 +344,10 @@ func initializeVFLServices(dataRequest map[string]any, clients []ClientData, aut
 	sifePublicKey := responseData.Data.GetFields()["sife_public_key"].GetStringValue()
 	mifePublicKey := responseData.Data.GetFields()["mife_public_key"].GetStringValue()
 
-	// Initialize aggregator
-	responseData, err = cloneAndSendDataRequest(dataRequest, authorizedProviders,
-		Aggregator,
-		"vflInitializeRequest",
-		map[string]any{
-			"parties_size":    len(clients),
-			"batch_size":      sampleBatchSize,
-			"mife_public_key": mifePublicKey,
-			"sife_public_key": sifePublicKey,
-		},
-	)
-
-	if err != nil {
-		return err
-	}
-
 	// Initialize parties
 	var wg sync.WaitGroup
+	var mtx sync.Mutex
+	featuresSize := map[string]any{}
 
 	for index, client := range clients {
 		wg.Add(1)
@@ -364,7 +355,7 @@ func initializeVFLServices(dataRequest map[string]any, clients []ClientData, aut
 		go func() {
 			defer wg.Done()
 
-			_, err = cloneAndSendDataRequest(dataRequest, authorizedProviders,
+			responseData, err := cloneAndSendDataRequest(dataRequest, authorizedProviders,
 				client.Auth,
 				"vflInitializeRequest",
 				map[string]any{
@@ -372,15 +363,64 @@ func initializeVFLServices(dataRequest map[string]any, clients []ClientData, aut
 					"sife_public_key":     sifePublicKey,
 				},
 			)
+
+			if err == nil {
+				v := responseData.Data.GetFields()["features_size"].GetNumberValue()
+				if v != 0 {
+					mtx.Lock()
+					featuresSize[client.Auth] = v
+					mtx.Unlock()
+				}
+			}
 		}()
 	}
 
 	wg.Wait()
 
+	orderedClientFeatures := []ClientFeature{}
+
+	logger.Sugar().Debug("Clients: ", clients)
+
+	for _, client := range clients {
+		if size, exists := featuresSize[client.Auth]; exists {
+			orderedClientFeatures = append(orderedClientFeatures, ClientFeature{
+				PartyId:      client.Auth,
+				FeaturesSize: size,
+			})
+		}
+	}
+
+	// Initialize aggregator
+	responseData, err = cloneAndSendDataRequest(dataRequest, authorizedProviders,
+		Aggregator,
+		"vflInitializeRequest",
+		map[string]any{
+			"parties_size":     len(clients),
+			"batch_size":       sampleBatchSize,
+			"mife_public_key":  mifePublicKey,
+			"sife_public_key":  sifePublicKey,
+			"parties_features": orderedClientFeatures,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	*weights = ToAnyList(responseData.Data.GetFields()["weights"].GetListValue().GetValues())
+
 	return nil
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, authorizedProviders map[string]string, sampleBatchSize int64) (float64, error) {
+func ToAnyList[T any](input []T) []any {
+	result := make([]any, len(input))
+	for i, v := range input {
+		result[i] = v
+	}
+	return result
+}
+
+func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weights *[]any, authorizedProviders map[string]string, sampleBatchSize int64) (float64, error) {
 
 	responseData, err := cloneAndSendDataRequest(dataRequest, authorizedProviders,
 		Server,
@@ -401,18 +441,33 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, autho
 	featureDimension := map[string]any{}
 	sampleDimension := map[string]any{}
 
+	index := 0
+
 	for _, client := range clients {
 		wg.Add(1)
 
-		go func() {
+		weightIndex := -1
+		// Server holds only labels. No weights.
+		if strings.ToLower(client.Auth) != Server {
+			weightIndex = index
+			index++
+		}
+
+		go func(idx int) {
 			defer wg.Done()
+
+			data := map[string]any{
+				"sample_batch_indexes": sampleBatchIndexes,
+			}
+
+			if weightIndex != -1 {
+				data["weights"] = (*weights)[idx]
+			}
 
 			responseData, err := cloneAndSendDataRequest(dataRequest, authorizedProviders,
 				client.Auth,
 				"vflExtractCiphertextsRequest",
-				map[string]any{
-					"sample_batch_indexes": sampleBatchIndexes,
-				},
+				data,
 			)
 
 			if err != nil {
@@ -426,7 +481,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, autho
 				sampleDimension[client.Auth] = sampleDimensionField.GetListValue().GetValues()
 			}
 
-		}()
+		}(weightIndex)
 	}
 
 	wg.Wait()
@@ -504,34 +559,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, autho
 		},
 	)
 
-	gradients := responseData.Data.GetFields()["gradients"].GetListValue().GetValues()
-
-	gradIndex := 0
-
-	for _, client := range clients {
-
-		if _, exists := sampleDimension[client.Auth]; !exists {
-			continue
-		}
-
-		wg.Add(1)
-
-		go func(index int) {
-			defer wg.Done()
-
-			responseData, err = cloneAndSendDataRequest(dataRequest, authorizedProviders,
-				client.Auth,
-				"vflGradientDescentRequest",
-				map[string]any{
-					"gradients": gradients[index],
-				},
-			)
-		}(gradIndex)
-
-		gradIndex++
-	}
-
-	wg.Wait()
+	*weights = ToAnyList(responseData.Data.GetFields()["weights"].GetListValue().GetValues())
 
 	return accuracy, nil
 }
@@ -621,6 +649,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	var policyChanged bool
 	var finalAccuracy float64
 	var wg sync.WaitGroup
+	var weights = []any{}
 
 	// Default parameters values
 	var sampleBatchSize int64 = 64
@@ -721,7 +750,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	// Checks if policy changes (from incoming messages)
 	checkPolicyUpdate(clients, user, &policyChanged)
 
-	initializeVFLServices(dataRequest, getSafeClients(clients), authorizedProviders, sampleBatchSize)
+	initializeVFLServices(dataRequest, getSafeClients(clients), &weights, authorizedProviders, sampleBatchSize)
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	for cycle := range cycles {
@@ -730,7 +759,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		currentClients := getSafeClients(clients)
 
 		if policyChanged {
-			initializeVFLServices(dataRequest, currentClients, authorizedProviders, sampleBatchSize)
+			initializeVFLServices(dataRequest, currentClients, &weights, authorizedProviders, sampleBatchSize)
 			policyChanged = false
 		}
 
@@ -784,7 +813,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 		}
 
-		accuracy, err := runVFLTrainingRound(dataRequest, currentClients, authorizedProviders, sampleBatchSize)
+		accuracy, err := runVFLTrainingRound(dataRequest, currentClients, &weights, authorizedProviders, sampleBatchSize)
 
 		finalAccuracy = accuracy
 

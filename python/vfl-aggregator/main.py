@@ -152,17 +152,61 @@ def deserialize_crypto_object(exported_key: str):
 
 class VFLAggregator:
     def __init__(self):
-        self.parties_size = 4
-        self.features_size = 5
+        self.parties_size = 0
+        self.features_size = 0
         self.batch_size = 256
-        self.learning_rate = 0.001
+        self.learning_rate = 0.1
         self.sife_pk = None
         self.mife_pk = None
+        self.weights = []
+        self.parties = []
 
         self.mife_bound = (-50000, 50000)
         # self.sife_bound = (-50000, 50000)
         self.sife_bound = (-10000000, 10000000)
 
+        self.features_scale = 100
+        self.samples_scale = 100
+
+    def update_parties(self, parties_features):
+        new_parties_order = []
+        new_parties = {}
+
+        for party in parties_features.list_value.values:
+            item = party.struct_value
+
+            party_id = item.fields["party_id"].string_value
+            features_size = int(item.fields["features_size"].number_value)
+
+            new_parties[party_id] = features_size
+            new_parties_order.append(party_id)
+
+        old_weights = dict(zip(self.parties, self.weights))
+
+        new_weights = []
+        for party_id in new_parties_order:
+            if party_id in old_weights:
+                # Party exists
+                new_weights.append(old_weights[party_id])
+            else:
+                # New party
+                features_size = new_parties[party_id]
+                
+                new_weight = self._initialize_weights(features_size)
+                new_weights.append(new_weight)
+
+        logger.info(f"Old parties: {self.parties}")
+        self.parties = new_parties_order
+        self.weights = new_weights
+        logger.info(f"Updated parties: {new_parties_order}")
+
+    def _initialize_weights(self, features_size):
+        return np.random.randn(features_size) * 0.01
+    
+    def update_weights(self, gradients):
+        for i in range(len(self.weights)):
+            float_gradients = [g / (self.features_scale * self.samples_scale * self.batch_size) for g in gradients[i]]
+            self.weights[i] = self.weights[i] - self.learning_rate * np.array(float_gradients)
 
     def set_public_keys(self, sife_pk, mife_pk):
         self.sife_pk = sife_pk
@@ -197,6 +241,8 @@ def handle_vflInitializeRequest(msComm, request):
     global ms_config
     global vfl_aggregator
 
+    data = Struct()
+
     try:
         parties_size = extract_number_from_data(request, "parties_size")
         batch_size = extract_number_from_data(request, "batch_size")
@@ -212,10 +258,16 @@ def handle_vflInitializeRequest(msComm, request):
 
         vfl_aggregator.mife_pk = mife_public_key
         vfl_aggregator.sife_pk = sife_public_key
+
+        parties_features = extract_data(request, "parties_features")
+        vfl_aggregator.update_parties(parties_features)
+
+        weights = [serialise_array(w) for w in vfl_aggregator.weights]
+        data.update({"weights": weights})
     except Exception as e:
         logger.exception(f"Error occurred while handling handle_vflInitializeRequest: {e}")
 
-    ms_config.next_client.ms_comm.send_data(msComm, Struct(), {})
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
 def handle_vflShutdownRequest(msComm):
     global ms_config
@@ -273,7 +325,10 @@ def handle_vflSamplesDecryptionRequest(msComm, request):
             party_gradients = vfl_aggregator.decrypt_samples_dimension(ct_sds, dk_u_sife)
             gradients.append(party_gradients)
         
-        data.update({"gradients": gradients})
+        vfl_aggregator.update_weights(gradients)
+        weights = [serialise_array(w) for w in vfl_aggregator.weights]
+
+        data.update({"weights": weights})
     except Exception as e:
         logger.exception(f"Error occurred while handling vflSamplesDecryptionRequest: {e}")
     

@@ -122,7 +122,7 @@ def extract_string_from_data(request: rabbitTypes.Request, property_name: str):
 def extract_array_from_data(request: rabbitTypes.Request, property_name: str):
     prop = extract_string_from_data(request, property_name)
     
-    if (prop != None):
+    if (prop != None and prop != ""):
         return deserialise_array(prop)
     else:
         return None
@@ -158,7 +158,6 @@ class VFLParty(ABC):
         self.data = data
         self.features_size = 0
         self.batch = None
-        self.weights = None
         self.mife_sk = None # Encryption key / Secret key / sk_MIFE_pi
         self.sife_pk = None # Encryption key / Public key / pk_SIFE
 
@@ -178,17 +177,13 @@ class VFLParty(ABC):
     
     def set_training_batch(self, sample_indexes):
         self.batch = self.get_training_batch(sample_indexes)
-
-    def update_weights(self, gradients):
-        float_gradients = [g / (self.features_scale * self.samples_scale * self.batch_size) for g in gradients]
-        self.weights = self.weights - self.learning_rate * np.array(float_gradients)
     
     @abstractmethod
-    def _update_partial_model(self):
+    def _update_partial_model(self, weights):
         pass
 
-    def extract_feature_dimension(self):
-        updated_model = self._update_partial_model()
+    def extract_feature_dimension(self, weights):
+        updated_model = self._update_partial_model(weights)
         updated_model =  np.array(updated_model).flatten()
 
         # Up-scaling the data for better precision
@@ -209,8 +204,8 @@ class VFLParty(ABC):
 
         return cts
     
-    def extract_ciphertexts(self):
-        ct_fd = self.extract_feature_dimension() # ciphertext for feature dimension SA
+    def extract_ciphertexts(self, weights):
+        ct_fd = self.extract_feature_dimension(weights) # ciphertext for feature dimension SA
         ct_sds = self.extract_sample_dimension() # ciphertext list for sample dimension SA
         return ct_fd, ct_sds
 
@@ -218,7 +213,7 @@ class VFLActiveParty(VFLParty):
     def __init__(self, data):
         super().__init__(data)
 
-    def _update_partial_model(self):
+    def _update_partial_model(self, weights):
         # Exclude labels from calculation
         return np.zeros(len(self.batch))
         # return -np.array(self.batch) This was for linear regression
@@ -249,19 +244,14 @@ class VFLPassiveParty(VFLParty):
         self.scaler.fit(self.data)
         self.features_size = len(self.data.columns)
 
-        self._initialize_weights()
-
-    def _initialize_weights(self):
-        self.weights = np.random.randn(self.features_size) * 0.01
-
     def set_training_batch(self, sample_indexes):
         sample_data = self.get_training_batch(sample_indexes)
         scaled_data = self.scaler.transform(sample_data)
         self.batch = scaled_data
         self.batch_size = len(self.batch)
 
-    def _update_partial_model(self):
-        return np.dot(self.batch, self.weights)
+    def _update_partial_model(self, weights):
+        return np.dot(self.batch, weights)
 
 #endregion
 
@@ -284,7 +274,12 @@ def handle_vflExtractCiphertextsRequest(msComm: msCommTypes.MicroserviceCommunic
         sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
         vfl_party.set_training_batch(sample_indexes)
 
-        ct_fd, ct_sds = vfl_party.extract_ciphertexts()
+        weights = extract_array_from_data(request, "weights")
+
+        if weights is None:
+            weights = np.array([]) # For passive parties
+
+        ct_fd, ct_sds = vfl_party.extract_ciphertexts(weights)
 
         feature_dimension_str = serialize_crypto_object(ct_fd)
         data.update({"feature_dimension": feature_dimension_str})
@@ -297,21 +292,6 @@ def handle_vflExtractCiphertextsRequest(msComm: msCommTypes.MicroserviceCommunic
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
-def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunication, 
-                                     request: rabbitTypes.Request):
-    global ms_config
-    global vfl_party
-
-    try:
-        gradients = extract_list_from_data(request, "gradients")
-        gradients = [int(val.number_value) for val in gradients]
-        
-        vfl_party.update_weights(gradients)
-    except Exception as e:
-        logger.exception(f"Error occurred while handling vflGradientDescentRequest: {e}")
-
-    ms_config.next_client.ms_comm.send_data(msComm, Struct(), {})
-
 def handle_vflPingRequest(msComm: msCommTypes.MicroserviceCommunication):
     global ms_config
     
@@ -319,6 +299,9 @@ def handle_vflPingRequest(msComm: msCommTypes.MicroserviceCommunication):
 
 def handle_vflInitializeRequest(msComm: msCommTypes.MicroserviceCommunication,
                                     request: rabbitTypes.Request):
+
+    data = Struct()
+
     try:
         mife_encryption_key_str = extract_string_from_data(request, "mife_encryption_key")
         sife_public_key_str = extract_string_from_data(request, "sife_public_key")
@@ -327,10 +310,12 @@ def handle_vflInitializeRequest(msComm: msCommTypes.MicroserviceCommunication,
         sife_public_key = deserialize_crypto_object(sife_public_key_str)
 
         vfl_party.set_keys(mife_encryption_key, sife_public_key)
+        
+        data.update({"features_size": vfl_party.features_size})
     except Exception as e:
         logger.exception(f"Error occurred while handling vflInitializeRequest: {e}")
 
-    ms_config.next_client.ms_comm.send_data(msComm, Struct(), {})
+    ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
 def handle_vflSampleBatchRequest(msComm: msCommTypes.MicroserviceCommunication,
                                  request: rabbitTypes.Request):
@@ -411,9 +396,6 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
             elif request.type == "vflExtractCiphertextsRequest":
                 handle_vflExtractCiphertextsRequest(msComm, request)
-                
-            elif request.type == "vflGradientDescentRequest":
-                handle_vflGradientDescentRequest(msComm, request)
 
             elif request.type == "vflCalculateAccuracyRequest" and isinstance(vfl_party, VFLActiveParty):
                 handle_vflCalculateAccuracyRequest(msComm, request)
