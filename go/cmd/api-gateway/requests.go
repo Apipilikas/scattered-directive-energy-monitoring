@@ -490,6 +490,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 
 	orderedFeatureDimension := []any{}
 	orderedSampleDimension := []any{}
+	orderedActiveClients := []any{}
 
 	for _, client := range clients {
 		orderedFeatureDimension = append(orderedFeatureDimension, featureDimension[client.Auth])
@@ -498,12 +499,15 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 			orderedSampleDimension = append(orderedSampleDimension, sd)
 		}
 
+		orderedActiveClients = append(orderedActiveClients, map[bool]int{true: 1, false: 0}[client.Active])
 	}
 
 	responseData, err = cloneAndSendDataRequest(dataRequest, authorizedProviders,
 		Authority,
 		"vflMIFEDKGenerationRequest",
-		map[string]any{},
+		map[string]any{
+			"active_parties": orderedActiveClients,
+		},
 	)
 
 	dkFeaturesMife := responseData.Data.GetFields()["dks_features_mife"].GetListValue().GetValues()
@@ -601,33 +605,51 @@ func checkPolicyUpdate(clients *[]ClientData, user *pb.User, policyChanged *bool
 
 			validDataproviders := policyUpdateResponse.GetValidDataproviders()
 
-			if len(*clients) != len(validDataproviders)-len(excludedClients) {
-				logger.Sugar().Debug("Clients before policy update: ", clients)
+			logger.Sugar().Debug("Clients before policy update: ", clients)
 
-				var activeClients []ClientData
-				for auth, agentDetail := range availableProviders {
-					if shouldExcludeClient(strings.ToLower(auth)) {
-						continue
+			clientsMutex.Lock()
+			existingClients := make(map[string]bool)
+
+			for i, client := range *clients {
+				existingClients[client.Auth] = true
+
+				_, isValid := validDataproviders[client.Auth]
+
+				if isValid {
+					// Policy reintroduced
+					if !client.Active {
+						(*clients)[i].Active = true
+						logger.Sugar().Debug("[", client.Auth, "] [>!<PolicyChange>!<] Policy reintroduced.")
 					}
-
-					_, isValid := validDataproviders[auth]
-
-					if !isValid {
-						continue
+				} else {
+					// Policy removed
+					if client.Active {
+						(*clients)[i].Active = false
+						logger.Sugar().Debug("[", client.Auth, "] [>!<PolicyChange>!<] Policy removed.")
 					}
+				}
+			}
 
-					activeClients = append(activeClients, ClientData{
-						Auth: auth,
-						Url:  agentDetail.Dns,
-					})
+			for auth, agentDetail := range availableProviders {
+				if shouldExcludeClient(strings.ToLower(auth)) {
+					continue
 				}
 
-				clientsMutex.Lock()
-				*clients = activeClients
-				*policyChanged = true
-				clientsMutex.Unlock()
-				logger.Sugar().Debug("Clients after policy update: ", clients)
+				_, isValid := validDataproviders[auth]
+
+				if isValid && !existingClients[auth] {
+					*clients = append(*clients, ClientData{
+						Auth:   auth,
+						Url:    agentDetail.Dns,
+						Active: true,
+					})
+					*policyChanged = true
+					logger.Sugar().Debug("[", auth, "] [>!<PolicyChange>!<] Policy added.")
+				}
 			}
+
+			clientsMutex.Unlock()
+			logger.Sugar().Debug("Clients after policy update: ", clients)
 		}
 
 		policyUpdateMutex.Lock()
@@ -637,8 +659,9 @@ func checkPolicyUpdate(clients *[]ClientData, user *pb.User, policyChanged *bool
 }
 
 type ClientData struct {
-	Auth string
-	Url  string
+	Auth   string
+	Url    string
+	Active bool
 }
 
 func shouldExcludeClient(auth string) bool {
@@ -690,7 +713,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		lower := strings.ToLower(auth)
 
 		if !shouldExcludeClient(lower) && url != "" {
-			*clients = append(*clients, ClientData{Auth: auth, Url: url})
+			*clients = append(*clients, ClientData{Auth: auth, Url: url, Active: true})
 		}
 
 		dataProviders = append(dataProviders, auth)
@@ -760,6 +783,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		currentClients := getSafeClients(clients)
 
 		if policyChanged {
+			// Aggreement has been added. Re-initilization is mandatory.
 			initializeVFLServices(dataRequest, currentClients, &weights, authorizedProviders, sampleBatchSize)
 			policyChanged = false
 		}

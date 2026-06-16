@@ -263,9 +263,11 @@ def handle_vflMIFEDKGenerationRequest(msComm, request):
     dks_v_mife = []
 
     try:
+        active_parties = extract_list_from_data(request, "active_parties")
+
         for k in range(vfl_authority.batch_size):
             # Everything is 0, except the k-th column which is 1.
-            v_k = [[1 if j == k else 0 for j in range(vfl_authority.batch_size)] for _ in range(vfl_authority.parties_size)]
+            v_k = [[int(party.number_value) if j == k else 0 for j in range(vfl_authority.batch_size)] for party in active_parties]
 
             dk_v_mife_k = vfl_authority.generate_mife_decryption_key(v_k)
             dks_v_mife.append(serialize_crypto_object(dk_v_mife_k))
