@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"slices"
+
 	"github.com/Jorrit05/DYNAMOS/pkg/api"
 	"github.com/Jorrit05/DYNAMOS/pkg/lib"
 	pb "github.com/Jorrit05/DYNAMOS/pkg/proto"
@@ -599,8 +601,7 @@ func checkPolicyUpdate(clients *[]ClientData, user *pb.User, policyChanged *bool
 
 			validDataproviders := policyUpdateResponse.GetValidDataproviders()
 
-			// We exclude server from valid data providers
-			if len(*clients) != len(validDataproviders)-1 {
+			if len(*clients) != len(validDataproviders)-len(excludedClients) {
 				logger.Sugar().Debug("Clients before policy update: ", clients)
 
 				var activeClients []ClientData
@@ -641,7 +642,7 @@ type ClientData struct {
 }
 
 func shouldExcludeClient(auth string) bool {
-	return auth == Aggregator || auth == Authority
+	return slices.Contains(excludedClients, auth)
 }
 
 func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]string, jobId string, ctx context.Context, requestID string) []byte {
