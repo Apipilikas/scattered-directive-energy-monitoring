@@ -41,7 +41,7 @@ REQUEST_APPROVAL_HEADER = {
     "Host": "api-gateway.api-gateway.svc.cluster.local"
 }
 
-PROM_CONTAINERS = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
 
@@ -54,7 +54,7 @@ def _get_energy_query_range(is_active = False):
     if run_custom:
         containers_filter = "{container_name=\"" + custom_container + "\"}"
 
-    return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by (pod_name)"
+    return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by ({conf.KEPLER_LABEL})"
 
 run_baseline = False
 run_custom = False

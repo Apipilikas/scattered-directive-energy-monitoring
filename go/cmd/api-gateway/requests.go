@@ -229,6 +229,7 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	responses := map[string]string{}
 
 	for auth, url := range clients {
@@ -253,7 +254,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 			return 0., err
 		}
 
-		go func() {
+		go func(tgt string) {
 			responseData, err := sendData(endpoint, dataRequestJson)
 
 			if err != nil {
@@ -274,12 +275,13 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 					embeddings = ""
 					// TODO: Handle disagreements?
 				}
-
-				responses[target] = embeddings
+				mu.Lock()
+				responses[tgt] = embeddings
+				mu.Unlock()
 			}
 
 			wg.Done()
-		}()
+		}(target)
 	}
 
 	wg.Wait()
@@ -746,6 +748,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 func sendDataToAuthProviders(dataRequest []byte, authorizedProviders map[string]string, msgType string, jobId string) []byte {
 	// Setup the wait group for async data requests
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	var responses []string
 
 	// This will be replaced with AMQ in the future
@@ -765,7 +768,9 @@ func sendDataToAuthProviders(dataRequest []byte, authorizedProviders map[string]
 			if err != nil {
 				logger.Sugar().Errorf("Error sending data, %v", err)
 			}
+			mu.Lock()
 			responses = append(responses, respData)
+			mu.Unlock()
 			// Signal that the data request has been sent to all auth providers
 			wg.Done()
 		}()

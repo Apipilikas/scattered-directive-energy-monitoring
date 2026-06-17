@@ -26,7 +26,7 @@ PLOT_OUTPUT_FOLDER = "plots"
 # Kepler constants
 KEPLER_WATT_PER_SECOND_TO_KWH = 1/3600000
 KEPLER_COAL = 0.4
-KEPLER_CARBON_COEFFICIENT = 0.2
+KEPLER_CARBON_COEFFICIENT = 0.2264
 
 # Prometheus constants
 PROM_IDLE_DURATION = f"{_IDLE_PERIOD_MINS}m"
@@ -45,13 +45,13 @@ PROM_QUERIES = {
     # both local and fabric environments.
     # "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by ({CADVISOR_LABEL})",
     "carbon_coal": f"(sum(increase((kepler_container_joules_total[24h:1m]))) by ({KEPLER_LABEL}) * {KEPLER_WATT_PER_SECOND_TO_KWH}) * {KEPLER_COAL}",
-    # "carbon_emission": f"""(sum(increase(kepler_container_joules_total[1h]) * (1/3600000)) by (container_name)) 
-    #                         * 
-    #                         (
-    #                         sum(count_over_time(kepler_container_joules_total[24h])) by (container_name) 
-    #                         / 
-    #                         sum(count_over_time(kepler_container_joules_total[1h])) by (container_name)
-    #                         ) * {KEPLER_CARBON_COEFFICIENT}"""
+    "carbon_emission": f"""(sum(increase(kepler_container_joules_total[1h]) * ({KEPLER_WATT_PER_SECOND_TO_KWH})) by (container_name)) 
+                            * 
+                            (
+                            sum(count_over_time(kepler_container_joules_total[24h])) by (container_name) 
+                            / 
+                            sum(count_over_time(kepler_container_joules_total[1h])) by (container_name)
+                            ) * {KEPLER_CARBON_COEFFICIENT}"""
 }
 
 # Arguments
@@ -67,6 +67,8 @@ RCD_K = 5
 
 # Containers
 CONTAINERS = [
+    "kernel_processes",
+    "system_processes",
     "api-gateway",
     "policy-enforcer",
     "orchestrator",

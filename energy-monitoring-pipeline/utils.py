@@ -29,8 +29,8 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
    
     return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs))
 
-def resolve_experiment_path(output_prefix, is_local = True, raise_ex = True) -> str:
-    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}/{output_prefix}"
+def resolve_experiment_path(path, is_local = True, raise_ex = True) -> str:
+    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}/{path}"
 
     if os.path.exists(output_path):
         return output_path
