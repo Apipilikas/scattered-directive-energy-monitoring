@@ -45,6 +45,11 @@ PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".
 PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
 
+run_baseline = False
+run_custom = False
+custom_container = ""
+output_path = ""
+
 def _get_duration(is_active = False):
     return conf.PROM_ACTIVE_DURATION if is_active else conf.PROM_IDLE_DURATION
 
@@ -56,10 +61,19 @@ def _get_energy_query_range(is_active = False):
 
     return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by ({conf.KEPLER_LABEL})"
 
-run_baseline = False
-run_custom = False
-custom_container = ""
-output_path = ""
+def _get_carbon_emission_query_range():
+    containers_filter = PROM_CONTAINERS
+
+    if run_custom:
+        containers_filter = "{container_name=\"" + custom_container + "\"}"
+
+    return f"""(sum(increase(kepler_container_joules_total{containers_filter}[1h]) * ({conf.KEPLER_WATT_PER_SECOND_TO_KWH})) by ({conf.KEPLER_LABEL})) 
+                * 
+                (
+                sum(count_over_time(kepler_container_joules_total{containers_filter}[24h])) by ({conf.KEPLER_LABEL}) 
+                / 
+                sum(count_over_time(kepler_container_joules_total{containers_filter}[1h])) by ({conf.KEPLER_LABEL})
+                ) * {conf.KEPLER_CARBON_COEFFICIENT}"""
 
 def main():
     iterations = _resolve_args()
@@ -99,11 +113,15 @@ def _get_training_status(jobId : str):
 
     return response.json()
 
+def _get_carbon_emission():
+    query = _get_carbon_emission_query_range()
+    return execute_query(query)
+
 def _get_energy_comsumption(is_active = False):
     query = _get_energy_query_range(is_active) 
     return execute_query(query)
 
-def _calculate_total_energy(metrics: dict):
+def _sum_metrics(metrics: dict):
     return sum(float(value) for value in metrics.values())
 
 def _format_datetime(seconds) -> str:
@@ -132,7 +150,10 @@ def execute_experiment_run(run_no: int):
     time.sleep(conf.IDLE_PERIOD)
     
     idle_energy = _get_energy_comsumption()
-    total_idle_energy = _calculate_total_energy(idle_energy)
+    total_idle_energy = _sum_metrics(idle_energy)
+
+    idle_carbon_emission = _get_carbon_emission()
+    total_idle_carbon_emission = _sum_metrics(idle_carbon_emission)
 
     accuracies = {}
     status_code = 0
@@ -174,7 +195,10 @@ def execute_experiment_run(run_no: int):
         time.sleep(remaining_time)
 
     active_energy = _get_energy_comsumption()
-    total_active_energy = _calculate_total_energy(active_energy)
+    total_active_energy = _sum_metrics(active_energy)
+
+    active_carbon_emission = _get_carbon_emission()
+    total_active_carbon_emission = _sum_metrics(active_carbon_emission)
 
     experiment_elapsed_datetime = _format_datetime(experiment_elapsed_time)
     active_elapsed_datetime = _format_datetime(active_elapsed_time)
@@ -193,26 +217,33 @@ def execute_experiment_run(run_no: int):
 
     output_total_metrics_path = f"{output_path}/experiment_{run_no}_total_metrics.csv"
     with open(output_total_metrics_path, mode="w", newline="") as file:
-        fieldnames = ["total_idle_energy", "total_active_energy", "total_energy_difference"]
+        fieldnames = ["total_idle_energy", "total_active_energy", "total_energy_difference", 
+                      "total_idle_carbon_emission", "total_active_carbon_emission", "total_carbon_emission_difference"]
+        
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
-        # Calculate total idle, active and difference energy consumption
+
         total_energy_difference = total_active_energy - total_idle_energy
+        total_carbon_emission_difference = total_active_carbon_emission - total_idle_carbon_emission
         
-        # Add energy data
         writer.writerow({
             "total_idle_energy": total_idle_energy,
             "total_active_energy": total_active_energy,
-            "total_energy_difference": total_energy_difference
+            "total_energy_difference": total_energy_difference,
+            "total_idle_carbon_emission": total_idle_carbon_emission,
+            "total_active_carbon_emission": total_active_carbon_emission,
+            "total_carbon_emission_difference": total_carbon_emission_difference
         })
 
     output = {
-        "idle_energy": idle_energy,
-        "active_energy": active_energy,
         "request_approval_status_code": status_code,
         "request_approval_execution_time": execution_time,
         "experiment_elapsed_time": experiment_elapsed_datetime,
         "active_elapsed_time": active_elapsed_datetime,
+        "idle_energy": idle_energy,
+        "active_energy": active_energy,
+        "idle_carbon_emission": idle_carbon_emission,
+        "active_carbon_emission": active_carbon_emission,
         "accuracies": accuracies,
         "total_metrics_path": output_total_metrics_path,
         "metrics_path": output_metrics_path

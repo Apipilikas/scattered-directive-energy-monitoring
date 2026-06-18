@@ -45,12 +45,12 @@ PROM_QUERIES = {
     # both local and fabric environments.
     # "disk" : f"sum(rate(container_fs_reads_bytes_total[{DURATION}])) by ({CADVISOR_LABEL})",
     "carbon_coal": f"(sum(increase((kepler_container_joules_total[24h:1m]))) by ({KEPLER_LABEL}) * {KEPLER_WATT_PER_SECOND_TO_KWH}) * {KEPLER_COAL}",
-    "carbon_emission": f"""(sum(increase(kepler_container_joules_total[1h]) * ({KEPLER_WATT_PER_SECOND_TO_KWH})) by (container_name)) 
+    "carbon_emission": f"""(sum(increase(kepler_container_joules_total[1h]) * ({KEPLER_WATT_PER_SECOND_TO_KWH})) by ({KEPLER_LABEL})) 
                             * 
                             (
-                            sum(count_over_time(kepler_container_joules_total[24h])) by (container_name) 
+                            sum(count_over_time(kepler_container_joules_total[24h])) by ({KEPLER_LABEL}) 
                             / 
-                            sum(count_over_time(kepler_container_joules_total[1h])) by (container_name)
+                            sum(count_over_time(kepler_container_joules_total[1h])) by ({KEPLER_LABEL})
                             ) * {KEPLER_CARBON_COEFFICIENT}"""
 }
 
