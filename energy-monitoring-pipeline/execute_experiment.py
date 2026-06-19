@@ -20,7 +20,7 @@ REQUEST_APPROVAL_DATA_PROVIDERS = ["server", "clientone", "clienttwo", "clientth
 REQUEST_APPROVAL_BODY = {
     "type": "vflTrainModelRequest",
     "user": {
-      "id": "1234",
+      "id": "GUID",
       "userName": "evangelos.pipilikas@student.uva.nl"
     },
     "dataProviders": REQUEST_APPROVAL_DATA_PROVIDERS,
@@ -28,7 +28,7 @@ REQUEST_APPROVAL_BODY = {
       "type": "vflTrainModelRequest",
       "data": {
         "learning_rate": 0.1,
-        "cycles": 180,
+        "cycles": 50,
         "policy_removal": -1,
         "policy_reintroduction": -1,
         "training_backtrack": 0
@@ -148,7 +148,7 @@ def execute_experiment_run(run_no: int):
     experiment_start_time = time.time()
     
     print("Waiting for idle period ...")
-    time.sleep(conf.IDLE_PERIOD)
+    # time.sleep(conf.IDLE_PERIOD)
     
     idle_energy = _get_energy_comsumption()
     total_idle_energy = _sum_metrics(idle_energy)
