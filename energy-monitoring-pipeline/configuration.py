@@ -12,7 +12,7 @@ DATA_RCA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/rca_results.csv"
 
 # Experiment constants
 _IDLE_PERIOD_MINS = 2
-_ACTIVE_PERIOD_MINS = 4
+_ACTIVE_PERIOD_MINS = 3
 EXPERIMENT_RUNS_NO = 10
 IDLE_PERIOD = _IDLE_PERIOD_MINS * 60
 ACTIVE_PERIOD = _ACTIVE_PERIOD_MINS * 60
@@ -67,7 +67,7 @@ RCD_K = 5
 
 # Containers
 CONTAINERS = [
-    "kernel_processes",
+    # "kernel_processes",
     "system_processes",
     "api-gateway",
     "policy-enforcer",
