@@ -4,6 +4,7 @@ import argparse
 import configuration as conf
 import pandas as pd
 import os
+from collections import defaultdict
 
 def get_time_range(minutes_before: int) -> tuple[float, float]:
 
@@ -23,11 +24,28 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
     total_metrics_dfs = []
     metrics_dfs = []
 
+    flat_metrics = defaultdict(list)
+    nested_metrics = defaultdict(lambda: defaultdict(list))
+
+    ignore_properties = ["accuracies", "total_metrics_path", "metrics_path"]
+
     for run, data in experiments_data.items():
         total_metrics_dfs.append(pd.read_csv(data["total_metrics_path"]))
         metrics_dfs.append(pd.read_csv(data["metrics_path"]))
+
+        for key, value in data.items():
+            if key in ignore_properties:
+                continue
+
+            if isinstance(value, dict):
+                for component, v in value.items():
+                    nested_metrics[key][component].append(float(v))
+            else:
+                flat_metrics[key].append(value)
+
+    aggregated_metrics = {**{k: dict(v) for k, v in nested_metrics.items()}, **dict(flat_metrics)}
    
-    return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs))
+    return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs)), aggregated_metrics
 
 def resolve_experiment_path(path, is_local = True, raise_ex = True) -> str:
     output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}/{path}"

@@ -2,6 +2,7 @@ import argparse
 import json
 import configuration as conf
 import pandas as pd
+import numpy as np
 import utils
 
 def main():
@@ -20,19 +21,23 @@ def _process_statistics(output_path, is_local = True):
 
 def _calculate_statistics(output_path:str):
     print(f"> Calculating statistics for {output_path}")
-    total_metrics_data, metrics_data = utils.read_experiments_file(output_path)
+    total_metrics_data, metrics_data, aggregated_data = utils.read_experiments_file(output_path)
 
     output = {}
 
     total_metrics_mean_path, total_metrics_std_path = _calculate_total_metrics_statistics(total_metrics_data, output_path)
     metrics_mean_path, metrics_std_path = _calculate_metrics_statistics(metrics_data, output_path)
 
-    output = {
+    stats = _calculate_aggregated_statistics(aggregated_data)
+
+    file_paths = {
         "total_metrics_mean_path": total_metrics_mean_path,
         "total_metrics_std_path": total_metrics_std_path,
         "metrics_mean_path": metrics_mean_path,
         "metrics_std_path": metrics_std_path
     }
+
+    output = {**file_paths, **stats}
 
     output_file_path = f"{output_path}/{conf.AVERAGE_EXPERIMENTS_FILE_NAME}"
 
@@ -45,7 +50,10 @@ def _calculate_total_metrics_statistics(metrics: pd.DataFrame, output_path:str):
     properties_to_calculate = [
         "total_idle_energy",
         "total_active_energy",
-        "total_energy_difference"
+        "total_energy_difference",
+        "total_idle_carbon_emission",
+        "total_active_carbon_emission",
+        "total_carbon_emission_difference"
     ]
 
     mean_properties = {}
@@ -80,6 +88,36 @@ def _calculate_metrics_statistics(metrics: pd.DataFrame, output_path:str):
     print(f"Saved metrics std file to [{metrics_mean_path}]!")
 
     return metrics_mean_path, metrics_std_path
+
+def _calculate_aggregated_statistics(aggregated_data: dict) -> dict:
+    stats = {}
+    
+    for key, value in aggregated_data.items():
+        if isinstance(value, dict):
+            stats[key] = {}
+            for component, val_list in value.items():
+                stats[key][component] = {
+                    "mean": float(np.mean(val_list)),
+                    "std": float(np.std(val_list))
+                }
+                
+        elif isinstance(value, list) and len(value) > 0:
+            first_val = value[0]
+            
+            if isinstance(first_val, (int, float)):
+                stats[key] = {
+                    "mean": float(np.mean(value)),
+                    "std": float(np.std(value))
+                }
+                
+            elif isinstance(first_val, str) and ":" in first_val:
+                sec_list = [pd.to_timedelta(t).total_seconds() for t in value]
+                stats[key] = {
+                    "mean_seconds": float(np.mean(sec_list)),
+                    "std_seconds": float(np.std(sec_list))
+                }
+                
+    return stats
 
 def _resolve_args():
     parser = argparse.ArgumentParser()
