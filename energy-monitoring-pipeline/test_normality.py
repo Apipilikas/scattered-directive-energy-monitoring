@@ -46,7 +46,7 @@ def main():
     print(f"============= Test normality =============")
 
     # Load the data
-    total_metrics_data, metrics_data = utils.read_experiments_file(output_path)
+    total_metrics_data, metrics_data, aggregated_metrics = utils.read_experiments_file(output_path)
 
     if total_metrics_data is None:
         print("No data loaded. Exiting.")

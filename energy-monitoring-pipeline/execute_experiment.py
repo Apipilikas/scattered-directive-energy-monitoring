@@ -31,7 +31,9 @@ REQUEST_APPROVAL_BODY = {
         "cycles": 180,
         "policy_removal": -1,
         "policy_reintroduction": -1,
-        "training_backtrack": 0
+        "training_backtrack": 0,
+        "communication_frequency": 15,
+        "sample_batch_size": 256
     },
     "requestMetadata": {}
     }

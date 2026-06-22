@@ -17,7 +17,7 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     min_length = min(len(df) for df in dfs)
     return [df.head(min_length) for df in dfs]
 
-def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd.DataFrame, pd.DataFrame]:
+def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     with open(f"{file_path}/{conf.EXPERIMENTS_OUTPUT_FILE_NAME}", 'r') as file:
         experiments_data = json.load(file)
 
