@@ -283,7 +283,7 @@ def handle_vflLocalUpdateRequest(msComm, request):
     cycle = -1
 
     try:
-        for cycle in range(communication_frequency):
+        for cycle in range(communication_frequency-1):
             accuracy = vfl_server.local_update()
             accuracies.append(accuracy)
     except Exception as e:
