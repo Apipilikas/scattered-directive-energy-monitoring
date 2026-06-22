@@ -339,7 +339,7 @@ def handle_vflAggregateRequest(msComm, request):
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
-    vfl_server.local_update_async(communication_frequency)
+    vfl_server.local_update_async(communication_frequency-1)
 
 def handle_vflShutdownRequest(msComm):
     global ms_config
