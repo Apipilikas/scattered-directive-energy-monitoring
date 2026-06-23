@@ -87,7 +87,6 @@ def main():
     
     iterations_no = int(iterations) if not iterations is None else conf.EXPERIMENT_RUNS_NO 
     execute_experiment(iterations_no)
-    _delete_experiment_files(iterations_no)
 
 def _request_approval():
     response = requests.post(
@@ -133,15 +132,22 @@ def _format_datetime(seconds) -> str:
 def execute_experiment(runs_no: int):
     runs = {}
 
-    for r in range(runs_no):
-        print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
-        try:
-            runs[r] = execute_experiment_run(r)
-        except Exception as e:
-            print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
+    try:
+        for r in range(runs_no):
+            print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
+            try:
+                runs[r] = execute_experiment_run(r)
+            except Exception as e:
+                print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
 
-    with open(f"{output_path}/{conf.EXPERIMENTS_OUTPUT_FILE_NAME}", 'w') as f:
-        json.dump(runs, f, indent=2)
+    except KeyboardInterrupt:
+        print("\nExperiment manually interrupted by user!")
+
+    finally:
+        if runs:
+            with open(f"{output_path}/{conf.EXPERIMENTS_OUTPUT_FILE_NAME}", 'w') as f:
+                json.dump(runs, f, indent=2)
+            _delete_experiment_files(runs_no)
 
 def execute_experiment_run(run_no: int):
     # Phase 1: Idle period
