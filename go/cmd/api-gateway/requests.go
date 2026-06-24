@@ -739,24 +739,10 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
 
-			policyUpdate := &pb.RequestApproval{
-				Type:             "policyRemoval",
-				User:             user,
-				DestinationQueue: "policyEnforcer-in",
-			}
-
-			// Create a channel to receive the response
-			responseChan := make(chan validation)
-
-			requestApprovalMutex.Lock()
-			requestApprovalMap[policyUpdate.User.Id] = responseChan
-			requestApprovalMutex.Unlock()
-
-			logger.Sugar().Info("- Sending policy removal request")
-			_, err = c.SendRequestApproval(ctx, policyUpdate)
-			if err != nil {
-				logger.Sugar().Warnf("error in sending/receiving policy removal: %v", err)
-			}
+			api.DeleteRequest(
+				"http://orchestrator.orchestrator.svc.cluster.local:8080/api/v1/policyEnforcer/agreements/clientthree",
+				"",
+				nil)
 		}
 
 		// TODO: Implement policy change request
@@ -764,24 +750,36 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
-			policyUpdate := &pb.RequestApproval{
-				Type:             "policyReintroduction",
-				User:             user,
-				DestinationQueue: "policyEnforcer-in",
-			}
+			rawPayload := `{
+						"name": "clientthree"
+						,
+						"relations": {
+							"evangelos.pipilikas@student.uva.nl": {
+								"ID": "GUID",
+								"requestTypes": [
+									"vflTrainRequest"
+								],
+								"dataSets": null,
+								"allowedArchetypes": [
+									"computeToData"
+								],
+								"allowedComputeProviders": [
+									"clientthree"
+								]
+							}
+						},
+						"computeProviders": [
+							"clientthree"
+						],
+						"archetypes": [
+							"computeToData"
+						]
+				}`
 
-			// Create a channel to receive the response
-			responseChan := make(chan validation)
-
-			requestApprovalMutex.Lock()
-			requestApprovalMap[policyUpdate.User.Id] = responseChan
-			requestApprovalMutex.Unlock()
-
-			logger.Sugar().Info("- Sending policy reintroduction request")
-			_, err = c.SendRequestApproval(ctx, policyUpdate)
-			if err != nil {
-				logger.Sugar().Warnf("error in sending/receiving policy reintroduction: %v", err)
-			}
+			api.PutRequest(
+				"http://orchestrator.orchestrator.svc.cluster.local:8080/api/v1/policyEnforcer",
+				rawPayload,
+				nil)
 		}
 
 		logger.Sugar().Info("- Sending training request")

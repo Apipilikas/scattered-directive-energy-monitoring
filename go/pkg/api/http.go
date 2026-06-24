@@ -299,3 +299,90 @@ func PostRequest(url string, body string, extra_headers map[string]string) ([]by
 
 	return respBody, nil
 }
+
+func DeleteRequest(url string, body string, extra_headers map[string]string) ([]byte, error) {
+	var reqBody io.Reader
+	if body != "" {
+		reqBody = bytes.NewBufferString(body)
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, url, reqBody)
+	if err != nil {
+		logger.Sugar().Infof("Failed to make request: %v", err)
+		return []byte(""), err
+	}
+
+	headers := map[string]string{
+		"Content-Type": "application/json",
+		// add other headers as required
+	}
+
+	maps.Copy(headers, extra_headers)
+
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Sugar().Infof("Failed to make request: %v", err)
+		return []byte(""), err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Sugar().Infof("Failed to read response body: %v", err)
+		return []byte(""), err
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		err = fmt.Errorf("bad response from server: %s", resp.Status)
+		logger.Sugar().Infof("%v", err)
+		return []byte(""), err
+	}
+
+	return respBody, nil
+}
+
+func PutRequest(url string, body string, extra_headers map[string]string) ([]byte, error) {
+	reqBody := bytes.NewBufferString(body)
+	req, err := http.NewRequest(http.MethodPut, url, reqBody)
+	if err != nil {
+		logger.Sugar().Infof("Failed to make request: %v", err)
+		return []byte(""), err
+	}
+
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	maps.Copy(headers, extra_headers)
+
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Sugar().Infof("Failed to make request: %v", err)
+		return []byte(""), err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Sugar().Infof("Failed to read response body: %v", err)
+		return []byte(""), err
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		err = fmt.Errorf("bad response from server: %s", resp.Status)
+		logger.Sugar().Infof("%v", err)
+		return []byte(""), err
+	}
+
+	return respBody, nil
+}
