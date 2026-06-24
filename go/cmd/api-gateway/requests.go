@@ -825,17 +825,17 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	}
 
 	for auth, url := range authorizedProviders {
-		wg.Add(1)
+		// wg.Add(1)
 		target := strings.ToLower(auth)
 		endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", url, target)
 
 		go func() {
 			sendData(endpoint, dataRequestJson)
-			wg.Done()
+			// wg.Done()
 		}()
 	}
 
-	wg.Wait()
+	// wg.Wait()
 
 	response := map[string]any{
 		"jobId":    jobId,
