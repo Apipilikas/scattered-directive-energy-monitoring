@@ -13,6 +13,8 @@ from dynamos.ms_init import NewConfiguration
 from dynamos.signal_flow import signal_continuation, signal_wait
 from dynamos.logger import InitLogger
 import rabbitMQ_pb2 as rabbitTypes
+import queue
+import itertools
 
 from google.protobuf.empty_pb2 import Empty
 import microserviceCommunication_pb2 as msCommTypes
@@ -53,6 +55,51 @@ ms_config = None
 
 # --------------------------------
 
+#region PriorityLock
+
+class PriorityLock:
+    
+    class _Context:
+        def __init__(self, lock, priority):
+            self._lock = lock
+            self._priority = priority
+
+        def __enter__(self):
+            self._lock.acquire(self._priority)
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self._lock.release()
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._acquire_queue = queue.PriorityQueue()
+        self._need_to_wait = False
+        self._counter = itertools.count()
+
+    def acquire(self, priority):
+        with self._lock:
+            if not self._need_to_wait:
+                self._need_to_wait = True
+                return True
+
+            event = threading.Event()
+            self._acquire_queue.put((priority, next(self._counter), event))
+        event.wait()
+        return True
+
+    def release(self):
+        with self._lock:
+            try:
+                _, _, event = self._acquire_queue.get_nowait()
+            except queue.Empty:
+                self._need_to_wait = False
+            else:
+                event.set()
+
+    def __call__(self, priority):
+        return self._Context(self, priority)
+
+#endregion
 
 #region Helpers
 
@@ -134,38 +181,23 @@ class VFLClient():
         self.scaler = StandardScaler()
         self.scaler.fit(self.data)
 
-        self.gradient_descent_thread = None
-        self.current_cycle = 0
-        self.cycle_sync_condition = threading.Condition()
+        self.training_lock = PriorityLock()
 
-    def check_cycle_sync(self, cycle):
-        with self.cycle_sync_condition:
-            while self.current_cycle != cycle:
-                logger.info(f"Cycle sync wait! Requested cycle: {cycle}")
-                self.cycle_sync_condition.wait()
-    
-    def sync_to_next_cycle(self):
-        with self.cycle_sync_condition:
-            self.current_cycle += 1
-            self.cycle_sync_condition.notify()
-            logger.info(f"Cycle sync notify! Cycle changed to {self.current_cycle}")
+        self.labels = {}
 
-    def is_gradient_descent_in_progress(self):
-        return not self.gradient_descent_thread is None and self.gradient_descent_thread.is_alive()
-
-    def wait_for_gradient_descent_to_finish(self):
-        if (self.is_gradient_descent_in_progress()):
-            self.gradient_descent_thread.join()
-
-    def set_labels_from_sample(self, sample_indexes):
+    def set_labels_from_sample(self, cycle, sample_indexes):
         sample_data = self.data.loc[sample_indexes]
-        self.set_labels(sample_data)
+        return self.set_labels(cycle, sample_data)
 
-    def set_labels(self, data):
-        logger.info(f"Labels changed at cycle {self.current_cycle}.")
+    def set_labels(self, cycle, data):
+        logger.info(f"Labels set for cycle {cycle}.")
         try:
             scaled_data = self.scaler.transform(data)
-            self.labels = torch.tensor(scaled_data).float()
+            calculated_labels = torch.tensor(scaled_data).float()
+
+            self.labels[cycle] = calculated_labels
+
+            return calculated_labels
         except Exception as e:
             logger.error(f"Error occurred while setting labels: {e}")
 
@@ -174,39 +206,42 @@ class VFLClient():
             self.optimiser = torch.optim.SGD(
                 self.model.parameters(), lr=learning_rate)
 
-    def train_model(self):
-        self.embedding = self.model(self.labels)
-        return serialise_array(self.embedding.detach().numpy())
+    def train_model(self, cycle, labels):
+        with self.training_lock(2):
+            current_embeddings = self.model(labels)
+            embeddings = serialise_array(current_embeddings.detach().numpy())
 
-    def _gradient_descent(self, gradients):
+        return embeddings
+
+    def _gradient_descent(self, labels, gradients):
         if self.optimiser is None:
             logger.error("Optimiser is not defined.")
 
         try:
             self.model.zero_grad()
-            current_embedding = self.model(self.labels)
+            current_embedding = self.model(labels)
             current_embedding.backward(torch.from_numpy(gradients.copy()))
             self.optimiser.step()
         except Exception as e:
             logger.error(f"Error occurred: {e}")
 
-    def gradient_descent(self, gradients, communication_frequency = 1):
+    def gradient_descent(self, cycle, gradients, communication_frequency = 1):
+        logger.info(f"Starting gradient descent for cycle {cycle}.")
         try:
-            for cycle in range(communication_frequency):
-                self._gradient_descent(gradients)
+            labels = self.labels[cycle]
+            with self.training_lock(1):
+                for c in range(communication_frequency):
+                    self._gradient_descent(labels, gradients)
 
-            logger.info(f"Finished performing gradient descent for cycle {vfl_client.current_cycle}.")
-            self.sync_to_next_cycle()
+            logger.info(f"Finished performing gradient descent for cycle {cycle}.")
         except Exception as e:
-            logger.error(f"Unexpected error in cycle [{cycle}]: {e}")
+            logger.error(f"Unexpected error in cycle [{cycle}] and inner-cycle [{c}]: {e}")
 
-    def gradient_descent_async(self, gradients, communication_frequency):
-        if not self.is_gradient_descent_in_progress():
-            self.gradient_descent_thread = threading.Thread(
-                target=self.gradient_descent,
-                args=(gradients, communication_frequency,)
-            )
-            self.gradient_descent_thread.start()
+    def gradient_descent_async(self, cycle, gradients, communication_frequency):
+        threading.Thread(
+            target=self.gradient_descent,
+            args=(cycle, gradients, communication_frequency,)
+        ).start()
 
 #region Request handlers
 
@@ -224,18 +259,15 @@ def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication,
     try:
         sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
         cycle = int(extract_number_from_data(request, "cycle"))
-        
-        vfl_client.check_cycle_sync(cycle)
-        vfl_client.wait_for_gradient_descent_to_finish()
     except Exception as e:
         logger.error(f"Error occurred while getting sample indexes: {e}")
 
     try:
-        vfl_client.set_labels_from_sample(sample_indexes)
-        embeddings = vfl_client.train_model()
+        labels = vfl_client.set_labels_from_sample(cycle, sample_indexes)
+        embeddings = vfl_client.train_model(cycle, labels)
         data = Struct()
         data.update({"embeddings":  embeddings})
-        logger.info(f"Embeddings sent for cycle {vfl_client.current_cycle}.")
+        logger.info(f"Embeddings sent for cycle {cycle}.")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         data = Struct()
@@ -252,7 +284,6 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
         learning_rate = float(extract_number_from_data(request, "learning_rate"))
         cycle = int(extract_number_from_data(request, "cycle"))
 
-        vfl_client.check_cycle_sync(cycle)
         vfl_client.create_optimiser(learning_rate)
     except Exception:
         vfl_client.create_optimiser(0.05)
@@ -268,7 +299,7 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
 
     communication_frequency = int(extract_number_from_data(request, "communication_frequency"))
 
-    vfl_client.gradient_descent_async(gradients, communication_frequency)
+    vfl_client.gradient_descent_async(cycle, gradients, communication_frequency)
 
     try:
         data = Struct()

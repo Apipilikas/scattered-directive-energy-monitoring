@@ -278,6 +278,7 @@ type TrainingRoundData struct {
 	sampleIndexes string
 	embeddings    []string
 	gradients     []string
+	activeClients []ClientData
 }
 
 var (
@@ -324,7 +325,9 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 		for data := range sampleChan {
 			logger.Sugar().Debug("Embeddings routine. Samples received! Cycle: ", data.cycle)
 
-			for _, client := range getSafeClients(clients) {
+			currentClients := getSafeClients(clients)
+
+			for _, client := range currentClients {
 				auth := client.Auth
 				url := client.Url
 
@@ -381,13 +384,14 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 				return
 			}
 			embeddingList := []string{}
-			for _, client := range getSafeClients(clients) {
+			for _, client := range currentClients {
 				if emb, ok := responses[strings.ToLower(client.Auth)]; ok {
 					embeddingList = append(embeddingList, emb)
 				}
 			}
 
 			data.embeddings = embeddingList
+			data.activeClients = currentClients
 			logger.Sugar().Info("[CLIENTS] [vflTrainRequest] [Cycle: ", data.cycle, "] Pushing embeddings into embeddingsChan")
 			embeddingsChan <- data
 		}
@@ -450,7 +454,7 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 		for data := range gradientsChan {
 			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
 
-			for index, client := range getSafeClients(clients) {
+			for index, client := range data.activeClients {
 
 				target := strings.ToLower(client.Auth)
 				endpoint := fmt.Sprintf(formattedEndpoint, client.Url, target)
