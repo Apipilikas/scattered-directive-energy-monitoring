@@ -196,10 +196,14 @@ def execute_experiment_run(run_no: int):
     experiment_elapsed_time = experiment_end_time - experiment_start_time
     active_elapsed_time = time.time() - active_start_time
 
+    experiment_elapsed_datetime = _format_datetime(experiment_elapsed_time)
+    active_elapsed_datetime = _format_datetime(active_elapsed_time)
+
     remaining_time = conf.ACTIVE_PERIOD - active_elapsed_time
 
     if remaining_time > 0:
         # To Change
+        print(f"Active period elapsed time: {active_elapsed_time} s ({active_elapsed_datetime})")
         print("Waiting for remaining active period...")
         time.sleep(remaining_time)
 
@@ -208,9 +212,6 @@ def execute_experiment_run(run_no: int):
 
     active_carbon_emission = _get_carbon_emission()
     total_active_carbon_emission = _sum_metrics(active_carbon_emission)
-
-    experiment_elapsed_datetime = _format_datetime(experiment_elapsed_time)
-    active_elapsed_datetime = _format_datetime(active_elapsed_time)
 
     print("\n> Summary")
     print(f"Experiment elapsed time: {experiment_elapsed_time} s ({experiment_elapsed_datetime})")
