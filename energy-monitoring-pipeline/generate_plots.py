@@ -1,10 +1,18 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import configuration as conf
+import json
+import argparse
 
 def main():
+    plot_accuracies = _resolve_args()
+
     print(f"============= Generate plots =============")
-    _generate_sidecar_plot()
+    
+    if plot_accuracies:
+        _generate_accuracies_plot()
+    else:
+        _generate_sidecar_plot()
 
 def _generate_sidecar_plot():
     print("> Generating sidecar plot")
@@ -41,6 +49,66 @@ def _generate_sidecar_plot():
     plt.savefig(file_name)
     plt.close()
     print(f"Plot saved in {file_name}!")
+
+def _generate_accuracies_plot():
+    print("> Generating accuracies plot")
+    
+    plt.figure(figsize=(10, 6))
+    
+    json_files = {
+        "Baseline": "experiments/fabric/baseline_experiment_260623_1609/experiments.json",
+        "Fed-BCD": "experiments/fabric/fed_bcd_experiment_260623_1411/experiments.json",
+        "Overlap-Fed-BCD": "experiments/fabric/overlap_fed_bcd_experiment_260624_1955/experiments.json"
+    }
+    
+    if not json_files:
+        print("Warning: No JSON files found in the output folder.")
+        return
+
+
+    for name, file_path in json_files.items():
+        try:
+            with open(file_path, 'r') as f:
+                metrics_data = json.load(f)
+            
+            run_data = metrics_data["0"]
+            accuracies_list = run_data["accuracies"]
+            
+            if not accuracies_list:
+                continue
+            
+            rounds = [item["train_round"] for item in accuracies_list]
+            accuracies = [item["accuracy"] for item in accuracies_list]
+            
+            
+            plt.plot(rounds, accuracies, marker='o', linestyle='-', alpha=0.8, label=name)
+                
+        except Exception as e:
+            print(f"Error processing accuracy data for {file_path}: {e}")
+
+    plt.xlabel('Train Round')
+    plt.ylabel('Accuracy (%)')
+    plt.title('Model accuracy per training round')
+    plt.grid(True, linestyle='--', alpha=0.6)
+    
+    plt.gca().xaxis.get_major_locator().set_params(integer=True)
+    
+    plt.legend(loc='lower right')
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/accuracies_plot.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    print(f"Plot saved in {file_name}!")
+
+def _resolve_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-acc", "--accuracies", action='store_true')
+
+    args = parser.parse_args()
+    plot_accuracies = args.accuracies
+
+    return plot_accuracies
+
 
 if __name__ == '__main__':
     main()

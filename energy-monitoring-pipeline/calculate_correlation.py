@@ -26,6 +26,25 @@ def test_kendall_tau(df: pd.DataFrame, archetype: str):
     else:
         print(f"\nNot enough data points for Kendall Tau correlation test.")
 
+def _resolve_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-bpr", "--baseline-prefix")
+    parser.add_argument("-mpr", "--mitigation-prefix")
+    utils.add_boolean_argument(parser, conf.F_ARGUMENT)
+
+    args = parser.parse_args()
+    is_local = not args.fabric_mode
+    baseline_prefix_arg = args.baseline_prefix
+    mitigation_prefix_arg = args.mitigation_prefix
+
+    baseline_data = utils.read_experiments_by_prefix(baseline_prefix_arg, is_local)
+    mitigation_data = utils.read_experiments_by_prefix(mitigation_prefix_arg, is_local)
+
+    return baseline_data, mitigation_data, mitigation_prefix_arg
+
+def main():
+    baseline_data, mitigation_data, mitigation_prefix = _resolve_args()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Kendall Tau correlation test on energy efficiency experiment data")
     parser.add_argument("archetype", type=str, choices=["ComputeToData", "DataThroughTTP", "all"], 

@@ -13,6 +13,7 @@ def test_normality(df: pd.DataFrame):
 
     # Test normality for each column
     for column in columns_to_test:
+        print(f"\n> Testing normality for column: {column}")
         data = df[column].values
         print(f"Data: {data}")
         # Ensure data used is at least 3 values
@@ -32,21 +33,24 @@ def test_normality(df: pd.DataFrame):
 def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-ep", "--experiment-path")
+    parser.add_argument("-pr", "--prefix")
     utils.add_boolean_argument(parser, conf.F_ARGUMENT)
 
     args = parser.parse_args()
     is_local = not args.fabric_mode
+    prefix_arg = args.prefix
 
-    return utils.resolve_experiment_path(args.experiment_path, is_local)
+    if prefix_arg is None:
+        output_path = utils.resolve_experiment_path(args.experiment_path, is_local)
+        return utils.read_experiments_file(output_path)
+
+    return utils.read_experiments_by_prefix(prefix_arg, is_local)
 
 
 def main():
-    output_path = _resolve_args()
+    total_metrics_data, metrics_data, aggregated_metrics = _resolve_args()
 
     print(f"============= Test normality =============")
-
-    # Load the data
-    total_metrics_data, metrics_data, aggregated_metrics = utils.read_experiments_file(output_path)
 
     if total_metrics_data is None:
         print("No data loaded. Exiting.")
