@@ -1,6 +1,10 @@
 import time
 import json
 import argparse
+import configuration as conf
+import pandas as pd
+import os
+from collections import defaultdict
 
 def get_time_range(minutes_before: int) -> tuple[float, float]:
 
@@ -9,27 +13,127 @@ def get_time_range(minutes_before: int) -> tuple[float, float]:
 
     return start_time, end_time
 
+def _align_experiments(dfs: list[pd.DataFrame]):
+    min_length = min(len(df) for df in dfs)
+    return [df.head(min_length) for df in dfs]
 
-def extract_property_from_json(file_path: str, property_name: str):
-    lst = []
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            
-            if isinstance(data, list):
-                for item in data:
-                    if property_name in item:
-                        lst.append(item[property_name])
+def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    filtered_dirs = get_experiments_directories_by_prefix(prefix, is_local)
 
-            
-        return lst
+    if not filtered_dirs:
+        print(f"No experiment directories found starting with prefix: '{prefix}'")
+        return pd.DataFrame(), pd.DataFrame(), {}
 
-    except FileNotFoundError:
-        print(f"Error: The file '{file_path}' was not found.")
-    except json.JSONDecodeError:
-        print(f"Error: '{file_path}' is not a valid JSON file.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    total_metrics_dfs = []
+    metrics_dfs = []
+
+    combined_flat_metrics = defaultdict(list)
+    combined_nested_metrics = defaultdict(lambda: defaultdict(list))
+
+    for dir in filtered_dirs:
+        exp_path = resolve_experiment_path(dir, is_local=is_local, raise_ex=False)
+        
+        if not exp_path:
+            continue
+
+        total_metrics_df, metrics_df, aggregated_metrics = read_experiments_file(file_path=exp_path)
+        
+        total_metrics_dfs.append(total_metrics_df)
+        metrics_dfs.append(metrics_df)
+
+        for key, value in aggregated_metrics.items():
+            if isinstance(value, dict):
+                for component, val_list in value.items():
+                    combined_nested_metrics[key][component].extend(val_list)
+            else:
+                combined_flat_metrics[key].extend(value)
+
+    final_aggregated_metrics = {
+        **{k: dict(v) for k, v in combined_nested_metrics.items()}, 
+        **dict(combined_flat_metrics)
+    }
+
+    final_total_metrics_df = pd.concat(total_metrics_dfs)
+    final_metrics_df = pd.concat(metrics_dfs)
+
+    return final_total_metrics_df, final_metrics_df, final_aggregated_metrics
+
+def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    with open(f"{file_path}/{conf.EXPERIMENTS_OUTPUT_FILE_NAME}", 'r') as file:
+        experiments_data = json.load(file)
+
+    total_metrics_dfs = []
+    metrics_dfs = []
+
+    flat_metrics = defaultdict(list)
+    nested_metrics = defaultdict(lambda: defaultdict(list))
+
+    ignore_properties = ["accuracies", "total_metrics_path", "metrics_path"]
+
+    for run, data in experiments_data.items():
+        df = pd.read_csv(data["total_metrics_path"])
+        df["Run"] = run
+        total_metrics_dfs.append(df)
+        metrics_dfs.append(pd.read_csv(data["metrics_path"]))
+
+        for key, value in data.items():
+            if key in ignore_properties:
+                continue
+
+            if isinstance(value, dict):
+                for component, v in value.items():
+                    nested_metrics[key][component].append(float(v))
+            else:
+                flat_metrics[key].append(value)
+
+    aggregated_metrics = {**{k: dict(v) for k, v in nested_metrics.items()}, **dict(flat_metrics)}
+   
+    return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs)), aggregated_metrics
+
+def resolve_experiment_path(path, is_local = True, raise_ex = True) -> str:
+    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}/{path}"
+
+    if os.path.exists(output_path):
+        return output_path
+    else:
+        if raise_ex:
+            raise Exception(f"File path {output_path} does not exist in {conf.EXPERIMENT_OUTPUT_FOLDER} folder.")
+        else:
+            return None
+
+def get_experiments_directories(is_local = True):
+    return os.listdir(f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}")
+
+def get_experiments_directories_by_prefix(prefix: str, is_local = True):
+    all_dirs = get_experiments_directories(is_local=is_local)
+    return [d for d in all_dirs if d.startswith(prefix)]
+
+def get_experiment_mode_folder(is_local = True):
+    return "local" if is_local else "fabric"
+
+def interpret_guilford_scale(correlation: float) -> str:
+    """
+    Interpret a correlation value using the standard Guilford scale.
+    Handles both positive and negative correlations symmetrically.
+
+    :param correlation: Correlation coefficient (range: -1.0 to 1.0)
+    :return: Interpretation string (e.g., "High positive correlation")
+    """
+    abs_corr = abs(correlation)
+
+    if abs_corr < 0.2:
+        strength = "Slight"
+    elif abs_corr < 0.4:
+        strength = "Low"
+    elif abs_corr < 0.7:
+        strength = "Moderate"
+    elif abs_corr < 0.9:
+        strength = "High"
+    else:
+        strength = "Very high"
+
+    direction = "positive" if correlation > 0 else "negative" if correlation < 0 else "neutral"
+    return f"{strength} {direction} correlation"
 
 def add_boolean_argument(parser: argparse.ArgumentParser, arg_tuple: tuple[str, str, str]):
     arg_flag = arg_tuple[0]

@@ -2,58 +2,85 @@ import argparse
 import json
 import configuration as conf
 import pandas as pd
-import statistics
+import numpy as np
+import utils
 
 def main():
+    output_path, is_local = _resolve_args()
     print(f"============= Average experiments =============")
-    _calculate_statistics()
+    _process_statistics(output_path, is_local)
 
-def _calculate_statistics():
-    experiments_data = _read_experiments_file()
+def _process_statistics(output_path, is_local = True):
+    if output_path is None:
+        for dir in utils.get_experiments_directories(is_local):
+            experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
+            experiment_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{dir}"
+            _calculate_statistics(experiment_path)
+    else:
+        _calculate_statistics(output_path)
 
-    values = {}
-    experiment_files = []
-
-    properties_to_calculate = [
-        "total_idle_energy",
-        "total_active_energy",
-        "total_energy_difference"
-    ]
-
-    for run, data in experiments_data.items():
-        for property_name in properties_to_calculate:
-            values.setdefault(property_name, []).append(data[property_name])
-
-        experiment_files.append(data["metrics_path"])
+def _calculate_statistics(output_path:str):
+    print(f"> Calculating statistics for {output_path}")
+    total_metrics_data, metrics_data, aggregated_data = utils.read_experiments_file(output_path)
 
     output = {}
 
-    for property_name in properties_to_calculate:
-        mean_property_name = f"{property_name}_mean"
-        std_property_name = f"{property_name}_std"
+    total_metrics_mean_path, total_metrics_std_path = _calculate_total_metrics_statistics(total_metrics_data, output_path)
+    metrics_mean_path, metrics_std_path = _calculate_metrics_statistics(metrics_data, output_path)
 
-        output[mean_property_name] = statistics.mean(values[property_name])
-        output[std_property_name] = statistics.stdev(values[property_name])
+    stats = _calculate_aggregated_statistics(aggregated_data)
 
-    metrics_mean_path, metrics_std_path = _calculate_metrics_statistics(experiment_files)
+    file_paths = {
+        "total_metrics_mean_path": total_metrics_mean_path,
+        "total_metrics_std_path": total_metrics_std_path,
+        "metrics_mean_path": metrics_mean_path,
+        "metrics_std_path": metrics_std_path
+    }
 
-    output["metrics_mean_path"] = metrics_mean_path
-    output["metrics_std_path"] = metrics_std_path
+    output = {**file_paths, **stats}
 
-    with open(conf.AVERAGE_EXPERIMENTS_OUTPUT_PATH, 'w') as f:
+    output_file_path = f"{output_path}/{conf.AVERAGE_EXPERIMENTS_FILE_NAME}"
+
+    with open(output_file_path, 'w') as f:
         json.dump(output, f, indent=2)
     
-    print(f"Saved final average experiments file to [{conf.AVERAGE_EXPERIMENTS_OUTPUT_PATH}]!")
+    print(f"Saved final average experiments file to [{output_file_path}]!")
 
-def _calculate_metrics_statistics(experiment_files):
-    metrics = _read_experiment_metrics(experiment_files)
+def _calculate_total_metrics_statistics(metrics: pd.DataFrame, output_path:str):
+    properties_to_calculate = [
+        "total_idle_energy",
+        "total_active_energy",
+        "total_energy_difference",
+        "total_idle_carbon_emission",
+        "total_active_carbon_emission",
+        "total_carbon_emission_difference"
+    ]
+
+    mean_properties = {}
+    std_properties = {}
+
+    metrics_mean_path = f"{output_path}/average_total_metrics_mean.csv"
+    metrics_std_path = f"{output_path}/average_total_metrics_std.csv"
+
+    for property_name in properties_to_calculate:
+        mean_properties[property_name] = metrics[property_name].mean()
+        std_properties[property_name] = metrics[property_name].std()
+
+    pd.DataFrame([mean_properties]).to_csv(metrics_mean_path, index=False)
+    print(f"Saved metrics means file to [{metrics_mean_path}]!")
+    pd.DataFrame([std_properties]).to_csv(metrics_std_path, index=False)
+    print(f"Saved metrics std file to [{metrics_std_path}]!")
+
+    return metrics_mean_path, metrics_std_path
+
+def _calculate_metrics_statistics(metrics: pd.DataFrame, output_path:str):
     metrics = metrics.filter(like='_energy')
 
     metrics_mean = metrics.groupby(metrics.index).mean(numeric_only=True)
     metrics_std = metrics.groupby(metrics.index).std(numeric_only=True)
 
-    metrics_mean_path = f"{conf.DATA_OUTPUT_FOLDER}/average_metrics_mean.csv"
-    metrics_std_path = f"{conf.DATA_OUTPUT_FOLDER}/average_metrics_std.csv"
+    metrics_mean_path = f"{output_path}/average_metrics_mean.csv"
+    metrics_std_path = f"{output_path}/average_metrics_std.csv"
 
     metrics_mean.to_csv(metrics_mean_path, index=False)
     print(f"Saved metrics means file to [{metrics_mean_path}]!")
@@ -62,18 +89,44 @@ def _calculate_metrics_statistics(experiment_files):
 
     return metrics_mean_path, metrics_std_path
 
-def _align_experiments(dfs: list[pd.DataFrame]):
-    min_length = min(len(df) for df in dfs)
-    return [df.head(min_length) for df in dfs]
+def _calculate_aggregated_statistics(aggregated_data: dict) -> dict:
+    stats = {}
+    
+    for key, value in aggregated_data.items():
+        if isinstance(value, dict):
+            stats[key] = {}
+            for component, val_list in value.items():
+                stats[key][component] = {
+                    "mean": float(np.mean(val_list)),
+                    "std": float(np.std(val_list))
+                }
+                
+        elif isinstance(value, list) and len(value) > 0:
+            first_val = value[0]
+            
+            if isinstance(first_val, (int, float)):
+                stats[key] = {
+                    "mean": float(np.mean(value)),
+                    "std": float(np.std(value))
+                }
+                
+            elif isinstance(first_val, str) and ":" in first_val:
+                sec_list = [pd.to_timedelta(t).total_seconds() for t in value]
+                stats[key] = {
+                    "mean_seconds": float(np.mean(sec_list)),
+                    "std_seconds": float(np.std(sec_list))
+                }
+                
+    return stats
 
-def _read_experiment_metrics(experiment_files: list[str]):
-    dfs = [pd.read_csv(file) for file in experiment_files]
-    dfs = _align_experiments(dfs)
-    return pd.concat(dfs)
-
-def _read_experiments_file():
-    with open(conf.EXPERIMENTS_OUTPUT_PATH, 'r') as file:
-        return json.load(file)
+def _resolve_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-ep", "--experiment-path")
+    utils.add_boolean_argument(parser, conf.F_ARGUMENT)
+    
+    args = parser.parse_args()
+    is_local = not args.fabric_mode
+    return utils.resolve_experiment_path(args.experiment_path, is_local, False), is_local
 
 if __name__ == '__main__':
     main()
