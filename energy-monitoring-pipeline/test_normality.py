@@ -4,7 +4,7 @@ import argparse
 from scipy.stats import shapiro
 import utils
 
-def test_normality(df: pd.DataFrame):
+def test_normality(df: pd.DataFrame, aggregated_metrics):
     # Perform Shapiro-Wilk normality test
     columns_to_test = ['total_energy_difference']
     # columns_to_test = ['total_energy_difference', 'average_exec_time']
@@ -24,6 +24,7 @@ def test_normality(df: pd.DataFrame):
                 not_normal[column] += 1
                 print(f"Not normal distribution for column: {column}")
             else:
+                print(f"Normal distribution for column: {column}")
                 normal[column] += 1
             # Print stastic and p-value
             print(f"Statistic (Shapiro-Wilk test): {stat}, p-value: {p}")
@@ -56,7 +57,7 @@ def main():
         print("No data loaded. Exiting.")
     else:
         # Perform normality test
-        test_normality(total_metrics_data)
+        test_normality(total_metrics_data, aggregated_metrics)
 
 if __name__ == "__main__":
     main()

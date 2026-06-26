@@ -18,8 +18,7 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     return [df.head(min_length) for df in dfs]
 
 def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
-    all_dirs = get_experiments_directories(is_local=is_local)
-    filtered_dirs = [d for d in all_dirs if d.startswith(prefix)]
+    filtered_dirs = get_experiments_directories_by_prefix(prefix, is_local)
 
     if not filtered_dirs:
         print(f"No experiment directories found starting with prefix: '{prefix}'")
@@ -72,7 +71,9 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
     ignore_properties = ["accuracies", "total_metrics_path", "metrics_path"]
 
     for run, data in experiments_data.items():
-        total_metrics_dfs.append(pd.read_csv(data["total_metrics_path"]))
+        df = pd.read_csv(data["total_metrics_path"])
+        df["Run"] = run
+        total_metrics_dfs.append(df)
         metrics_dfs.append(pd.read_csv(data["metrics_path"]))
 
         for key, value in data.items():
@@ -102,6 +103,10 @@ def resolve_experiment_path(path, is_local = True, raise_ex = True) -> str:
 
 def get_experiments_directories(is_local = True):
     return os.listdir(f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{get_experiment_mode_folder(is_local)}")
+
+def get_experiments_directories_by_prefix(prefix: str, is_local = True):
+    all_dirs = get_experiments_directories(is_local=is_local)
+    return [d for d in all_dirs if d.startswith(prefix)]
 
 def get_experiment_mode_folder(is_local = True):
     return "local" if is_local else "fabric"
