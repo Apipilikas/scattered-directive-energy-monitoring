@@ -58,7 +58,8 @@ def _generate_accuracies_plot():
     json_files = {
         "Baseline": "experiments/fabric/baseline_experiment_260623_1609/experiments.json",
         "Fed-BCD": "experiments/fabric/fed_bcd_experiment_260623_1411/experiments.json",
-        "Overlap-Fed-BCD": "experiments/fabric/overlap_fed_bcd_experiment_260624_1955/experiments.json"
+        "Overlap-Fed-BCD": "experiments/fabric/overlap_fed_bcd_experiment_260625_1502/experiments.json",
+        "Fed-Encrypt": "experiments/fabric/fed_encrypt_experiment_260626_2016/experiments.json"
     }
     
     if not json_files:
@@ -79,6 +80,10 @@ def _generate_accuracies_plot():
             
             rounds = [item["train_round"] for item in accuracies_list]
             accuracies = [item["accuracy"] for item in accuracies_list]
+
+            if name == "Fed-Encrypt":
+                # There is an issue that accuracies in Fed-encrypt returns the float value not %.
+                accuracies = [item["accuracy"] * 100 for item in accuracies_list]
             
             
             plt.plot(rounds, accuracies, marker='o', linestyle='-', alpha=0.8, label=name)
@@ -91,6 +96,8 @@ def _generate_accuracies_plot():
     plt.title('Model accuracy per training round')
     plt.grid(True, linestyle='--', alpha=0.6)
     
+    plt.ylim(0, 100)
+
     plt.gca().xaxis.get_major_locator().set_params(integer=True)
     
     plt.legend(loc='lower right')

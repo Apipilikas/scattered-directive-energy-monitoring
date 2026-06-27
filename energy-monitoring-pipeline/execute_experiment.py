@@ -16,7 +16,7 @@ REQUEST_APPROVAL_URL = f"{API_BASE_URL}/requestApproval"
 GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
-REQUEST_APPROVAL_DATA_PROVIDERS = ["server", "clientone", "clienttwo", "clientthree"]
+REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server", "aggregator", "authority"]
 REQUEST_APPROVAL_BODY = {
     "type": "vflTrainModelRequest",
     "user": {
@@ -29,8 +29,8 @@ REQUEST_APPROVAL_BODY = {
       "data": {
         "learning_rate": 0.1,
         "cycles": 180,
-        "policy_removal": -1,
-        "policy_reintroduction": -1,
+        "policy_removal": 40,
+        "policy_reintroduction": 80,
         "training_backtrack": 0,
         "communication_frequency": 15,
         "sample_batch_size": 256
