@@ -17,6 +17,9 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     min_length = min(len(df) for df in dfs)
     return [df.head(min_length) for df in dfs]
 
+def is_experiment_run_valid(output: dict):
+    return output["request_approval_status_code"] != 202 or output["accuracies"] != {}
+
 def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     filtered_dirs = get_experiments_directories_by_prefix(prefix, is_local)
 
@@ -71,8 +74,12 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
     ignore_properties = ["accuracies", "total_metrics_path", "metrics_path"]
 
     for run, data in experiments_data.items():
+        if not is_experiment_run_valid(data):
+            continue
+
         df = pd.read_csv(data["total_metrics_path"])
-        df["Run"] = run
+        df["run"] = run
+        df["execution_time"] = pd.to_timedelta(data["active_elapsed_time"]).total_seconds()
         total_metrics_dfs.append(df)
         metrics_dfs.append(pd.read_csv(data["metrics_path"]))
 

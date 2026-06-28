@@ -3,16 +3,23 @@ import matplotlib.pyplot as plt
 import configuration as conf
 import json
 import argparse
+import utils
+import seaborn as sns
 
 def main():
-    plot_accuracies = _resolve_args()
+    plot_sidecar, plot_accuracies, plot_correlation = _resolve_args()
 
     print(f"============= Generate plots =============")
     
+    if plot_sidecar:
+        _generate_sidecar_plot()
+
+    if plot_correlation:
+        _generate_correlation_plot()
+        _generate_correlation_matrix()
+
     if plot_accuracies:
         _generate_accuracies_plot()
-    else:
-        _generate_sidecar_plot()
 
 def _generate_sidecar_plot():
     print("> Generating sidecar plot")
@@ -20,7 +27,6 @@ def _generate_sidecar_plot():
 
     time_seconds = data.index * 30  
 
-    # Initialize the plot
     plt.figure(figsize=(10, 6))
 
     min_time = time_seconds.min()  # This will be 0
@@ -49,6 +55,106 @@ def _generate_sidecar_plot():
     plt.savefig(file_name)
     plt.close()
     print(f"Plot saved in {file_name}!")
+
+def _generate_correlation_plot():
+    print("> Generating correlation plot")
+    
+    plt.figure(figsize=(10, 6))
+    
+    json_files = {
+        "Baseline": "baseline_experiment",
+        "Fed-BCD": "fed_bcd_experiment",
+        "Overlap-Fed-BCD": "overlap_fed_bcd_experiment",
+        "Fed-Encrypt": "fed_encrypt_experiment"
+    }
+    
+    if not json_files:
+        print("Warning: No JSON files found in the output folder.")
+        return
+
+    for name, file_prefix in json_files.items():
+        total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
+
+        plt.scatter(
+            total_metrics_data["execution_time"], 
+            total_metrics_data["total_energy_difference"], 
+            label=name, 
+            alpha=0.7
+        )
+
+    plt.xlabel("Execution Time (s)")
+    plt.ylabel("Energy Consumption (J)") 
+    
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/correlation_plot.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    print(f"Plot saved in {file_name}!")
+
+def _generate_correlation_matrix():
+    print("> Generating correlation matrix heatmap")
+    
+    json_files = {
+        "Baseline": "baseline_experiment",
+        "Fed-BCD": "fed_bcd_experiment",
+        "Overlap-Fed-BCD": "overlap_fed_bcd_experiment",
+        "Fed-Encrypt": "fed_encrypt_experiment"
+    }
+    
+    combined_frames = []
+
+    for name, file_prefix in json_files.items():
+        total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
+        
+        if isinstance(total_metrics_data, pd.DataFrame) and not total_metrics_data.empty:
+            df_copy = total_metrics_data.copy()
+            df_copy['experiment_type'] = name 
+            combined_frames.append(df_copy)
+
+    if not combined_frames:
+        return
+
+    master_df = pd.concat(combined_frames, ignore_index=True)
+
+    columns_to_include = [
+        "total_carbon_emission_difference",
+        "total_energy_difference",
+        "execution_time"
+    ]
+
+    valid_columns = [col for col in columns_to_include if col in master_df.columns]
+
+    filtered_df = master_df[valid_columns]
+
+    corr_matrix = filtered_df.corr(method='kendall')
+    corr_matrix = corr_matrix.iloc[::-1]
+
+    plt.figure(figsize=(11, 9))
+
+    # cmap_custom = sns.light_palette("seagreen", as_cmap=True)
+    cmap_custom = sns.color_palette("vlag", as_cmap=True)
+    
+    sns.heatmap(
+        corr_matrix, 
+        annot=True,
+        fmt=".2f",
+        cmap=cmap_custom,
+        vmin=-1, vmax=1,
+        center=0,
+        square=True,
+        linewidths=0.5,      
+        cbar_kws={"shrink": .8}
+    )
+
+    plt.tight_layout()
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/correlation_matrix.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    print(f"Correlation matrix saved in {file_name}!")
 
 def _generate_accuracies_plot():
     print("> Generating accuracies plot")
@@ -93,7 +199,7 @@ def _generate_accuracies_plot():
 
     plt.xlabel('Train Round')
     plt.ylabel('Accuracy (%)')
-    plt.title('Model accuracy per training round')
+    # plt.title('Model accuracy per training round')
     plt.grid(True, linestyle='--', alpha=0.6)
     
     plt.ylim(0, 100)
@@ -109,12 +215,16 @@ def _generate_accuracies_plot():
 
 def _resolve_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-sid", "--sidecar", action='store_true')
     parser.add_argument("-acc", "--accuracies", action='store_true')
+    parser.add_argument("-cor", "--correlation", action='store_true')
 
     args = parser.parse_args()
+    plot_sidecar = args.sidecar
     plot_accuracies = args.accuracies
+    plot_correlation = args.correlation
 
-    return plot_accuracies
+    return plot_sidecar, plot_accuracies, plot_correlation
 
 
 if __name__ == '__main__':

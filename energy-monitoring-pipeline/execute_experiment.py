@@ -16,7 +16,7 @@ REQUEST_APPROVAL_URL = f"{API_BASE_URL}/requestApproval"
 GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
-REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server", "aggregator", "authority"]
+REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server"]
 REQUEST_APPROVAL_BODY = {
     "type": "vflTrainModelRequest",
     "user": {
@@ -43,8 +43,10 @@ REQUEST_APPROVAL_HEADER = {
     "Host": "api-gateway.api-gateway.svc.cluster.local"
 }
 
-PROM_CONTAINERS = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
-# PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+# For fabric
+# PROM_CONTAINERS = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+# For local
+PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
 
@@ -136,7 +138,11 @@ def execute_experiment(runs_no: int):
         for r in range(runs_no):
             print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
             try:
-                runs[r] = execute_experiment_run(r)
+                run_output = execute_experiment_run(r)
+                runs[r] = run_output
+
+                if not utils.is_experiment_run_valid(run_output):
+                    break
             except Exception as e:
                 print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
 

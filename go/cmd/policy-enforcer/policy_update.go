@@ -68,7 +68,6 @@ func removePolicy() {
 	// c.SendPolicyUpdate(ctx, policyUpdate)
 }
 
-
 func reintroducePolicy() {
 	// var agreements []api.Agreement
 	//
@@ -82,7 +81,7 @@ func reintroducePolicy() {
 	// 	RequestApproved: false,
 	// }
 	//
-	etcd.PutValueToEtcd(etcdClient, "/policyEnforcer/agreements/clientthree", "{\"name\":\"clientthree\",\"relations\":{\"jake.jongejans@student.uva.nl\":{\"ID\":\"GUID\",\"requestTypes\":[\"vflTrainRequest\"],\"dataSets\":null,\"allowedArchetypes\":[\"computeToData\"],\"allowedComputeProviders\":[\"clientthree\"]}},\"computeProviders\":[\"clientthree\"],\"archetypes\":[\"computeToData\"]}")
+	etcd.PutValueToEtcd(etcdClient, "/policyEnforcer/agreements/clientthree", "{\"name\":\"clientthree\",\"relations\":{\"evangelos.pipilikas@student.uva.nl\":{\"ID\":\"GUID\",\"requestTypes\":[\"vflTrainRequest\"],\"dataSets\":null,\"allowedArchetypes\":[\"computeToData\"],\"allowedComputeProviders\":[\"clientthree\"]}},\"computeProviders\":[\"clientthree\"],\"archetypes\":[\"computeToData\"]}")
 
 	// getValidAgreements(policyUpdate.DataProviders, policyUpdate.User, &agreements, protoRequest)
 	// policyUpdate.ValidationResponse = &pb.ValidationResponse{}

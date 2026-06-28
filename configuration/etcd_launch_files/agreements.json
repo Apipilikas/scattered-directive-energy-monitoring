@@ -1,36 +1,10 @@
 [
   {
-    "name": "aggregator",
-    "relations": {
-      "evangelos.pipilikas@student.uva.nl": {
-        "ID": "GUID",
-        "requestTypes": ["vflTrainModelRequest"],
-        "allowedArchetypes": ["computeToData"],
-        "allowedComputeProviders": ["aggregator"]
-      }
-    },
-    "computeProviders": ["aggregator"],
-    "archetypes": ["computeToData"]
-  },
-  {
-    "name": "authority",
-    "relations": {
-      "evangelos.pipilikas@student.uva.nl": {
-        "ID": "GUID",
-        "requestTypes": ["vflTrainModelRequest"],
-        "allowedArchetypes": ["computeToData"],
-        "allowedComputeProviders": ["authority"]
-      }
-    },
-    "computeProviders": ["authority"],
-    "archetypes": ["computeToData"]
-  },
-  {
     "name": "server",
     "relations": {
       "evangelos.pipilikas@student.uva.nl": {
         "ID": "GUID",
-        "requestTypes": ["vflTrainRequest"],
+        "requestTypes": ["vflTrainModelRequest"],
         "allowedArchetypes": ["computeToData"],
         "allowedComputeProviders": ["server"]
       }

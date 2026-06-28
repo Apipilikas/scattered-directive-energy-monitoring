@@ -19,7 +19,7 @@ def test_statistical_significance(df_baseline: pd.DataFrame, df_opt: pd.DataFram
     """
     Perform Mann-Whitney U test for statistical significance and compute Rank Biserial Correlation as effect size.
     """
-    columns_to_test = ['total_energy_difference', 'total_carbon_emission_difference']
+    columns_to_test = ['total_energy_difference', 'total_carbon_emission_difference', 'execution_time']
 
     for column in columns_to_test:
         if len(df_baseline) >= 3 and len(df_opt) >= 3:
@@ -28,8 +28,13 @@ def test_statistical_significance(df_baseline: pd.DataFrame, df_opt: pd.DataFram
             rbc = calculate_rank_biserial(u_stat, len(df_baseline), len(df_opt))
             strength = utils.interpret_guilford_scale(rbc)
 
+            baseline_mean = df_baseline[column].mean()
+            opt_mean = df_opt[column].mean()
+
             print(f"\nComparison: {optimization} vs. baseline for {column}")
             print(f"    Mann-Whitney U Statistic: {u_stat}")
+            print(f"    Mean difference: {opt_mean - baseline_mean}")
+            print(f"    Mean difference (%): {(opt_mean - baseline_mean)/df_baseline[column].mean()*100}")
             print(f"    p-value: {p_value} {'(Significant)' if p_value < 0.05 else '(Not Significant)'}")
             print(f"    Rank Biserial Correlation (Effect Size): {rbc}")
             print(f"    Strength: {strength}")
