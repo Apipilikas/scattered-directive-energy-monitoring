@@ -52,6 +52,7 @@ run_baseline = False
 run_custom = False
 custom_container = ""
 output_path = ""
+relative_path = ""
 
 def _get_duration(is_active = False):
     return conf.PROM_ACTIVE_DURATION if is_active else conf.PROM_IDLE_DURATION
@@ -245,10 +246,14 @@ def execute_experiment_run(run_no: int):
     else:
         dfs = collect_metrics(experiment_start_time, experiment_end_time)
 
-    output_metrics_path = f"{output_path}/experiment_{run_no}_metrics.csv"
+    metrics_file_name = f"experiment_{run_no}_metrics.csv"
+    output_metrics_path = f"{output_path}/{metrics_file_name}"
+    relative_metrics_path = f"{relative_path}/{metrics_file_name}"
     save_metrics_to_csv(dfs, output_metrics_path)
 
-    output_total_metrics_path = f"{output_path}/experiment_{run_no}_total_metrics.csv"
+    total_metrics_name = f"experiment_{run_no}_total_metrics.csv"
+    output_total_metrics_path = f"{output_path}/{total_metrics_name}"
+    relative_total_metrics_path = f"{relative_path}/{total_metrics_name}"
     with open(output_total_metrics_path, mode="w", newline="") as file:
         fieldnames = ["total_idle_energy", "total_active_energy", "total_energy_difference", 
                       "total_idle_carbon_emission", "total_active_carbon_emission", "total_carbon_emission_difference"]
@@ -278,8 +283,8 @@ def execute_experiment_run(run_no: int):
         "idle_carbon_emission": idle_carbon_emission,
         "active_carbon_emission": active_carbon_emission,
         "accuracies": accuracies,
-        "total_metrics_path": output_total_metrics_path,
-        "metrics_path": output_metrics_path
+        "total_metrics_path": relative_total_metrics_path,
+        "metrics_path": relative_metrics_path
     }
 
     with open(f"{output_path}/experiment_{run_no}.json", 'w') as f:
@@ -303,6 +308,8 @@ def _resolve_output_path(arg, is_local = True):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
 
+    relative_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{folder_name}"
+
     output_path = os.path.join(
         current_dir, 
         conf.EXPERIMENT_OUTPUT_FOLDER, 
@@ -312,7 +319,7 @@ def _resolve_output_path(arg, is_local = True):
 
     os.makedirs(output_path, exist_ok=True)
 
-    return output_path
+    return output_path, relative_path
 
 
 def _resolve_args():
@@ -320,6 +327,7 @@ def _resolve_args():
     global run_custom
     global custom_container
     global output_path
+    global relative_path
     global execute_policy_aware
 
     parser = argparse.ArgumentParser()
@@ -335,7 +343,7 @@ def _resolve_args():
     run_baseline = args.baseline
     execute_policy_aware = args.policy_aware
     run_custom = args.custom is not None
-    output_path = _resolve_output_path(args.output_prefix, not args.fabric_mode)
+    output_path, relative_path = _resolve_output_path(args.output_prefix, not args.fabric_mode)
 
     if run_custom:
         custom_container = str(args.custom)
