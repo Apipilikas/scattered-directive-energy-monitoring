@@ -1,4 +1,5 @@
 import json
+import os
 
 # General
 COLLECT_MINUTES_BEFORE = 15
@@ -80,8 +81,12 @@ CONTAINERS = [
 
 # Helpers
 def get_agents():
-    etcd_launch_files_path = "../configuration/etcd_launch_files"
-    agents = extract_property_from_json(f"{etcd_launch_files_path}/agreements.json", "name")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    agreements_file = os.path.abspath(
+        os.path.join(current_dir, "..", "configuration", "etcd_launch_files", "agreements.json")
+    )
+
+    agents = extract_property_from_json(agreements_file, "name")
 
     return agents
 

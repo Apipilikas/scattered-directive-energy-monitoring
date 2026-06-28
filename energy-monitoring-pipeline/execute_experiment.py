@@ -17,26 +17,23 @@ GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
 REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server"]
-REQUEST_APPROVAL_BODY = {
-    "type": "vflTrainModelRequest",
-    "user": {
-      "id": "GUID",
-      "userName": "evangelos.pipilikas@student.uva.nl"
-    },
-    "dataProviders": REQUEST_APPROVAL_DATA_PROVIDERS,
-    "data_request": {
-      "type": "vflTrainModelRequest",
-      "data": {
-        "learning_rate": 0.1,
-        "cycles": 180,
-        "policy_removal": 40,
-        "policy_reintroduction": 80,
-        "training_backtrack": 0,
-        "communication_frequency": 15,
-        "sample_batch_size": 256
-    },
-    "requestMetadata": {}
-    }
+REQUEST_APPROVAL_DATA_BODY = {
+    "learning_rate": 0.1,
+    "cycles": 180,
+    "policy_removal": -1,
+    "policy_reintroduction": -1,
+    "training_backtrack": 0,
+    "communication_frequency": 15,
+    "sample_batch_size": 256
+}
+REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY = {
+    "learning_rate": 0.1,
+    "cycles": 180,
+    "policy_removal": 40,
+    "policy_reintroduction": 80,
+    "training_backtrack": 0,
+    "communication_frequency": 15,
+    "sample_batch_size": 256
 }
 REQUEST_APPROVAL_HEADER = {
     "Content-Type": "application/json",
@@ -50,6 +47,7 @@ PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".
 PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
 PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
 
+execute_policy_aware = False
 run_baseline = False
 run_custom = False
 custom_container = ""
@@ -85,14 +83,33 @@ def main():
     
     baseline_str = "(baseline)" if run_baseline else ""
     custom_container_str = f"({custom_container})" if run_custom else ""
-    print(f"============= Execute experiment {baseline_str} {custom_container_str} =============")
+    policy_aware_str = "(Policy aware)" if execute_policy_aware else ""
+    print(f"============= Execute experiment {baseline_str} {custom_container_str} {policy_aware_str} =============")
     
     iterations_no = int(iterations) if not iterations is None else conf.EXPERIMENT_RUNS_NO 
     execute_experiment(iterations_no)
 
+def _get_request_approval_body():
+    data_body = REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY if execute_policy_aware else REQUEST_APPROVAL_DATA_BODY
+
+    return {
+        "type": "vflTrainModelRequest",
+        "user": {
+        "id": "GUID",
+        "userName": "evangelos.pipilikas@student.uva.nl"
+        },
+        "dataProviders": REQUEST_APPROVAL_DATA_PROVIDERS,
+        "data_request": {
+        "type": "vflTrainModelRequest",
+        "data": data_body,
+        "requestMetadata": {}
+        }
+    }
+
+
 def _request_approval():
     response = requests.post(
-        REQUEST_APPROVAL_URL, json=REQUEST_APPROVAL_BODY, headers=REQUEST_APPROVAL_HEADER
+        REQUEST_APPROVAL_URL, json=_get_request_approval_body(), headers=REQUEST_APPROVAL_HEADER
         )
     
     response_content = response.json()
@@ -283,9 +300,16 @@ def _resolve_output_path(arg, is_local = True):
     output_prefix = f"{arg}_" if arg is not None else ""
     folder_name = f"{output_prefix}experiment_{timestamp}"
 
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
 
-    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{folder_name}"
+    output_path = os.path.join(
+        current_dir, 
+        conf.EXPERIMENT_OUTPUT_FOLDER, 
+        experiment_mode_folder, 
+        folder_name
+    )
+
     os.makedirs(output_path, exist_ok=True)
 
     return output_path
@@ -296,9 +320,11 @@ def _resolve_args():
     global run_custom
     global custom_container
     global output_path
+    global execute_policy_aware
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--baseline", action='store_true')
+    parser.add_argument("-pa", "--policy-aware", action='store_true')
     parser.add_argument("-op", "--output-prefix")
     parser.add_argument("-c", "--custom")
     parser.add_argument("-i", "--iterations")
@@ -307,6 +333,7 @@ def _resolve_args():
     args = parser.parse_args()
     
     run_baseline = args.baseline
+    execute_policy_aware = args.policy_aware
     run_custom = args.custom is not None
     output_path = _resolve_output_path(args.output_prefix, not args.fabric_mode)
 
