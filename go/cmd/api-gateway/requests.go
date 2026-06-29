@@ -737,8 +737,15 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	// Checks if policy changes (from incoming messages)
 	checkPolicyUpdate(clients, user)
 
-	policyRemovalRound := policy_removal / communication_frequency
-	policyReintroductionRound := policy_reintroduction / communication_frequency
+	var policyRemovalRound int64 = -1
+	if policy_removal != -1 {
+		policyRemovalRound = policy_removal / communication_frequency
+	}
+
+	var policyReintroductionRound int64 = -1
+	if policy_reintroduction != -1 {
+		policyReintroductionRound = policy_reintroduction / communication_frequency
+	}
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	var lastCycle int64 = -1
