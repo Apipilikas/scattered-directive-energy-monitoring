@@ -454,6 +454,8 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 		for data := range gradientsChan {
 			logger.Sugar().Debug("Gradient descent routine. Gradients received! Cycle: ", data.cycle)
 
+			var wg sync.WaitGroup
+
 			for index, client := range data.activeClients {
 
 				target := strings.ToLower(client.Auth)
@@ -461,7 +463,9 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 
 				logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Perform gradient descent for ", communicationFrequency, " times")
 
+				wg.Add(1)
 				go func() {
+					defer wg.Done()
 					request := cloneDataRequest(
 						dataRequest,
 						"vflGradientDescentRequest",
@@ -480,7 +484,7 @@ func startVFLPipeline(dataRequest map[string]any, clients *[]ClientData, serverA
 					logger.Sugar().Info("[", target, "] [vflGradientDescentRequest] [Cycle: ", data.cycle, "] Response OK.")
 				}()
 			}
-
+			wg.Wait()
 		}
 
 		logger.Sugar().Info("Gradients descent has finished!")
