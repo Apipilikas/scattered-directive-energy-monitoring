@@ -14,7 +14,6 @@ if [[ "$ENV" != "local" && "$ENV" != "fabric" ]]; then
     echo ">!< ERROR: First argument must be 'local' or 'fabric'"
     exit 1
 fi
-echo -e "=============== Started experiment execution ==============="
 
 shift $(( $# >= 2 ? 2 : $# ))
 PYTHON_ARGS="$@"
@@ -74,7 +73,7 @@ setup_dynamos_with_retry() {
 }
 
 for (( i=1; i<=TOTAL_RUNS; i++ )); do
-    echo -e "=============== STARTING SUITE RUN [ $i / $TOTAL_RUNS ] ==============="
+    echo -e "=============== Started experiment execution [ $i / $TOTAL_RUNS ] ==============="
     
     echo "[Step 1/5] Running Dynamos Configuration..."
     setup_dynamos_with_retry

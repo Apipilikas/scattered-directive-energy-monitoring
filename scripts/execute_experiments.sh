@@ -21,7 +21,7 @@ fi
 
 echo -e "============================================================="
 echo -e "=============== Started experiments execution ==============="
-echo -e "============================================================="
+echo -e "=============================================================\n"
 
 python -c '
 import sys, json
@@ -37,7 +37,7 @@ with open(sys.argv[1]) as f:
         print(f"{exp} {reps} {iters} {policy_aware}")
 ' "$EXPERIMENTS_PATH" | tr -d '\r' | while read -r EXP_NAME REPS ITERS PA; do
 
-    echo -e "=============== Starting experiment ==============="
+    echo -e "\n=============== Starting experiment ==============="
     echo -e " Name: $EXP_NAME | Repetitions: $REPS"
     echo -e " Iterations: $ITERS | Policy-aware: $PA"
     echo -e "===================================================\n"

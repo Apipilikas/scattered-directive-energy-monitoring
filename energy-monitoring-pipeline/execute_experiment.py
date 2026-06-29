@@ -44,12 +44,11 @@ REQUEST_APPROVAL_HEADER = {
 }
 
 # For fabric
-# PROM_CONTAINERS = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+PROM_CONTAINERS_FABRIC = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 # For local
-PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
-PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
-PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
+PROM_CONTAINERS_LOCAL = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 
+is_local = False
 execute_policy_aware = False
 run_baseline = False
 run_custom = False
@@ -61,7 +60,7 @@ def _get_duration(is_active = False):
     return conf.PROM_ACTIVE_DURATION if is_active else conf.PROM_IDLE_DURATION
 
 def _get_energy_query_range(is_active = False):
-    containers_filter = PROM_CONTAINERS
+    containers_filter = PROM_CONTAINERS_LOCAL if is_local else PROM_CONTAINERS_FABRIC
 
     if run_custom:
         containers_filter = "{container_name=\"" + custom_container + "\"}"
@@ -69,7 +68,7 @@ def _get_energy_query_range(is_active = False):
     return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by ({conf.KEPLER_LABEL})"
 
 def _get_carbon_emission_query_range():
-    containers_filter = PROM_CONTAINERS
+    containers_filter = PROM_CONTAINERS_LOCAL if is_local else PROM_CONTAINERS_FABRIC
 
     if run_custom:
         containers_filter = "{container_name=\"" + custom_container + "\"}"
@@ -333,6 +332,7 @@ def _resolve_args():
     global output_path
     global relative_path
     global execute_policy_aware
+    global is_local
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--baseline", action='store_true')
@@ -347,7 +347,9 @@ def _resolve_args():
     run_baseline = args.baseline
     execute_policy_aware = args.policy_aware
     run_custom = args.custom is not None
-    output_path, relative_path = _resolve_output_path(args.output_prefix, not args.fabric_mode)
+    is_local = not args.fabric_mode
+
+    output_path, relative_path = _resolve_output_path(args.output_prefix, is_local)
 
     if run_custom:
         custom_container = str(args.custom)
