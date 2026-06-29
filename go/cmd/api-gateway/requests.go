@@ -316,7 +316,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 			embeddingList = append(embeddingList, emb)
 		}
 
-		logger.Sugar().Debug("Embeddings for: ", approved_client)
+		logger.Sugar().Debug("Embeddings for: ", client.Auth)
 	}
 
 	logger.Sugar().Debug("The embeddings list: ", embeddingList)
