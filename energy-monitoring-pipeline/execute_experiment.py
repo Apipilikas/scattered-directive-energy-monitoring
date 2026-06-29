@@ -9,6 +9,9 @@ import argparse
 import csv
 import os
 import utils
+import faulthandler
+
+faulthandler.enable()
 
 # URLs
 API_BASE_URL = "http://localhost:8080/api/v1"
