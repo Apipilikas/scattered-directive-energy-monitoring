@@ -607,6 +607,8 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	checkPolicyUpdate(clients, user)
 
 	iterations := cycles / communication_frequency
+	policyRemovalRound := policy_removal / communication_frequency
+	policyReintroductionRound := policy_reintroduction / communication_frequency
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	for round := range iterations {
@@ -618,7 +620,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		metadata_accuracy := -1.0 // default value in case of error
 
 		// TODO: Implement policy change request
-		if policy_removal == round {
+		if policyRemovalRound == round {
 			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
 
@@ -629,7 +631,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		// TODO: Implement policy change request
-		if policy_reintroduction == round {
+		if policyReintroductionRound == round {
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
