@@ -733,16 +733,17 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	// Checks if policy changes (from incoming messages)
 	checkPolicyUpdate(clients, user)
 
+	policyRemovalRound := policy_removal / communication_frequency
+	policyReintroductionRound := policy_reintroduction / communication_frequency
+
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	var lastCycle int64 = -1
 	for cycle := range iterations {
 		logger.Sugar().Info("Running VFL training round ", cycle)
 
 		// TODO: Implement policy change request
-		if policy_removal == cycle {
-			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
+		if policyRemovalRound == cycle {
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
-
 			api.DeleteRequest(
 				"http://orchestrator.orchestrator.svc.cluster.local:8080/api/v1/policyEnforcer/agreements/clientthree",
 				"",
@@ -750,7 +751,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		// TODO: Implement policy change request
-		if policy_reintroduction == cycle {
+		if policyReintroductionRound == cycle {
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
