@@ -160,6 +160,7 @@ def execute_experiment(runs_no: int):
                 runs[r] = run_output
 
                 if not utils.is_experiment_run_valid(run_output):
+                    print(f"Experiment {r} is not valid.")
                     break
             except Exception as e:
                 print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
