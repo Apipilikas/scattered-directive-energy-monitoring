@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 import argparse
 from scipy.stats import mannwhitneyu
 import utils
@@ -45,21 +44,30 @@ def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-bpr", "--baseline-prefix")
     parser.add_argument("-mpr", "--mitigation-prefix")
+    parser.add_argument("-all", "--all", action='store_true')
     utils.add_boolean_argument(parser, conf.F_ARGUMENT)
 
     args = parser.parse_args()
     is_local = not args.fabric_mode
     baseline_prefix_arg = args.baseline_prefix
     mitigation_prefix_arg = args.mitigation_prefix
+    all_arg = args.all
 
-    baseline_data = utils.read_experiments_by_prefix(baseline_prefix_arg, is_local)
-    mitigation_data = utils.read_experiments_by_prefix(mitigation_prefix_arg, is_local)
+    baseline_data, _, _ = utils.read_experiments_by_prefix(baseline_prefix_arg, is_local)
+    mitigation_data, _, _ = utils.read_experiments_by_prefix(mitigation_prefix_arg, is_local)
+
+    if all_arg:
+        b_data, _, _ =  utils.read_experiments_by_prefix(baseline_prefix_arg, not is_local)
+        m_data, _, _ =  utils.read_experiments_by_prefix(baseline_prefix_arg, not is_local)
+        baseline_data = pd.concat([baseline_data, b_data])
+        mitigation_data = pd.concat([mitigation_data, m_data])
+
 
     return baseline_data, mitigation_data, mitigation_prefix_arg
 
 def main():
     baseline_data, mitigation_data, mitigation_prefix = _resolve_args()
-    test_statistical_significance(baseline_data[0], mitigation_data[0], mitigation_prefix)
+    test_statistical_significance(baseline_data, mitigation_data, mitigation_prefix)
 
 if __name__ == "__main__":
     main()

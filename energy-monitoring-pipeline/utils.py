@@ -18,7 +18,7 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     return [df.head(min_length) for df in dfs]
 
 def is_experiment_run_valid(output: dict):
-    return output["request_approval_status_code"] != 202 or output["accuracies"] != {}
+    return output["request_approval_status_code"] == 202 and output["accuracies"] != {}
 
 def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     filtered_dirs = get_experiments_directories_by_prefix(prefix, is_local)
@@ -34,12 +34,12 @@ def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFra
     combined_nested_metrics = defaultdict(lambda: defaultdict(list))
 
     for dir in filtered_dirs:
-        exp_path = resolve_experiment_path(dir, is_local=is_local, raise_ex=False)
+        exp_path = resolve_experiment_path(dir, is_local, False)
         
         if not exp_path:
             continue
 
-        total_metrics_df, metrics_df, aggregated_metrics = read_experiments_file(file_path=exp_path)
+        total_metrics_df, metrics_df, aggregated_metrics = read_experiments_file(exp_path)
         
         total_metrics_dfs.append(total_metrics_df)
         metrics_dfs.append(metrics_df)
@@ -61,9 +61,14 @@ def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFra
 
     return final_total_metrics_df, final_metrics_df, final_aggregated_metrics
 
-def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+def load_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER):
     with open(f"{file_path}/{conf.EXPERIMENTS_OUTPUT_FILE_NAME}", 'r') as file:
         experiments_data = json.load(file)
+
+    return experiments_data
+
+def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    experiments_data = load_experiments_file(file_path)
 
     total_metrics_dfs = []
     metrics_dfs = []
@@ -94,7 +99,10 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
                 flat_metrics[key].append(value)
 
     aggregated_metrics = {**{k: dict(v) for k, v in nested_metrics.items()}, **dict(flat_metrics)}
-   
+
+    if len(total_metrics_dfs) == 0:
+        return None, None, aggregated_metrics
+    
     return pd.concat(total_metrics_dfs), pd.concat(_align_experiments(metrics_dfs)), aggregated_metrics
 
 def resolve_experiment_path(path, is_local = True, raise_ex = True) -> str:

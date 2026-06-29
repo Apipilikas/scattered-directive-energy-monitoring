@@ -4,7 +4,22 @@ import configuration as conf
 import json
 import argparse
 import utils
+from scipy.stats import kendalltau
+import numpy as np
 import seaborn as sns
+
+CORRELATION_CONFIG = {
+        "Baseline": "baseline_experiment",
+        "Event-driven": "baseline_event_driven",
+        "Fed-BCD": "fed_bcd_experiment",
+        "Overlap-Fed-BCD": "overlap_fed_bcd_experiment",
+        "Fed-Encrypt": "fed_encrypt_experiment"
+    }
+
+CORRELATION_COLUMN = ("total_carbon_emission_difference","Carbon Emission (gCO2e/KWh)", "cab", 1000)
+# CORRELATION_COLUMN = ("execution_time","Execution Time (s)", "ex", 1)
+
+CORRELATION_COLUMN_NAME, CORRELATION_COLUMN_LABEL, CORRELATION_COLUMN_PREFIX, CORRELATION_COLUMN_SCALE = CORRELATION_COLUMN
 
 def main():
     plot_sidecar, plot_accuracies, plot_correlation = _resolve_args()
@@ -16,6 +31,7 @@ def main():
 
     if plot_correlation:
         _generate_correlation_plot()
+        _generate_mean_correlation_plot()
         _generate_correlation_matrix()
 
     if plot_accuracies:
@@ -56,40 +72,93 @@ def _generate_sidecar_plot():
     plt.close()
     print(f"Plot saved in {file_name}!")
 
-def _generate_correlation_plot():
-    print("> Generating correlation plot")
+def _generate_mean_correlation_plot():
+    print("> Generating mean correlation plot")
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(6, 5))
     
-    json_files = {
-        "Baseline": "baseline_experiment",
-        "Fed-BCD": "fed_bcd_experiment",
-        "Overlap-Fed-BCD": "overlap_fed_bcd_experiment",
-        "Fed-Encrypt": "fed_encrypt_experiment"
-    }
-    
-    if not json_files:
+    if not CORRELATION_CONFIG:
         print("Warning: No JSON files found in the output folder.")
         return
 
-    for name, file_prefix in json_files.items():
+    x = []
+    y = []
+
+    for name, file_prefix in CORRELATION_CONFIG.items():
         total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
+        
+        x_val = total_metrics_data[CORRELATION_COLUMN_NAME].mean()*CORRELATION_COLUMN_SCALE
+        y_val = total_metrics_data["total_energy_difference"].mean()
+        
+        x.append(x_val)
+        y.append(y_val)
 
-        plt.scatter(
-            total_metrics_data["execution_time"], 
-            total_metrics_data["total_energy_difference"], 
-            label=name, 
-            alpha=0.7
-        )
+        plt.scatter(x_val, y_val, label=name, alpha=0.7, s=100)
 
-    plt.xlabel("Execution Time (s)")
+    if len(x) > 1:        
+        slope, intercept = np.polyfit(x, y, 1)
+        
+        x_line = np.linspace(min(x) * 0.9, max(x) * 1.1, 100)
+        y_line = slope * x_line + intercept
+        
+        plt.plot(x_line, y_line, color='gray', linestyle='--', alpha=0.5, label=f"Linear Fit")
+
+    plt.xlabel(f"Mean {CORRELATION_COLUMN_LABEL}")
+    plt.ylabel("Mean Energy Consumption (J)") 
+    
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{CORRELATION_COLUMN_PREFIX}_mean_correlation_plot.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    print(f"Plot saved in {file_name}!")
+
+def _generate_correlation_plot():
+    print("> Generating correlation plot")
+    
+    plt.figure(figsize=(6, 5))
+    
+    if not CORRELATION_CONFIG:
+        print("Warning: No JSON files found in the output folder.")
+        return
+
+    x = []
+    y = []
+
+    for name, file_prefix in CORRELATION_CONFIG.items():
+        total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
+        
+        x_val = total_metrics_data[CORRELATION_COLUMN_NAME]*CORRELATION_COLUMN_SCALE
+        y_val = total_metrics_data["total_energy_difference"]
+        
+        x.extend(x_val.tolist())
+        y.extend(y_val.tolist())
+
+        plt.scatter(x_val, y_val, label=name, alpha=0.7, s=30)
+
+    x = np.array(x)
+    y = np.array(y)
+
+    if len(x) > 1:
+        tau, p_value = kendalltau(x, y)
+        
+        slope, intercept = np.polyfit(x, y, 1)
+        
+        x_line = np.linspace(x.min(), x.max(), 100)
+        y_line = slope * x_line + intercept
+        
+        plt.plot(x_line, y_line, color='gray', linestyle='--', alpha=0.5, label=f"Linear Fit (τ={tau:.2f})")
+
+    plt.xlabel(CORRELATION_COLUMN_LABEL)
     plt.ylabel("Energy Consumption (J)") 
     
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/correlation_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{CORRELATION_COLUMN_PREFIX}_correlation_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")
@@ -97,16 +166,9 @@ def _generate_correlation_plot():
 def _generate_correlation_matrix():
     print("> Generating correlation matrix heatmap")
     
-    json_files = {
-        "Baseline": "baseline_experiment",
-        "Fed-BCD": "fed_bcd_experiment",
-        "Overlap-Fed-BCD": "overlap_fed_bcd_experiment",
-        "Fed-Encrypt": "fed_encrypt_experiment"
-    }
-    
     combined_frames = []
 
-    for name, file_prefix in json_files.items():
+    for name, file_prefix in CORRELATION_CONFIG.items():
         total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
         
         if isinstance(total_metrics_data, pd.DataFrame) and not total_metrics_data.empty:
@@ -132,7 +194,7 @@ def _generate_correlation_matrix():
     corr_matrix = filtered_df.corr(method='kendall')
     corr_matrix = corr_matrix.iloc[::-1]
 
-    plt.figure(figsize=(11, 9))
+    plt.figure(figsize=(10, 10))
 
     # cmap_custom = sns.light_palette("seagreen", as_cmap=True)
     cmap_custom = sns.color_palette("vlag", as_cmap=True)
