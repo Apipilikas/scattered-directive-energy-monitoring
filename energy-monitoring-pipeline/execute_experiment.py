@@ -9,6 +9,9 @@ import argparse
 import csv
 import os
 import utils
+import faulthandler
+
+faulthandler.enable()
 
 # URLs
 API_BASE_URL = "http://localhost:8080/api/v1"
@@ -16,48 +19,48 @@ REQUEST_APPROVAL_URL = f"{API_BASE_URL}/requestApproval"
 GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
-REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server", "aggregator", "authority"]
-REQUEST_APPROVAL_BODY = {
-    "type": "vflTrainModelRequest",
-    "user": {
-      "id": "GUID",
-      "userName": "evangelos.pipilikas@student.uva.nl"
-    },
-    "dataProviders": REQUEST_APPROVAL_DATA_PROVIDERS,
-    "data_request": {
-      "type": "vflTrainModelRequest",
-      "data": {
-        "learning_rate": 0.1,
-        "cycles": 180,
-        "policy_removal": -1,
-        "policy_reintroduction": -1,
-        "training_backtrack": 0,
-        "communication_frequency": 15,
-        "sample_batch_size": 256
-    },
-    "requestMetadata": {}
-    }
+REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server"]
+REQUEST_APPROVAL_DATA_BODY = {
+    "learning_rate": 0.1,
+    "cycles": 180,
+    "policy_removal": -1,
+    "policy_reintroduction": -1,
+    "training_backtrack": 0,
+    "communication_frequency": 15,
+    "sample_batch_size": 256
+}
+REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY = {
+    "learning_rate": 0.1,
+    "cycles": 180,
+    "policy_removal": 40,
+    "policy_reintroduction": 80,
+    "training_backtrack": 0,
+    "communication_frequency": 15,
+    "sample_batch_size": 256
 }
 REQUEST_APPROVAL_HEADER = {
     "Content-Type": "application/json",
     "Host": "api-gateway.api-gateway.svc.cluster.local"
 }
 
-PROM_CONTAINERS = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
-# PROM_CONTAINERS = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
-PROM_ENERGY_QUERY_TOTAL = f"sum(kepler_container_joules_total{PROM_CONTAINERS}) by ({conf.KEPLER_LABEL})"
-PROM_ENERGY_QUERY_RANGE = f"sum(increase(kepler_container_joules_total{PROM_CONTAINERS}[{conf.PROM_IDLE_DURATION}])) by ({conf.KEPLER_LABEL})"
+# For fabric
+PROM_CONTAINERS_FABRIC = "{container_name=~\"system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
+# For local
+PROM_CONTAINERS_LOCAL = "{container_name=~\"kernel_processes|system_processes|" + "|".join(conf.get_agents())  + "|policy.*|orchestrator|sidecar|rabbitmq|api-gateway\"}"
 
+is_local = False
+execute_policy_aware = False
 run_baseline = False
 run_custom = False
 custom_container = ""
 output_path = ""
+relative_path = ""
 
 def _get_duration(is_active = False):
     return conf.PROM_ACTIVE_DURATION if is_active else conf.PROM_IDLE_DURATION
 
 def _get_energy_query_range(is_active = False):
-    containers_filter = PROM_CONTAINERS
+    containers_filter = PROM_CONTAINERS_LOCAL if is_local else PROM_CONTAINERS_FABRIC
 
     if run_custom:
         containers_filter = "{container_name=\"" + custom_container + "\"}"
@@ -65,7 +68,7 @@ def _get_energy_query_range(is_active = False):
     return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by ({conf.KEPLER_LABEL})"
 
 def _get_carbon_emission_query_range():
-    containers_filter = PROM_CONTAINERS
+    containers_filter = PROM_CONTAINERS_LOCAL if is_local else PROM_CONTAINERS_FABRIC
 
     if run_custom:
         containers_filter = "{container_name=\"" + custom_container + "\"}"
@@ -83,15 +86,33 @@ def main():
     
     baseline_str = "(baseline)" if run_baseline else ""
     custom_container_str = f"({custom_container})" if run_custom else ""
-    print(f"============= Execute experiment {baseline_str} {custom_container_str} =============")
-    print(f"> Idle period duration: {conf.IDLE_PERIOD} | Active period duration: {conf.ACTIVE_PERIOD}")
+    policy_aware_str = "(Policy aware)" if execute_policy_aware else ""
+    print(f"============= Execute experiment {baseline_str} {custom_container_str} {policy_aware_str} =============")
     
     iterations_no = int(iterations) if not iterations is None else conf.EXPERIMENT_RUNS_NO 
     execute_experiment(iterations_no)
 
+def _get_request_approval_body():
+    data_body = REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY if execute_policy_aware else REQUEST_APPROVAL_DATA_BODY
+
+    return {
+        "type": "vflTrainModelRequest",
+        "user": {
+        "id": "GUID",
+        "userName": "evangelos.pipilikas@student.uva.nl"
+        },
+        "dataProviders": REQUEST_APPROVAL_DATA_PROVIDERS,
+        "data_request": {
+        "type": "vflTrainModelRequest",
+        "data": data_body,
+        "requestMetadata": {}
+        }
+    }
+
+
 def _request_approval():
     response = requests.post(
-        REQUEST_APPROVAL_URL, json=REQUEST_APPROVAL_BODY, headers=REQUEST_APPROVAL_HEADER
+        REQUEST_APPROVAL_URL, json=_get_request_approval_body(), headers=REQUEST_APPROVAL_HEADER
         )
     
     response_content = response.json()
@@ -137,7 +158,12 @@ def execute_experiment(runs_no: int):
         for r in range(runs_no):
             print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
             try:
-                runs[r] = execute_experiment_run(r)
+                run_output = execute_experiment_run(r)
+                runs[r] = run_output
+
+                if not utils.is_experiment_run_valid(run_output):
+                    print(f"Experiment {r} is not valid.")
+                    break
             except Exception as e:
                 print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
 
@@ -223,10 +249,14 @@ def execute_experiment_run(run_no: int):
     else:
         dfs = collect_metrics(experiment_start_time, experiment_end_time)
 
-    output_metrics_path = f"{output_path}/experiment_{run_no}_metrics.csv"
+    metrics_file_name = f"experiment_{run_no}_metrics.csv"
+    output_metrics_path = f"{output_path}/{metrics_file_name}"
+    relative_metrics_path = f"{relative_path}/{metrics_file_name}"
     save_metrics_to_csv(dfs, output_metrics_path)
 
-    output_total_metrics_path = f"{output_path}/experiment_{run_no}_total_metrics.csv"
+    total_metrics_name = f"experiment_{run_no}_total_metrics.csv"
+    output_total_metrics_path = f"{output_path}/{total_metrics_name}"
+    relative_total_metrics_path = f"{relative_path}/{total_metrics_name}"
     with open(output_total_metrics_path, mode="w", newline="") as file:
         fieldnames = ["total_idle_energy", "total_active_energy", "total_energy_difference", 
                       "total_idle_carbon_emission", "total_active_carbon_emission", "total_carbon_emission_difference"]
@@ -256,8 +286,8 @@ def execute_experiment_run(run_no: int):
         "idle_carbon_emission": idle_carbon_emission,
         "active_carbon_emission": active_carbon_emission,
         "accuracies": accuracies,
-        "total_metrics_path": output_total_metrics_path,
-        "metrics_path": output_metrics_path
+        "total_metrics_path": relative_total_metrics_path,
+        "metrics_path": relative_metrics_path
     }
 
     with open(f"{output_path}/experiment_{run_no}.json", 'w') as f:
@@ -278,12 +308,21 @@ def _resolve_output_path(arg, is_local = True):
     output_prefix = f"{arg}_" if arg is not None else ""
     folder_name = f"{output_prefix}experiment_{timestamp}"
 
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
 
-    output_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{folder_name}"
+    relative_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{folder_name}"
+
+    output_path = os.path.join(
+        current_dir, 
+        conf.EXPERIMENT_OUTPUT_FOLDER, 
+        experiment_mode_folder, 
+        folder_name
+    )
+
     os.makedirs(output_path, exist_ok=True)
 
-    return output_path
+    return output_path, relative_path
 
 
 def _resolve_args():
@@ -291,9 +330,13 @@ def _resolve_args():
     global run_custom
     global custom_container
     global output_path
+    global relative_path
+    global execute_policy_aware
+    global is_local
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--baseline", action='store_true')
+    parser.add_argument("-pa", "--policy-aware", action='store_true')
     parser.add_argument("-op", "--output-prefix")
     parser.add_argument("-c", "--custom")
     parser.add_argument("-i", "--iterations")
@@ -302,8 +345,11 @@ def _resolve_args():
     args = parser.parse_args()
     
     run_baseline = args.baseline
+    execute_policy_aware = args.policy_aware
     run_custom = args.custom is not None
-    output_path = _resolve_output_path(args.output_prefix, not args.fabric_mode)
+    is_local = not args.fabric_mode
+
+    output_path, relative_path = _resolve_output_path(args.output_prefix, is_local)
 
     if run_custom:
         custom_container = str(args.custom)

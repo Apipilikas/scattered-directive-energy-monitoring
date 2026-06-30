@@ -23,8 +23,8 @@ def execute_DBSCAN_AD_algorithm(df: pd.DataFrame):
     # Iterate directly through the filtered column strings
     for index, anomaly in anomalies.iterrows():
         # print(anomaly)
-        dir = anomaly["Dir"]
-        run = anomaly["Run"]
+        dir = anomaly["dir"]
+        run = anomaly["run"]
         print(f"File: {dir} | Run: {run}")
 
 def check_runs_results(exp_dirs, anomaly_folders):

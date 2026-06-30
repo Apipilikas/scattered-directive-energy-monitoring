@@ -4,24 +4,38 @@ import configuration as conf
 import pandas as pd
 import numpy as np
 import utils
+import os
 
 def main():
-    output_path, is_local = _resolve_args()
+    output_path, is_local, prefix = _resolve_args()
     print(f"============= Average experiments =============")
-    _process_statistics(output_path, is_local)
+    _process_statistics(output_path, prefix, is_local)
 
-def _process_statistics(output_path, is_local = True):
+def _process_statistics(output_path, prefix, is_local = True):
     if output_path is None:
-        for dir in utils.get_experiments_directories(is_local):
-            experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
-            experiment_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/{dir}"
-            _calculate_statistics(experiment_path)
-    else:
-        _calculate_statistics(output_path)
+        experiment_mode_folder = utils.get_experiment_mode_folder(is_local)
+        experiment_path = f"{conf.EXPERIMENT_OUTPUT_FOLDER}/{experiment_mode_folder}/"
+        
+        if prefix is None:
+            for dir in utils.get_experiments_directories(is_local):
+                output_path = experiment_path + dir
+                _read_experiments_and_calculate_statistics(output_path)
+        else:
+            output_path = experiment_path + f"average_{prefix}"
+            total_metrics_data, metrics_data, aggregated_data = utils.read_experiments_by_prefix(prefix, is_local)
 
-def _calculate_statistics(output_path:str):
-    print(f"> Calculating statistics for {output_path}")
+            if not os.path.exists(output_path):
+                os.makedirs(output_path, exist_ok=True)
+                
+            _calculate_statistics(total_metrics_data, metrics_data, aggregated_data, output_path)
+    else:
+        _read_experiments_and_calculate_statistics(output_path)
+
+def _read_experiments_and_calculate_statistics(output_path):
     total_metrics_data, metrics_data, aggregated_data = utils.read_experiments_file(output_path)
+    _calculate_statistics(total_metrics_data, metrics_data, aggregated_data, output_path)
+
+def _calculate_statistics(total_metrics_data, metrics_data, aggregated_data, output_path):
 
     output = {}
 
@@ -122,11 +136,14 @@ def _calculate_aggregated_statistics(aggregated_data: dict) -> dict:
 def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-ep", "--experiment-path")
+    parser.add_argument("-pr", "--prefix")
     utils.add_boolean_argument(parser, conf.F_ARGUMENT)
     
     args = parser.parse_args()
     is_local = not args.fabric_mode
-    return utils.resolve_experiment_path(args.experiment_path, is_local, False), is_local
+    prefix_arg = args.prefix
+
+    return utils.resolve_experiment_path(args.experiment_path, is_local, False), is_local, prefix_arg
 
 if __name__ == '__main__':
     main()

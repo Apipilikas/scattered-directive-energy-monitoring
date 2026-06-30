@@ -1,8 +1,15 @@
 import json
+import os
 
 # General
 COLLECT_MINUTES_BEFORE = 15
 COLUMN_TO_DROP = "timestamp"
+PREFIXES = ["baseline_experiment", 
+            "baseline_event_driven_experiment", 
+            "fed_bcd_experiment", 
+            "overlap_fed_bcd_experiment", 
+            "fed_encrypt_experiment"
+            ]
 
 # Paths / Files
 DATA_OUTPUT_FOLDER = "output"
@@ -11,8 +18,8 @@ DATA_DA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/da_data_metrics.csv"
 DATA_RCA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/rca_results.csv"
 
 # Experiment constants
-_IDLE_PERIOD_MINS = 20
-_ACTIVE_PERIOD_MINS = 20
+_IDLE_PERIOD_MINS = 3
+_ACTIVE_PERIOD_MINS = 3
 EXPERIMENT_RUNS_NO = 10
 IDLE_PERIOD = _IDLE_PERIOD_MINS * 60
 ACTIVE_PERIOD = _ACTIVE_PERIOD_MINS * 60
@@ -67,7 +74,7 @@ RCD_K = 5
 
 # Containers
 CONTAINERS = [
-    # "kernel_processes",
+    "kernel_processes",
     "system_processes",
     "api-gateway",
     "policy-enforcer",
@@ -79,8 +86,12 @@ CONTAINERS = [
 
 # Helpers
 def get_agents():
-    etcd_launch_files_path = "../configuration/etcd_launch_files"
-    agents = extract_property_from_json(f"{etcd_launch_files_path}/agreements.json", "name")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    agreements_file = os.path.abspath(
+        os.path.join(current_dir, "..", "configuration", "etcd_launch_files", "agreements.json")
+    )
+
+    agents = extract_property_from_json(agreements_file, "name")
 
     return agents
 
