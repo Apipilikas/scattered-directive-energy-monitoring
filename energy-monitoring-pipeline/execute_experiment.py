@@ -19,7 +19,7 @@ REQUEST_APPROVAL_URL = f"{API_BASE_URL}/requestApproval"
 GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
-REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server"]
+REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server", "aggregator", "authority"]
 REQUEST_APPROVAL_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
