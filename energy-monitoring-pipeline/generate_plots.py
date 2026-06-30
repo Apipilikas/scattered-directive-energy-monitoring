@@ -202,7 +202,7 @@ def _generate_correlation_matrix():
     sns.heatmap(
         corr_matrix, 
         annot=True,
-        fmt=".2f",
+        fmt=".3f",
         cmap=cmap_custom,
         vmin=-1, vmax=1,
         center=0,
