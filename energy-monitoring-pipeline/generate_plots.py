@@ -16,13 +16,13 @@ CORRELATION_CONFIG = {
         "Fed-Encrypt": "fed_encrypt_experiment"
     }
 
-CORRELATION_COLUMN = ("total_carbon_emission_difference","Carbon Emission (gCO2e/KWh)", "cab", 1000)
-# CORRELATION_COLUMN = ("execution_time","Execution Time (s)", "ex", 1)
-
-CORRELATION_COLUMN_NAME, CORRELATION_COLUMN_LABEL, CORRELATION_COLUMN_PREFIX, CORRELATION_COLUMN_SCALE = CORRELATION_COLUMN
+CORRELATION_COLUMNS = [
+    ("total_carbon_emission_difference","Carbon Emission (gCO2e/KWh)", "cab", 1000),
+    ("execution_time","Execution Time (s)", "ex", 1)
+]
 
 def main():
-    plot_sidecar, plot_accuracies, plot_correlation = _resolve_args()
+    plot_sidecar, plot_accuracies, plot_correlation, plot_box, is_local, both_environments = _resolve_args()
 
     print(f"============= Generate plots =============")
     
@@ -30,12 +30,15 @@ def main():
         _generate_sidecar_plot()
 
     if plot_correlation:
-        _generate_correlation_plot()
-        _generate_mean_correlation_plot()
-        _generate_correlation_matrix()
+        _generate_correlation_plot(is_local, both_environments)
+        _generate_mean_correlation_plot(is_local, both_environments)
+        _generate_correlation_matrix(is_local, both_environments)
 
     if plot_accuracies:
         _generate_accuracies_plot()
+
+    if plot_box:
+        _generate_box_plot(is_local, both_environments)
 
 def _generate_sidecar_plot():
     print("> Generating sidecar plot")
@@ -72,9 +75,16 @@ def _generate_sidecar_plot():
     plt.close()
     print(f"Plot saved in {file_name}!")
 
-def _generate_mean_correlation_plot():
-    print("> Generating mean correlation plot")
-    
+def _resolve_mode_name(is_local, both_environments = False):
+    return "both" if both_environments else ("local" if is_local else "fabric")
+
+def _generate_mean_correlation_plot(is_local, both_environments):
+    for column_name, column_label, column_prefix, column_scale in CORRELATION_COLUMNS:
+        _generate_mean_correlation_plot_by_column(column_name, column_label, column_prefix, column_scale, is_local, both_environments)  
+
+def _generate_mean_correlation_plot_by_column(column_name, column_label, column_prefix, column_scale, is_local, both_environments):
+    print(f"> Generating mean correlation plot for column : {column_name}")
+
     plt.figure(figsize=(6, 5))
     
     if not CORRELATION_CONFIG:
@@ -84,16 +94,25 @@ def _generate_mean_correlation_plot():
     x = []
     y = []
 
-    for name, file_prefix in CORRELATION_CONFIG.items():
-        total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
-        
-        x_val = total_metrics_data[CORRELATION_COLUMN_NAME].mean()*CORRELATION_COLUMN_SCALE
-        y_val = total_metrics_data["total_energy_difference"].mean()
-        
-        x.append(x_val)
-        y.append(y_val)
+    def _plot(is_local: bool, include_mode_in_label: bool):
+        for name, file_prefix in CORRELATION_CONFIG.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local)
+            
+            x_val = total_metrics_data[column_name].mean()*column_scale
+            y_val = total_metrics_data["total_energy_difference"].mean()
+            
+            x.append(x_val)
+            y.append(y_val)
 
-        plt.scatter(x_val, y_val, label=name, alpha=0.7, s=100)
+            if include_mode_in_label:
+                name = f"{name}_{_resolve_mode_name(is_local)}"
+
+            plt.scatter(x_val, y_val, label=name, alpha=0.7, s=100)
+
+    _plot(is_local, both_environments)
+
+    if both_environments:
+        _plot(not is_local, both_environments)
 
     if len(x) > 1:        
         slope, intercept = np.polyfit(x, y, 1)
@@ -103,40 +122,48 @@ def _generate_mean_correlation_plot():
         
         plt.plot(x_line, y_line, color='gray', linestyle='--', alpha=0.5, label=f"Linear Fit")
 
-    plt.xlabel(f"Mean {CORRELATION_COLUMN_LABEL}")
+    plt.xlabel(f"Mean {column_label}")
     plt.ylabel("Mean Energy Consumption (J)") 
     
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{CORRELATION_COLUMN_PREFIX}_mean_correlation_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{column_prefix}_mean_correlation_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")
 
-def _generate_correlation_plot():
-    print("> Generating correlation plot")
-    
+def _generate_correlation_plot(is_local, both_environments):
+    for column_name, column_label, column_prefix, column_scale in CORRELATION_COLUMNS:
+        _generate_correlation_plot_by_column(column_name, column_label, column_prefix, column_scale, is_local, both_environments)   
+
+def _generate_correlation_plot_by_column(column_name, column_label, column_prefix, column_scale, is_local, both_environments):
+    print(f"> Generating correlation plot for column: {column_name}")
     plt.figure(figsize=(6, 5))
     
-    if not CORRELATION_CONFIG:
-        print("Warning: No JSON files found in the output folder.")
-        return
-
     x = []
     y = []
 
-    for name, file_prefix in CORRELATION_CONFIG.items():
-        total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
-        
-        x_val = total_metrics_data[CORRELATION_COLUMN_NAME]*CORRELATION_COLUMN_SCALE
-        y_val = total_metrics_data["total_energy_difference"]
-        
-        x.extend(x_val.tolist())
-        y.extend(y_val.tolist())
+    def _plot(is_local: bool, include_mode_in_label: bool):
+        for name, file_prefix in CORRELATION_CONFIG.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local)
+            
+            x_val = total_metrics_data[column_name]*column_scale
+            y_val = total_metrics_data["total_energy_difference"]
+            
+            x.extend(x_val.tolist())
+            y.extend(y_val.tolist())
 
-        plt.scatter(x_val, y_val, label=name, alpha=0.7, s=30)
+            if include_mode_in_label:
+                name = f"{name}_{_resolve_mode_name(is_local)}"
+
+            plt.scatter(x_val, y_val, label=name, alpha=0.7, s=30)
+
+    _plot(is_local, both_environments)
+
+    if both_environments:
+        _plot(not is_local, both_environments)
 
     x = np.array(x)
     y = np.array(y)
@@ -151,30 +178,37 @@ def _generate_correlation_plot():
         
         plt.plot(x_line, y_line, color='gray', linestyle='--', alpha=0.5, label=f"Linear Fit (τ={tau:.2f})")
 
-    plt.xlabel(CORRELATION_COLUMN_LABEL)
+    plt.xlabel(column_label)
     plt.ylabel("Energy Consumption (J)") 
     
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{CORRELATION_COLUMN_PREFIX}_correlation_plot.pdf"
+    label = _resolve_mode_name(is_local, both_environments)
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{column_prefix}_correlation_{label}_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")
 
-def _generate_correlation_matrix():
+def _generate_correlation_matrix(is_local, both_environments):
     print("> Generating correlation matrix heatmap")
     
     combined_frames = []
 
-    for name, file_prefix in CORRELATION_CONFIG.items():
-        total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, False)
-        
-        if isinstance(total_metrics_data, pd.DataFrame) and not total_metrics_data.empty:
+    def _read_data(is_local):
+        for name, file_prefix in CORRELATION_CONFIG.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local)
+            
             df_copy = total_metrics_data.copy()
             df_copy['experiment_type'] = name 
             combined_frames.append(df_copy)
+
+    _read_data(is_local)
+
+    if both_environments:
+        _read_data(not is_local)
 
     if not combined_frames:
         return
@@ -213,7 +247,7 @@ def _generate_correlation_matrix():
 
     plt.tight_layout()
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/correlation_matrix.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/correlation_{_resolve_mode_name(is_local, both_environments)}_matrix.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Correlation matrix saved in {file_name}!")
@@ -275,18 +309,54 @@ def _generate_accuracies_plot():
     plt.close()
     print(f"Plot saved in {file_name}!")
 
+def _generate_box_plot(is_local, both_environments):
+    print("> Generating box plot")
+
+    plt.figure(figsize=(10, 5))
+
+    x = []
+    labels =[]
+
+    def _read_data(is_local: bool, include_mode_in_label: bool):
+        for name, file_prefix in CORRELATION_CONFIG.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local)
+
+            if include_mode_in_label:
+                name = f"{name}_{_resolve_mode_name(is_local)}"
+
+            x.append(total_metrics_data["total_energy_difference"])
+            labels.append(name)
+
+    _read_data(is_local, both_environments)
+
+    if both_environments:
+        _read_data(not is_local, both_environments)
+
+    plt.boxplot(x, tick_labels=labels)
+
+    plt.ylabel("Energy Consumption (J)")
+    plt.xlabel("Mitigation Strategies")
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    plt.savefig(file_name)
+    plt.close()
+    print(f"Plot saved in {file_name}!")
+
 def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-sid", "--sidecar", action='store_true')
     parser.add_argument("-acc", "--accuracies", action='store_true')
     parser.add_argument("-cor", "--correlation", action='store_true')
+    parser.add_argument("-box", "--box-plot", action='store_true')
+    utils.add_boolean_argument(parser, conf.F_ARGUMENT)
+    utils.add_boolean_argument(parser, conf.BE_ARGUMENT)
 
     args = parser.parse_args()
     plot_sidecar = args.sidecar
     plot_accuracies = args.accuracies
     plot_correlation = args.correlation
+    plot_box = args.box_plot
 
-    return plot_sidecar, plot_accuracies, plot_correlation
+    return plot_sidecar, plot_accuracies, plot_correlation, plot_box, not args.fabric_mode, args.both_environments
 
 
 if __name__ == '__main__':

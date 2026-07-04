@@ -4,6 +4,8 @@ import subprocess
 from datetime import datetime
 import configuration as conf
 
+METRICS = ["Ready", "ContainersReady", "PodScheduled", "PodReadyToStartContainers", "Initialized"]
+
 def get_matching_pods(namespace, prefix):
     print(f"\n> Searching namespace '{namespace}' for pods starting with '{prefix}'...")
     cmd = ["kubectl", "get", "pods", "-n", namespace, "-o", "jsonpath={.items[*].metadata.name}"]
@@ -29,36 +31,55 @@ def collect_pod_metrics(pod_name, namespace="default"):
         print(f">!< Error: Pod '{pod_name}' no longer exists in namespace '{namespace}'.")
         return
 
-    # 1. Capture the API Birth Certificate
     birth_time = _parse_time(data["metadata"]["creationTimestamp"])
     
-    # 2. Extract the static milestone receipts
     milestones = {}
     for condition in data.get("status", {}).get("conditions", []):
         milestones[condition["type"]] = _parse_time(condition["lastTransitionTime"])
 
-    # 3. Calculate exact durations
-    init_duration = 0.0
-    boot_duration = 0.0
     total_lifespan = (datetime.now(birth_time.tzinfo) - birth_time).total_seconds()
 
-    if "Initialized" in milestones:
-        init_duration = (milestones["Initialized"] - birth_time).total_seconds()
-        
-    if "Ready" in milestones:
-        boot_duration = (milestones["Ready"] - birth_time).total_seconds()
+    output = {}
 
-    # Print clean thesis stats
     print(f"\n>  Pod name: {pod_name}")
-    print(f"    - Initialized: {init_duration:.2f} s")
-    print(f"    - Running:  {boot_duration:.2f} s")
-    print(f"    - Total:  {total_lifespan / 60:.2f} minutes ({total_lifespan:.1f}s)")
+
+    for metric in METRICS:
+        duration = _get_condition(milestones, birth_time, metric)
+        output[metric] = duration
+        print(f"    - {metric}:  {_to_minutes(duration):.3f} minutes ({duration:.3f}s)")
+
+    print(f"    - Total:  {_to_minutes(total_lifespan):.3f} minutes ({total_lifespan:.3f}s)")
+
+    return output
+
+def _get_condition(milestones: dict, birth_time, condition_name: str):
+    duration = 0.0
+
+    if condition_name in milestones:
+        duration = (milestones[condition_name] - birth_time).total_seconds()
+
+    return duration
+
+def _to_minutes(lifespan: float):
+    return lifespan / 60
+
+def _calculate_pod_metrics_mean(results):
+    print("\n>  Calculating means across the pods")
+    for metric in METRICS:
+        total_duration = sum(res.get(metric, 0) for res in results)
+        mean_duration = total_duration / len(METRICS)
+        
+        print(f"    - Mean {metric}:  {_to_minutes(mean_duration):.3f} minutes ({mean_duration:.3f}s)")
 
 def main():
+    results = []
+
     for namespace in conf.get_agents():
         targeted_pods = get_matching_pods(namespace, "evangelos-pipilikas")
         for pod in targeted_pods:
-            collect_pod_metrics(pod, namespace)
+            results.append(collect_pod_metrics(pod, namespace))
+
+    _calculate_pod_metrics_mean(results)
 
 if __name__ == "__main__":
     main()
