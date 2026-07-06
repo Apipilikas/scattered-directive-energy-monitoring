@@ -221,9 +221,15 @@ def _generate_correlation_matrix(is_local, both_environments):
         "execution_time"
     ]
 
+    rename_columns = {
+        "total_carbon_emission_difference": "Carbon Emission (gCO2e/KWh)",
+        "total_energy_difference": "Energy Consumption (J)",
+        "execution_time": "Execution Time (s)"
+    }
+
     valid_columns = [col for col in columns_to_include if col in master_df.columns]
 
-    filtered_df = master_df[valid_columns]
+    filtered_df = master_df[valid_columns].rename(columns=rename_columns)
 
     corr_matrix = filtered_df.corr(method='kendall')
     corr_matrix = corr_matrix.iloc[::-1]

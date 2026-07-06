@@ -66,7 +66,7 @@ def test_statistical_significance(df_baseline: pd.DataFrame, df_opt: pd.DataFram
 
             output[column] = {
                 "mean_difference": _to_latex_scientific(mean_difference * METRICS_SCALES[column]),
-                "mean_difference_perc": _to_latex_scientific(mean_difference_perc),
+                "mean_difference_perc": f"{mean_difference_perc:.3f}",
                 "p_value": _to_latex_scientific(p_value),
                 "significance": p_value < 0.05,
                 "rbc": _to_latex_scientific(rbc),
@@ -97,7 +97,7 @@ def _print_latex_table(results: dict):
             print(r"        \addlinespace")
 
         first = False
-        print(rf"        \textbf{{{METRICS_LABELS[name]}}} & {result['mean_difference']}${METRICS[name]}$ & {result['mean_difference_perc']}\% & ${result['p_value']}$ & {sig_str} & {result['rbc']} & \makecell{{{result['strength']}}} \\")
+        print(rf"        \textbf{{{METRICS_LABELS[name]}}} & ${result['mean_difference']}$${METRICS[name]}$ & {result['mean_difference_perc']}\% & ${result['p_value']}$ & {sig_str} & {result['rbc']} & \makecell{{{result['strength']}}} \\")
     
     print(r"        \bottomrule")
     print(r"    \end{tabular}")
@@ -152,7 +152,7 @@ def _print_grouped_latex_table(data: list):
                 env_column = "&"
 
             print(rf"        {env_column}")
-            print(rf"        \textbf{{{METRICS_LABELS[name]}}} & {result['mean_difference']}${METRICS[name]}$ & {result['mean_difference_perc']}\% & ${result['p_value']}$ & {sig_str} & {result['rbc']} & \makecell{{{result['strength']}}} \\")
+            print(rf"        \textbf{{{METRICS_LABELS[name]}}} & ${result['mean_difference']}$${METRICS[name]}$ & {result['mean_difference_perc']}\% & ${result['p_value']}$ & {sig_str} & {result['rbc']} & \makecell{{{result['strength']}}} \\")
 
             if j < num_data_rows - 1:
                 print(r"        \addlinespace")
