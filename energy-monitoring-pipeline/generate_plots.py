@@ -320,8 +320,7 @@ def _generate_box_plot(is_local, both_environments):
 
     plt.figure(figsize=(10, 5))
 
-    x = []
-    labels =[]
+    data = {}
 
     def _read_data(is_local: bool, include_mode_in_label: bool):
         for name, file_prefix in CORRELATION_CONFIG.items():
@@ -330,13 +329,16 @@ def _generate_box_plot(is_local, both_environments):
             if include_mode_in_label:
                 name = f"{name}_{_resolve_mode_name(is_local)}"
 
-            x.append(total_metrics_data["total_energy_difference"])
-            labels.append(name)
+            data[name] = total_metrics_data["total_energy_difference"]
 
     _read_data(is_local, both_environments)
 
     if both_environments:
         _read_data(not is_local, both_environments)
+
+    labels = sorted(data.keys())
+    
+    x = [data[label] for label in labels]
 
     plt.boxplot(x, tick_labels=labels)
 
