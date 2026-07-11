@@ -329,7 +329,8 @@ def _generate_box_plot(is_local, both_environments):
             if include_mode_in_label:
                 name = f"{name}_{_resolve_mode_name(is_local)}"
 
-            data[name] = total_metrics_data["total_energy_difference"]
+            data[name] = total_metrics_data["total_carbon_emission_difference"]*1000
+            # data[name] = total_metrics_data["total_energy_difference"]
 
     _read_data(is_local, both_environments)
 
@@ -341,10 +342,13 @@ def _generate_box_plot(is_local, both_environments):
     x = [data[label] for label in labels]
 
     plt.boxplot(x, tick_labels=labels)
+    plt.xticks(rotation=20, ha='right')
 
-    plt.ylabel("Energy Consumption (J)")
+    plt.ylabel("Carbon Emission (gCO2e/KWh)")
+    # plt.ylabel("Energy Consumption (J)")
     plt.xlabel("Mitigation Strategies")
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/cab_box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    plt.tight_layout()
     plt.savefig(file_name)
     plt.close()
     print(f"Plot saved in {file_name}!")
