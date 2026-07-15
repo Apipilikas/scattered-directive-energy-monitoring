@@ -531,8 +531,8 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     all_energies = [row[2] for row in data_points]
     labels = [row[0] for row in data_points]
 
-    plt.xlabel('Accuracy (%)', fontsize=12)
-    # plt.xlabel('Execution Time (s)', fontsize=12)
+    plt.xlabel('Mean Accuracy (%)', fontsize=12)
+    # plt.xlabel('Mean Execution Time (s)', fontsize=12)
     # plt.xlabel('Mean Carbon Emission (gCO2e/KWh)', fontsize=12)
     plt.ylabel('Mean Energy Consumption (J)', fontsize=12)
     plt.grid(True, linestyle=':', alpha=0.7)
