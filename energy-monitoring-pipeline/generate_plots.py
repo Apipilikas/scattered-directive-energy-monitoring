@@ -22,7 +22,7 @@ CORRELATION_COLUMNS = [
 ]
 
 def main():
-    plot_sidecar, plot_accuracies, plot_correlation, plot_box, is_local, both_environments = _resolve_args()
+    plot_sidecar, plot_accuracies, plot_correlation, plot_box, plot_pareto, is_local, both_environments = _resolve_args()
 
     print(f"============= Generate plots =============")
     
@@ -39,6 +39,10 @@ def main():
 
     if plot_box:
         _generate_box_plot(is_local, both_environments)
+
+    if plot_pareto:
+        _generate_pareto_plot(is_local, both_environments)
+        _generate_mean_pareto_plot(is_local, both_environments)
 
 def _generate_sidecar_plot():
     print("> Generating sidecar plot")
@@ -329,8 +333,9 @@ def _generate_box_plot(is_local, both_environments):
             if include_mode_in_label:
                 name = f"{name}_{_resolve_mode_name(is_local)}"
 
-            data[name] = total_metrics_data["total_carbon_emission_difference"]*1000
+            # data[name] = total_metrics_data["total_carbon_emission_difference"]*1000
             # data[name] = total_metrics_data["total_energy_difference"]
+            data[name] = total_metrics_data["execution_time"]
 
     _read_data(is_local, both_environments)
 
@@ -344,14 +349,205 @@ def _generate_box_plot(is_local, both_environments):
     plt.boxplot(x, tick_labels=labels)
     plt.xticks(rotation=20, ha='right')
 
-    plt.ylabel("Carbon Emission (gCO2e/KWh)")
+    # plt.ylabel("Carbon Emission (gCO2e/KWh)")
     # plt.ylabel("Energy Consumption (J)")
+    plt.ylabel("Execution Time (s)")
     plt.xlabel("Mitigation Strategies")
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/cab_box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+
+    plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/ex_box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
     plt.tight_layout()
     plt.savefig(file_name)
     plt.close()
     print(f"Plot saved in {file_name}!")
+
+def _generate_pareto_plot(is_local, both_environments):
+    print("> Generating Pareto front plot")
+    plt.figure(figsize=(6, 5))
+
+    data_points = []
+    
+    strategy_mapping = {}
+    
+    num_strategies = len(CORRELATION_CONFIG) * (2 if both_environments else 1)
+    colors = sns.color_palette("tab10", num_strategies)
+    color_idx = 0
+
+    def _read_data(is_local_flag, include_mode_in_label):
+        nonlocal color_idx
+        for name, file_prefix in CORRELATION_CONFIG.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local_flag)
+            
+            if include_mode_in_label:
+                name = f"{name}_{_resolve_mode_name(is_local_flag)}"
+            
+            if name not in strategy_mapping:
+                strategy_mapping[name] = colors[color_idx]
+                color_idx += 1
+                
+            for index, row in total_metrics_data.iterrows():
+                energy = row["total_energy_difference"]
+                # compare = row["total_carbon_emission_difference"] * 1000
+                # compare = row["execution_time"]
+                compare = row["accuracy"]
+                data_points.append((name, compare, energy))
+
+    # Read data based on environment flags
+    _read_data(is_local, both_environments)
+
+    if both_environments:
+        _read_data(not is_local, both_environments)
+
+    if not data_points:
+        print("Warning: No data available for Pareto plot.")
+        return
+
+    # Sort data primarily by Carbon Emission (X) ascending, then Energy (Y) ascending
+    # sorted_data = sorted(data_points, key=lambda x: (x[1], x[2]))
+    # Only for accuracy
+    sorted_data = sorted(data_points, key=lambda x: (-x[1], x[2]))
+
+    pareto_front = []
+    min_energy_so_far = float('inf')
+    
+    for strategy, compare, energy in sorted_data:
+        if energy < min_energy_so_far:
+            pareto_front.append((strategy, compare, energy))
+            min_energy_so_far = energy
+
+    # Only for accuracy
+    pareto_front = sorted(pareto_front, key=lambda x: x[1])
+
+    for strategy_name, color in strategy_mapping.items():
+        s_emissions = [p[1] for p in data_points if p[0] == strategy_name]
+        s_energies = [p[2] for p in data_points if p[0] == strategy_name]
+        
+        plt.scatter(s_emissions, s_energies, color=color, label=strategy_name, s=40, alpha=0.5, zorder=2)
+
+    pareto_emissions = [row[1] for row in pareto_front]
+    pareto_energies = [row[2] for row in pareto_front]
+
+    plt.scatter([], [], facecolor='none', edgecolor='black', s=100, linewidth=1.5, 
+                label='Pareto Optimal Point')
+
+    for strategy, compare, energy in pareto_front:
+        plt.scatter(compare, energy, color=strategy_mapping[strategy], s=100, edgecolor='black', zorder=4)
+    
+    plt.plot(pareto_emissions, pareto_energies, color='red', linestyle='--', linewidth=2, zorder=3)
+
+    plt.xlabel('Accuracy (%)', fontsize=12)
+    # plt.xlabel('Execution Time (s)', fontsize=12)
+    # plt.xlabel('Carbon Emission (gCO2e/KWh)', fontsize=12)
+    plt.ylabel('Energy Consumption (J)', fontsize=12)
+    plt.grid(True, linestyle=':', alpha=0.7)
+    
+    plt.legend(loc='best', fontsize=10)
+
+    plt.tight_layout()
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/acc_pareto_front_{_resolve_mode_name(is_local, both_environments)}.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Plot saved in {file_name}!")
+    
+    optimal_strategies = set([p[0] for p in pareto_front])
+    print("Strategies that reached the Pareto Front:")
+    for s in optimal_strategies:
+        print(f"- {s}")
+
+def _generate_mean_pareto_plot(is_local, both_environments):
+    print("> Generating Pareto front plot")
+    plt.figure(figsize=(6, 5))
+
+    data_points = []
+    
+    strategy_mapping = {}
+    num_strategies = len(CORRELATION_CONFIG) * (2 if both_environments else 1)
+    colors = sns.color_palette("tab10", num_strategies)
+    color_idx = 0
+
+    def _read_data(is_local_flag, include_mode_in_label):
+        nonlocal color_idx
+        for name, file_prefix in CORRELATION_CONFIG.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local_flag)
+            
+            mean_energy = total_metrics_data["total_energy_difference"].mean()
+            # mean_cab = total_metrics_data["total_carbon_emission_difference"].mean()*1000
+            # mean_cab = total_metrics_data["execution_time"].mean()
+            mean_cab = total_metrics_data["accuracy"].mean()
+            
+            if include_mode_in_label:
+                name = f"{name}_{_resolve_mode_name(is_local_flag)}"
+                
+            if name not in strategy_mapping:
+                strategy_mapping[name] = colors[color_idx]
+                color_idx += 1
+                
+            data_points.append((name, mean_cab, mean_energy))
+
+    _read_data(is_local, both_environments)
+
+    if both_environments:
+        _read_data(not is_local, both_environments)
+
+    if not data_points:
+        print("Warning: No data available for Pareto plot.")
+        return
+
+    # sorted_data = sorted(data_points, key=lambda x: (x[1], x[2]))
+    # Only for accuracy
+    sorted_data = sorted(data_points, key=lambda x: (-x[1], x[2]))
+
+    pareto_front = []
+    min_energy_so_far = float('inf')
+    
+    for strategy, mean_cab, mean_energy in sorted_data:
+        if mean_energy < min_energy_so_far:
+            pareto_front.append((strategy, mean_cab, mean_energy))
+            min_energy_so_far = mean_energy
+
+    # Only for accuracy
+    pareto_front = sorted(pareto_front, key=lambda x: x[1])
+
+    for strategy_name, color in strategy_mapping.items():
+        s_emissions = [p[1] for p in data_points if p[0] == strategy_name]
+        s_energies = [p[2] for p in data_points if p[0] == strategy_name]
+        
+        plt.scatter(s_emissions, s_energies, color=color, s=100, label=strategy_name, zorder=3)
+
+    pareto_emissions = [row[1] for row in pareto_front]
+    pareto_energies = [row[2] for row in pareto_front]
+
+    plt.scatter([], [], facecolor='none', edgecolor='black', s=150, linewidth=1.5, 
+                label='Pareto Optimal (The Front)')
+
+    for strategy, emissions, energy in pareto_front:
+        plt.scatter(emissions, energy, color=strategy_mapping[strategy], s=150, edgecolor='black', zorder=4)
+
+    plt.plot(pareto_emissions, pareto_energies, color='red', linestyle='--', linewidth=2, zorder=2)
+
+    all_emissions = [row[1] for row in data_points]
+    all_energies = [row[2] for row in data_points]
+    labels = [row[0] for row in data_points]
+
+    plt.xlabel('Accuracy (%)', fontsize=12)
+    # plt.xlabel('Execution Time (s)', fontsize=12)
+    # plt.xlabel('Mean Carbon Emission (gCO2e/KWh)', fontsize=12)
+    plt.ylabel('Mean Energy Consumption (J)', fontsize=12)
+    plt.grid(True, linestyle=':', alpha=0.7)
+    
+    plt.legend(loc='best', fontsize=10)
+
+    plt.tight_layout()
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/acc_pareto_front_mean_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Plot saved in {file_name}!")
+    print("Pareto Optimal Strategies identified:")
+    for p in pareto_front:
+        print(f"- {p[0]}")
 
 def _resolve_args():
     parser = argparse.ArgumentParser()
@@ -359,6 +555,7 @@ def _resolve_args():
     parser.add_argument("-acc", "--accuracies", action='store_true')
     parser.add_argument("-cor", "--correlation", action='store_true')
     parser.add_argument("-box", "--box-plot", action='store_true')
+    parser.add_argument("-par", "--pareto", action='store_true')
     utils.add_boolean_argument(parser, conf.F_ARGUMENT)
     utils.add_boolean_argument(parser, conf.BE_ARGUMENT)
 
@@ -367,8 +564,9 @@ def _resolve_args():
     plot_accuracies = args.accuracies
     plot_correlation = args.correlation
     plot_box = args.box_plot
+    plot_pareto = args.pareto
 
-    return plot_sidecar, plot_accuracies, plot_correlation, plot_box, not args.fabric_mode, args.both_environments
+    return plot_sidecar, plot_accuracies, plot_correlation, plot_box, plot_pareto, not args.fabric_mode, args.both_environments
 
 
 if __name__ == '__main__':
