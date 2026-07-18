@@ -1,0 +1,74 @@
+2026-05-30T08:29:49.093211304Z 2026-05-30 08:29:49,092 - main.py - ms_init.py:189 - DEBUG - NewConfiguration vfl-train, 
+2026-05-30T08:29:49.093233686Z job_name: evangelos-pipilikas-85c0cfdfclientone1 
+2026-05-30T08:29:49.093235990Z port: 50054,  
+2026-05-30T08:29:49.093238054Z first_service: 0,  
+2026-05-30T08:29:49.093239697Z last_service: 1
+2026-05-30T08:29:49.099819808Z 2026-05-30 08:29:49,099 - main.py - grpc_server.py:162 - INFO - gRPC server started on localhost:50054
+2026-05-30T08:29:49.101091789Z 2026-05-30 08:29:49,100 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50051
+2026-05-30T08:29:49.103280360Z 2026-05-30 08:29:49,103 - main.py - grpc_client.py:78 - INFO - Successfully connected to gRPC server at localhost:50051
+2026-05-30T08:29:49.222747847Z 2026-05-30 08:29:49,222 - main.py - grpc_server.py:56 - INFO - Received health check request
+2026-05-30T08:29:50.055538194Z 2026-05-30 08:29:50,055 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:50.055550407Z 2026-05-30 08:29:50,055 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:50.055553513Z 2026-05-30 08:29:50,055 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:50.055555908Z 2026-05-30 08:29:50,055 - main.py - main.py:360 - INFO - Received request: vflPingRequest. This is the client.
+2026-05-30T08:29:50.056042917Z 2026-05-30 08:29:50,055 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x7e2b2cec7f20>
+2026-05-30T08:29:52.446361976Z 2026-05-30 08:29:52,445 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:52.446390951Z 2026-05-30 08:29:52,446 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.446395399Z 2026-05-30 08:29:52,446 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.446664407Z 2026-05-30 08:29:52,446 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:52.449304771Z 2026-05-30 08:29:52,448 - main.py - main.py:177 - INFO - Labels set for cycle 0.
+2026-05-30T08:29:52.460594962Z 2026-05-30 08:29:52,459 - main.py - main.py:244 - INFO - Embeddings sent for cycle 0.
+2026-05-30T08:29:52.460615141Z 2026-05-30 08:29:52,459 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x7e2b2cec7f20>
+2026-05-30T08:29:52.656970912Z 2026-05-30 08:29:52,656 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:52.657660044Z 2026-05-30 08:29:52,657 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.657677366Z 2026-05-30 08:29:52,657 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.657680352Z 2026-05-30 08:29:52,657 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:52.731472543Z 2026-05-30 08:29:52,731 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:52.732104045Z 2026-05-30 08:29:52,731 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.732124223Z 2026-05-30 08:29:52,731 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.732140413Z 2026-05-30 08:29:52,731 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:53.175963296Z 2026-05-30 08:29:53,175 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:53.176702852Z 2026-05-30 08:29:53,176 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.176727029Z 2026-05-30 08:29:53,176 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.176731708Z 2026-05-30 08:29:53,176 - main.py - main.py:360 - INFO - Received request: vflGradientDescentRequest. This is the client.
+2026-05-30T08:29:53.320278167Z 2026-05-30 08:29:53,319 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:53.320914017Z 2026-05-30 08:29:53,320 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.320924597Z 2026-05-30 08:29:53,320 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.320933594Z 2026-05-30 08:29:53,320 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:53.436297877Z 2026-05-30 08:29:53,436 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:53.436937544Z 2026-05-30 08:29:53,436 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.436956199Z 2026-05-30 08:29:53,436 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.437511077Z 2026-05-30 08:29:53,436 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:53.579556342Z 2026-05-30 08:29:53,579 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:53.579569817Z 2026-05-30 08:29:53,579 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.580187634Z 2026-05-30 08:29:53,579 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.580558996Z 2026-05-30 08:29:53,579 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:53.708593464Z 2026-05-30 08:29:53,708 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:53.709087737Z 2026-05-30 08:29:53,708 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.709474317Z 2026-05-30 08:29:53,709 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.710004417Z 2026-05-30 08:29:53,709 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:53.822742933Z 2026-05-30 08:29:53,822 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:53.822765326Z 2026-05-30 08:29:53,822 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.823376219Z 2026-05-30 08:29:53,822 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.823890680Z 2026-05-30 08:29:53,823 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:54.080950909Z 2026-05-30 08:29:54,080 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:54.081471361Z 2026-05-30 08:29:54,080 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.081495727Z 2026-05-30 08:29:54,081 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.082107923Z 2026-05-30 08:29:54,081 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:54.193582735Z 2026-05-30 08:29:54,193 - main.py - main.py:215 - INFO - Starting gradient descent for cycle 0.
+2026-05-30T08:29:54.242426642Z 2026-05-30 08:29:54,242 - main.py - main.py:222 - INFO - Finished performing gradient descent for cycle 0.
+2026-05-30T08:29:54.243370474Z 2026-05-30 08:29:54,243 - main.py - main.py:177 - INFO - Labels set for cycle 1.
+2026-05-30T08:29:54.250918612Z 2026-05-30 08:29:54,250 - main.py - main.py:244 - INFO - Embeddings sent for cycle 1.
+2026-05-30T08:29:54.251236933Z 2026-05-30 08:29:54,251 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x7e2b2cec7f20>
+2026-05-30T08:29:54.292738161Z 2026-05-30 08:29:54,292 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:54.292757808Z 2026-05-30 08:29:54,292 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.292854701Z 2026-05-30 08:29:54,292 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.292858668Z 2026-05-30 08:29:54,292 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:54.416579455Z 2026-05-30 08:29:54,416 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:54.416591898Z 2026-05-30 08:29:54,416 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.416594864Z 2026-05-30 08:29:54,416 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.416597359Z 2026-05-30 08:29:54,416 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.
+2026-05-30T08:29:54.833438973Z 2026-05-30 08:29:54,833 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfclientone1
+2026-05-30T08:29:54.833994963Z 2026-05-30 08:29:54,833 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.834016835Z 2026-05-30 08:29:54,833 - main.py - main.py:337 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.834020892Z 2026-05-30 08:29:54,833 - main.py - main.py:360 - INFO - Received request: vflTrainRequest. This is the client.

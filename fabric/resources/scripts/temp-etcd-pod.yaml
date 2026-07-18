@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: temp-etcd-pod
+  namespace: orchestrator
+  annotations:
+    "linkerd.io/inject": "disabled"
+spec:
+  containers:
+  - name: temp-container
+    image: busybox
+    command: [ "sh", "-c", "--" ]
+    args: [ "while true; do sleep 30; done;" ]
+    volumeMounts:
+    - name: data
+      mountPath: /etcd
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: etcd-pvc

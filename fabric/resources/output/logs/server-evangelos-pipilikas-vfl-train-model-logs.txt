@@ -1,0 +1,138 @@
+2026-05-30T08:29:47.960127449Z 2026-05-30 08:29:47,959 - main.py - main.py:69 - DEBUG - after read csv
+2026-05-30T08:29:48.867114894Z 2026-05-30 08:29:48,866 - main.py - ms_init.py:189 - DEBUG - NewConfiguration vfl-train-model, 
+2026-05-30T08:29:48.867133659Z job_name: evangelos-pipilikas-85c0cfdfserver1 
+2026-05-30T08:29:48.867135823Z port: 50053,  
+2026-05-30T08:29:48.867137847Z first_service: 1,  
+2026-05-30T08:29:48.867139560Z last_service: 0
+2026-05-30T08:29:49.204747540Z 2026-05-30 08:29:49,204 - main.py - grpc_server.py:162 - INFO - gRPC server started on localhost:50053
+2026-05-30T08:29:49.568330143Z 2026-05-30 08:29:49,568 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50051
+2026-05-30T08:29:49.611249228Z 2026-05-30 08:29:49,610 - main.py - grpc_client.py:78 - INFO - Successfully connected to gRPC server at localhost:50051
+2026-05-30T08:29:49.728438657Z 2026-05-30 08:29:49,728 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50054
+2026-05-30T08:29:49.728451401Z Attempting to instrument while already instrumented
+2026-05-30T08:29:49.734092027Z 2026-05-30 08:29:49,733 - main.py - grpc_client.py:78 - INFO - Successfully connected to gRPC server at localhost:50054
+2026-05-30T08:29:50.108423167Z 2026-05-30 08:29:50,107 - main.py - grpc_server.py:56 - INFO - Received health check request
+2026-05-30T08:29:50.156505586Z 2026-05-30 08:29:50,156 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:50.156533037Z 2026-05-30 08:29:50,156 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:50.157155783Z 2026-05-30 08:29:50,156 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': 'c5cb1ff0ea7bd7f0', 'TraceID': '8be39afb1cdc24524f581e18f876733a'}
+2026-05-30T08:29:50.157168246Z 2026-05-30 08:29:50,156 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:50.157171432Z 2026-05-30 08:29:50,156 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:50.157173997Z 2026-05-30 08:29:50,156 - main.py - main.py:498 - INFO - Received request: vflPingRequest. This is the server.
+2026-05-30T08:29:50.167764685Z 2026-05-30 08:29:50,167 - main.py - main.py:419 - INFO - Received a vflPingRequest.
+2026-05-30T08:29:50.167974752Z 2026-05-30 08:29:50,167 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:52.147595016Z 2026-05-30 08:29:52,147 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:52.148195750Z 2026-05-30 08:29:52,147 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.148645618Z 2026-05-30 08:29:52,147 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': 'bc336368fe246b1d', 'TraceID': '83a8bf8f51c36af024a540507b2b08ab'}
+2026-05-30T08:29:52.153861944Z 2026-05-30 08:29:52,153 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:52.153880569Z 2026-05-30 08:29:52,153 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.154511079Z 2026-05-30 08:29:52,153 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:52.160450128Z 2026-05-30 08:29:52,160 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:52.402588774Z 2026-05-30 08:29:52,401 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:52.402622338Z 2026-05-30 08:29:52,402 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.402626175Z 2026-05-30 08:29:52,402 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': 'b39ba6e011cefe49', 'TraceID': '094dde26e0d1c95b3dacdf374a7c573d'}
+2026-05-30T08:29:52.402629100Z 2026-05-30 08:29:52,402 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:52.402631645Z 2026-05-30 08:29:52,402 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.402634230Z 2026-05-30 08:29:52,402 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:52.424320851Z 2026-05-30 08:29:52,424 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:52.568233888Z 2026-05-30 08:29:52,567 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:52.570765937Z 2026-05-30 08:29:52,568 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.574036620Z 2026-05-30 08:29:52,573 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': 'aa03ea5825779276', 'TraceID': '1798e7be2a6ef8abe73f02c9fd678291'}
+2026-05-30T08:29:52.574056788Z 2026-05-30 08:29:52,573 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:52.574059783Z 2026-05-30 08:29:52,573 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.574062598Z 2026-05-30 08:29:52,573 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:52.574847861Z 2026-05-30 08:29:52,574 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:52.761616002Z 2026-05-30 08:29:52,761 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:52.761650116Z 2026-05-30 08:29:52,761 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.762151582Z 2026-05-30 08:29:52,761 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': 'a16b2dd1382026a3', 'TraceID': '18b0be43aa2138b3bc48440742ea3537'}
+2026-05-30T08:29:52.762170388Z 2026-05-30 08:29:52,761 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:52.762173424Z 2026-05-30 08:29:52,761 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.762746124Z 2026-05-30 08:29:52,762 - main.py - main.py:498 - INFO - Received request: vflAggregateRequest. This is the server.
+2026-05-30T08:29:52.800458191Z 2026-05-30 08:29:52,800 - main.py - main.py:230 - INFO - Labels set for cycle 0.
+2026-05-30T08:29:52.838254216Z 2026-05-30 08:29:52,838 - main.py - main.py:238 - INFO - Aggregate fit for cycle 0.
+2026-05-30T08:29:52.849176621Z 2026-05-30 08:29:52,848 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:52.849407898Z 2026-05-30 08:29:52,849 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.849728223Z 2026-05-30 08:29:52,849 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '98d370494cc9b9cf', 'TraceID': 'add1dbd99805c4c88c05ef04df04a61f'}
+2026-05-30T08:29:52.849757628Z 2026-05-30 08:29:52,849 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:52.850407184Z 2026-05-30 08:29:52,849 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.850432161Z 2026-05-30 08:29:52,850 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:52.851062080Z 2026-05-30 08:29:52,850 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:52.870230978Z 2026-05-30 08:29:52,869 - main.py - main.py:167 - DEBUG - Latest gradients have been fetched.
+2026-05-30T08:29:52.870241788Z 2026-05-30 08:29:52,869 - main.py - main.py:172 - DEBUG - ------------------------------------------
+2026-05-30T08:29:52.870245186Z 2026-05-30 08:29:52,869 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:52.874196763Z 2026-05-30 08:29:52,873 - main.py - main.py:174 - DEBUG - ------------------------------------------
+2026-05-30T08:29:52.962079741Z 2026-05-30 08:29:52,961 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:52.962484445Z 2026-05-30 08:29:52,961 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:52.962501597Z 2026-05-30 08:29:52,962 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '8f3bb4c15f724dfc', 'TraceID': 'e4cc01ddc7cea3f6ccbf25c8b13b6782'}
+2026-05-30T08:29:52.962655909Z 2026-05-30 08:29:52,962 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:52.963038251Z 2026-05-30 08:29:52,962 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:52.963057727Z 2026-05-30 08:29:52,962 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:52.979741236Z 2026-05-30 08:29:52,979 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:53.038773330Z 2026-05-30 08:29:53,038 - main.py - main.py:293 - INFO - Finished local update for cycle 0.
+2026-05-30T08:29:53.232079312Z 2026-05-30 08:29:53,231 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:53.232107204Z 2026-05-30 08:29:53,231 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.232116361Z 2026-05-30 08:29:53,231 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '86a3f739731be128', 'TraceID': 'd10fb34fbd07b6732900726aca3d561c'}
+2026-05-30T08:29:53.232120349Z 2026-05-30 08:29:53,232 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:53.232123324Z 2026-05-30 08:29:53,232 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.232474557Z 2026-05-30 08:29:53,232 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:53.238353493Z 2026-05-30 08:29:53,238 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:53.398166820Z 2026-05-30 08:29:53,397 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:53.398237975Z 2026-05-30 08:29:53,398 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.398249196Z 2026-05-30 08:29:53,398 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '7d0b3bb286c47455', 'TraceID': '95c38a176e8ab50bd1908afc7f88bb4a'}
+2026-05-30T08:29:53.398252222Z 2026-05-30 08:29:53,398 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:53.398574229Z 2026-05-30 08:29:53,398 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.398591041Z 2026-05-30 08:29:53,398 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:53.404431074Z 2026-05-30 08:29:53,404 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:53.588923710Z 2026-05-30 08:29:53,586 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:53.588943958Z 2026-05-30 08:29:53,586 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.588947365Z 2026-05-30 08:29:53,587 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '74737e2a9a6d0882', 'TraceID': 'b755e9e0358ae3a365d3154e9f2ac9f1'}
+2026-05-30T08:29:53.588950601Z 2026-05-30 08:29:53,587 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:53.588952975Z 2026-05-30 08:29:53,587 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.588955650Z 2026-05-30 08:29:53,587 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:53.614516153Z 2026-05-30 08:29:53,614 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:53.884230214Z 2026-05-30 08:29:53,883 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:53.884260591Z 2026-05-30 08:29:53,884 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:53.884364357Z 2026-05-30 08:29:53,884 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '6bdbc1a2ad169cae', 'TraceID': '5383e927c83e2b385842c14873295db9'}
+2026-05-30T08:29:53.884369247Z 2026-05-30 08:29:53,884 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:53.884515693Z 2026-05-30 08:29:53,884 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:53.889990445Z 2026-05-30 08:29:53,889 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:53.895961305Z 2026-05-30 08:29:53,895 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:54.019063505Z 2026-05-30 08:29:54,018 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:54.019086358Z 2026-05-30 08:29:54,018 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.019094243Z 2026-05-30 08:29:54,018 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '6243051bc1bf2fdb', 'TraceID': 'c1910c268aec173fbfae0c7e089fdb26'}
+2026-05-30T08:29:54.019478288Z 2026-05-30 08:29:54,019 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:54.019816356Z 2026-05-30 08:29:54,019 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.020005904Z 2026-05-30 08:29:54,019 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:54.020619201Z 2026-05-30 08:29:54,020 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:54.321622618Z 2026-05-30 08:29:54,321 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:54.321634590Z 2026-05-30 08:29:54,321 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.322810109Z 2026-05-30 08:29:54,321 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '59ab4893d468c307', 'TraceID': 'b27c2e882e958ec1c00d8c5e8d30578e'}
+2026-05-30T08:29:54.322825758Z 2026-05-30 08:29:54,321 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:54.322829295Z 2026-05-30 08:29:54,321 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.322832220Z 2026-05-30 08:29:54,321 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:54.328021024Z 2026-05-30 08:29:54,327 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:54.546135137Z 2026-05-30 08:29:54,545 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:54.546160886Z 2026-05-30 08:29:54,545 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.546164283Z 2026-05-30 08:29:54,545 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '50138c0be8115734', 'TraceID': '69acf3c471b1cda0e120b90b7e166071'}
+2026-05-30T08:29:54.546167238Z 2026-05-30 08:29:54,546 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:54.546169693Z 2026-05-30 08:29:54,546 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.546803368Z 2026-05-30 08:29:54,546 - main.py - main.py:498 - INFO - Received request: vflAggregateRequest. This is the server.
+2026-05-30T08:29:54.553392144Z 2026-05-30 08:29:54,553 - main.py - main.py:230 - INFO - Labels set for cycle 1.
+2026-05-30T08:29:54.559532554Z 2026-05-30 08:29:54,559 - main.py - main.py:238 - INFO - Aggregate fit for cycle 0.
+2026-05-30T08:29:54.571415080Z 2026-05-30 08:29:54,571 - main.py - main.py:167 - DEBUG - Latest gradients have been fetched.
+2026-05-30T08:29:54.571527242Z Exception in thread Thread-2 (_execute_communication_process_async):
+2026-05-30T08:29:54.571551287Z Traceback (most recent call last):
+2026-05-30T08:29:54.571554814Z   File "/usr/local/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+2026-05-30T08:29:54.572736885Z     self.run()
+2026-05-30T08:29:54.572897639Z   File "/usr/local/lib/python3.12/threading.py", line 1012, in run
+2026-05-30T08:29:54.573026000Z     self._target(*self._args, **self._kwargs)
+2026-05-30T08:29:54.573046208Z   File "/app/vfl-train-model/main.py", line 171, in _execute_communication_process_async
+2026-05-30T08:29:54.573428690Z     msComm = self.communications[cycle]
+2026-05-30T08:29:54.573447185Z              ~~~~~~~~~~~~~~~~~~~^^^^^^^
+2026-05-30T08:29:54.573450030Z KeyError: 1
+2026-05-30T08:29:54.574099056Z 2026-05-30 08:29:54,573 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-85c0cfdfserver1
+2026-05-30T08:29:54.574134463Z 2026-05-30 08:29:54,573 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-05-30T08:29:54.574142197Z 2026-05-30 08:29:54,574 - main.py - ms_init.py:113 - DEBUG - 1. scMap: {'SpanID': '477bcf83fbbaea60', 'TraceID': '8e79f1db97a26cd5c85ffa41941623cf'}
+2026-05-30T08:29:54.574145163Z 2026-05-30 08:29:54,574 - main.py - ms_init.py:114 - DEBUG - 1. state: ['{key=sampled, value=1}']
+2026-05-30T08:29:54.574584452Z 2026-05-30 08:29:54,574 - main.py - main.py:475 - INFO - Received original request type: vflTrainModelRequest
+2026-05-30T08:29:54.574751217Z 2026-05-30 08:29:54,574 - main.py - main.py:498 - INFO - Received request: vflSampleBatchRequest. This is the server.
+2026-05-30T08:29:54.575019693Z 2026-05-30 08:29:54,574 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x76cc0ff3c0b0>
+2026-05-30T08:29:54.582120145Z 2026-05-30 08:29:54,581 - main.py - main.py:293 - INFO - Finished local update for cycle 0.
