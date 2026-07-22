@@ -37,7 +37,7 @@ agents=$(grep '"name":' ${etcd_launch_files}/agreements.json | awk -F'"' '{print
 echo -e "Agents discovered: $agents\n"
 
 echo -e "Generating agents and third parties charts...\n"
-configure_dynamos="${DYNAMOS_ROOT}/fabric/node_scripts/configure_dynamos.sh"
+configure_dynamos="${CONFIG_PATH}/configure_dynamos.sh"
 chmod +x ${configure_dynamos}
 ${configure_dynamos} $agents "" "$1"
 
