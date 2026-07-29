@@ -269,7 +269,7 @@ def _generate_accuracies_plot():
     
     json_files = {
         "Baseline": "experiments/fabric/baseline_experiment_260623_1609/experiments.json",
-        "Fed-BCD": "experiments/fabric/fed_bcd_experiment_260623_1411/experiments.json",
+        "Fed-BCD": "experiments/fabric/fed_bcd_experiment_260623_2335/experiments.json",
         "Overlap-Fed-BCD": "experiments/fabric/overlap_fed_bcd_experiment_260625_1502/experiments.json",
         # "Fed-Encrypt": "experiments/fabric/fed_encrypt_experiment_260626_2016/experiments.json"
     }
@@ -291,6 +291,12 @@ def _generate_accuracies_plot():
                 continue
             
             rounds = [item["train_round"] for item in accuracies_list]
+
+            if name in ["Fed-BCD", "Overlap-Fed-BCD"]:
+                rounds = [item["train_round"] * 15 for item in accuracies_list]
+            else:
+                rounds = [item["train_round"] for item in accuracies_list]
+
             accuracies = [item["accuracy"] for item in accuracies_list]
 
             if name == "Fed-Encrypt":
