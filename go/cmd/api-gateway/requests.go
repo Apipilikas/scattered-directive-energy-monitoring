@@ -607,8 +607,15 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	checkPolicyUpdate(clients, user)
 
 	iterations := cycles / communication_frequency
-	policyRemovalRound := policy_removal / communication_frequency
-	policyReintroductionRound := policy_reintroduction / communication_frequency
+	policyRemovalRound := int64(-1)
+	if policy_removal != -1 {
+		policyRemovalRound = policy_removal / communication_frequency
+	}
+
+	policyReintroductionRound := int64(-1)
+	if policy_reintroduction != -1 {
+		policyReintroductionRound = policy_reintroduction / communication_frequency
+	}
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
 	for round := range iterations {
