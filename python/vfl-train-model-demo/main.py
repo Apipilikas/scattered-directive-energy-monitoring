@@ -20,6 +20,7 @@ from opentelemetry.context.context import Context
 
 np.set_printoptions(threshold=sys.maxsize)
 
+# --- DYNAMOS Interface code At the TOP ---------------------------
 if os.getenv('ENV') == 'PROD':
     import config_prod as config
 else:
@@ -27,8 +28,6 @@ else:
 
 logger = InitLogger()
 # tracer = InitTracer(config.service_name, config.tracing_host)
-
-#region Events
 
 # Events to start the shutdown of this Microservice, can be used to call 'signal_shutdown'
 stop_event = threading.Event()
@@ -39,14 +38,14 @@ stop_microservice_condition = threading.Condition()
 wait_for_setup_event = threading.Event()
 wait_for_setup_condition = threading.Condition()
 
-#endregion
-
-#region Global variables
-
 ms_config = None
 vfl_server = None
 
-#endregion
+DEFAULT_LEARNING_RATE = 0.1 
+DEFAULT_NOF_CLIENTS = 3  # TODO: make it dynamic 
+SERVER_CHECKPOINT_PATH = "server_checkpoint.pth"
+
+# --- END DYNAMOS Interface code At the TOP ----------------------
 
 # ---- LOCAL TEST SETUP OPTIONAL!
 
@@ -56,15 +55,7 @@ vfl_server = None
 # args = parser.parse_args()
 # test = args.test
 
-# --------------------------------
-
-DEFAULT_LEARNING_RATE = 0.1 
-DEFAULT_NOF_CLIENTS = 3  # TODO: make it dynamic 
-SERVER_CHECKPOINT_PATH = "server_checkpoint.pth"
-
 #region Helpers
-
-# Duplicate code everywhere. TODO: Change it!
 
 def load_data(file_path) -> pd.DataFrame:
     DATA_STEWARD_NAME = os.getenv("DATA_STEWARD_NAME").lower()
@@ -157,7 +148,7 @@ class VFLServer():
     def sample_data(self, sample_batch_size):
         try:
             data_sample = self.data.sample(int(sample_batch_size))
-            self.set_labels(data_sample["REL_TOTALBTU"].values)
+            self.set_labels(data_sample["REL_TOTALBTU"])
 
             data = Struct()
             data.update({"sample_batch_indexes": serialise_array(np.array(data_sample.index))})
@@ -166,54 +157,8 @@ class VFLServer():
         except Exception as e:
             logger.info(f"Error occurred while sampling data: {e}")
 
-    def set_labels(self, values):
-        self.labels = torch.tensor(values).float().unsqueeze(1)
-
-    def shrink_server_model(self, new_nof_clients, backtrack):
-        """
-        Creates a new ServerModel with fewer input neurons and copies over the trained weights
-        from the old model for the first new_input_size neurons.
-        """
-        if backtrack and new_nof_clients==2:  # for now hardcoded to work only when reducing size from 3 to 2 clients
-            # save model state to file
-            logger.info("Saving server state before shrinking...")
-            self.save_state(SERVER_CHECKPOINT_PATH)
-        self.nof_clients = new_nof_clients
-        # Create the new model
-        # note: this is a completely new model with random weights
-        self.model = ServerModel(self.intermediate_neurons * new_nof_clients)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=DEFAULT_LEARNING_RATE, weight_decay=1e-4)  # optim.SGD(self.model.parameters(), lr=0.01)
-    
-    def expand_server_model(self, new_nof_clients, backtrack):
-        """
-        Creates a new ServerModel with fewer input neurons and copies over the trained weights
-        from the old model for the first new_input_size neurons.
-        """
-        self.nof_clients = new_nof_clients
-        if backtrack and self.nof_clients==3:  # for now hardcoded to work only for 3 clients
-            # save model state to file
-            self.model = ServerModel(self.nof_clients * self.intermediate_neurons)
-            self.optimizer = optim.Adam(self.model.parameters(), lr=DEFAULT_LEARNING_RATE, weight_decay=1e-4)  # optim.SGD(self.model.parameters(), lr=0.01)
-            logger.info("Loading previous server state...")
-            self.load_state(SERVER_CHECKPOINT_PATH)
-        else:
-            # Create the new model
-            # note: this is a completely new model with random weights
-            self.model = ServerModel(self.nof_clients * self.intermediate_neurons)
-            self.optimizer = optim.Adam(self.model.parameters(), lr=DEFAULT_LEARNING_RATE, weight_decay=1e-4)  # optim.SGD(self.model.parameters(), lr=0.01)
-    
-    def update_server_model_architecture(self, old_nof_clients, new_nof_clients, backtrack):
-        if new_nof_clients == old_nof_clients:
-            # No change needed
-            logger.debug("Number of clients unchanged, no model architecture update needed.")
-        
-        if new_nof_clients < old_nof_clients:
-            logger.info(f"Number of clients decreased from {old_nof_clients} to {new_nof_clients}, shrinking model.")
-            self.shrink_server_model(new_nof_clients, backtrack)
-        
-        if new_nof_clients > old_nof_clients:
-            logger.info(f"Number of clients increased from {old_nof_clients} to {new_nof_clients}, expanding model.")
-            self.expand_server_model(new_nof_clients, backtrack)
+    def set_labels(self, data):
+        self.labels = torch.tensor(data.values).float().unsqueeze(1)
 
     def _calculate_loss(self):
         try:
@@ -225,8 +170,8 @@ class VFLServer():
             # enabling weight updates in binary classification tasks.
             loss.backward()
         except Exception as e:
-            logger.info(f"Running gradient descent 2 failed: {e}")
-            logger.info(f"{output}, {self.labels}")
+            print(f"Running gradient descent 2 failed: {e}")
+            print(f"{output}, {self.labels}")
 
         try:
             # Uses optimizer to adjust weights. This way reduces the error.
@@ -234,82 +179,24 @@ class VFLServer():
             # Clears the gradients to prepare for the next round.
             self.optimizer.zero_grad()
         except Exception as e:
-            logger.info(f"Running gradient descent 3 failed: {e}")
+            print(f"Running gradient descent 3 failed: {e}")
         
         return output
 
-    def get_gradients(self, results, backtrack = False):
+    def _update_model(self):
+        self.model = ServerModel(self.intermediate_neurons * self.nof_clients)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
+
+    def aggregate_fit(self, results, backtrack=False):
         global server_configuration
 
-        new_nof_clients = len(results)
-        if new_nof_clients != self.nof_clients:
-            logger.info(f"Number of clients {new_nof_clients} does not match expected {self.nof_clients}, updating server architecture...")
-            self.update_server_model_architecture(self.nof_clients, new_nof_clients, backtrack)
-
-        try:
-            # Convert the embeddings to PyTorch tensors to build computational graphs.
-            embedding_results = [
-                torch.from_numpy(embedding.copy())
-                for embedding in results
-            ]
-        except Exception as e:
-            logger.info(f"Converting the results to torch failed: {e}")
-
-        try:
-            # Takes the three individual client tensors (N x 4) and concatenates them into a larger tensor N x 12
-            embeddings_aggregated = torch.cat(embedding_results, dim=1)
-            # Detaches tensors from clients to calculate gradients without knowing their roots.
-            self.embeddings = embeddings_aggregated.detach().requires_grad_()
-        except Exception as e:
-            logger.info(f"Running gradient descent 1 failed: {e}")
-
-        self._calculate_loss()
-
-        # Chops gradients back to N x 4 chunks, one for each client.
-        gradients = self.embeddings.grad.split([4]*self.nof_clients, dim=1)
-        # Converts to numpy.
-        np_gradients = [serialise_array(gradient.numpy()) for gradient in gradients]
-
-        data = Struct()
-        data.update({"gradients": np_gradients}) 
-
-        return data
-
-    def local_update(self):
-        output = self._calculate_loss()
-
-        # Calculates the accuracy.
-        with torch.no_grad():
-            # correct = 0
-            # predicted = (output > 0.5).float()
-
-            # correct += (predicted == self.labels).sum().item()
-
-            # accuracy = correct / len(self.labels) * 100
-            mse = nn.MSELoss()(output, self.labels).item()
-            rmse = torch.sqrt(torch.tensor(mse)).item()
-            mae = nn.L1Loss()(output, self.labels).item()
-            total_sum_of_squares = torch.sum((self.labels - self.labels.mean()) ** 2)
-            residual_sum_of_squares = torch.sum((self.labels - output) ** 2)
-            r2 = 1 - (residual_sum_of_squares / total_sum_of_squares)
-            r2_score = r2.item()
-
-        logger.info(f"R2 achieved: {r2_score}")
-
-        return r2_score
-
-    def aggregate_fit(self, results,backtrack=False):
-        global server_configuration
-
-        # infer the number of clients based on the data received
         new_nof_clients = len(results)
         if new_nof_clients != self.nof_clients:
             print(f"Number of clients in results: {new_nof_clients}")
             print(f"Current number of clients: {self.nof_clients}")
             logger.info(f"Number of clients {new_nof_clients} does not match expected {self.nof_clients}, updating server architecture...")
             # TODO: update the architecture of the model
-            self.update_server_model_architecture(self.nof_clients, new_nof_clients, backtrack)
-
+            self.update_server_model_architecture(new_nof_clients, backtrack)
 
         try:
             embedding_results = [
@@ -321,25 +208,37 @@ class VFLServer():
 
         try:
             embeddings_aggregated = torch.cat(embedding_results, dim=1)
-            embedding_server = embeddings_aggregated.detach().requires_grad_()
-            output = self.model(embedding_server)
-            loss = self.criterion(output, self.labels)
-            loss.backward()
-
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+            self.embeddings = embeddings_aggregated.detach().requires_grad_()
         except Exception as e:
             logger.info(f"Running gradient descent failed: {e}")
 
+        output = self.model(self.embeddings)
+        loss = self.criterion(output, self.labels)
+        
+        self.optimizer.zero_grad()
+        loss.backward()
+
         try:
-            grads = embedding_server.grad.split([4]*self.nof_clients, dim=1)
-            np_gradients = [serialise_array(grad.numpy()) for grad in grads]
+            gradients = self.embeddings.grad.split([4]*self.nof_clients, dim=1)
+            np_gradients = [serialise_array(grad.numpy()) for grad in gradients]
         except Exception as e:
             logger.info(f"Converting the gradients failed: {e}")
 
-        with torch.no_grad():
-            output = self.model(embedding_server)
+        data = Struct()
+        data.update({"gradients": np_gradients}) 
 
+        return data
+    
+    def local_update(self):
+        output = self.model(self.embeddings)
+        loss = self.criterion(output, self.labels)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        # Calculates the accuracy.
+        with torch.no_grad():
             mse = nn.MSELoss()(output, self.labels).item()
             rmse = torch.sqrt(torch.tensor(mse)).item()
             mae = nn.L1Loss()(output, self.labels).item()
@@ -348,26 +247,54 @@ class VFLServer():
             r2 = 1 - (residual_sum_of_squares / total_sum_of_squares)
             r2_score = r2.item()
 
-            metrics = {
-                "mse": mse,
-                "rmse": rmse,
-                "mae": mae,
-                "r2": r2_score
-            }
-            # Example of printing the metrics
-            # print(f"Regression Metrics - MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}, R²: {r2_score:.4f}")
-            pass 
+        # data = Struct()
+        # data.update({"accuracy": accuracy})
 
-
-        data = Struct()
-        data.update({"accuracy": r2_score, "gradients": np_gradients})  # TODO: maybe try to rename the field
-        # data = []
-        # data.append({"r2": r2_score, "gradients": np_gradients})
-
-        logger.info(f"R2 achieved: {r2_score}")
-
-        return data
+        return r2_score
     
+    def shrink_server_model(self, new_clients_no, backtrack):
+        """
+        Creates a new ServerModel with fewer input neurons and copies over the trained weights
+        from the old model for the first new_input_size neurons.
+        """
+        if backtrack and new_clients_no==2:  # for now hardcoded to work only when reducing size from 3 to 2 clients
+            # save model state to file
+            logger.info("Saving server state before shrinking...")
+            self.save_state(SERVER_CHECKPOINT_PATH)
+        self.nof_clients = new_clients_no
+        # Create the new model
+        # note: this is a completely new model with random weights
+        self._update_model()
+    
+    def expand_server_model(self, new_clients_no, backtrack):
+        """
+        Creates a new ServerModel with fewer input neurons and copies over the trained weights
+        from the old model for the first new_input_size neurons.
+        """
+        self.nof_clients = new_clients_no
+        if backtrack and self.nof_clients==3:  # for now hardcoded to work only for 3 clients
+            # save model state to file
+            self._update_model()
+            logger.info("Loading previous server state...")
+            self.load_state(SERVER_CHECKPOINT_PATH)
+        else:
+            # Create the new model
+            # note: this is a completely new model with random weights
+            self._update_model()
+    
+    def update_server_model_architecture(self, new_clients_no, backtrack):
+        if new_clients_no == self.nof_clients:
+            # No change needed
+            logger.debug("Number of clients unchanged, no model architecture update needed.")
+        
+        if new_clients_no < self.nof_clients:
+            logger.info(f"Number of clients decreased from {self.nof_clients} to {new_clients_no}, shrinking model.")
+            self.shrink_server_model(new_clients_no, backtrack)
+        
+        if new_clients_no > self.nof_clients:
+            logger.info(f"Number of clients increased from {self.nof_clients} to {new_clients_no}, expanding model.")
+            self.expand_server_model(new_clients_no, backtrack)
+
     def save_state(self, filepath):
         """Save the state dicts for both model and optimizer to disk."""
         torch.save({
@@ -388,8 +315,6 @@ class VFLServer():
 def handle_vflAggregateRequest(msComm):
     global ms_config
     global vfl_server
-
-    logger.info("Received a vflAggregateRequest.")
 
     request = rabbitTypes.Request()
     msComm.original_request.Unpack(request)
@@ -415,7 +340,7 @@ def handle_vflAggregateRequest(msComm):
     except Exception as e:
         logger.error(f"Errored when deserialising client data: {e}")
 
-    data = vfl_server.get_gradients(clients_embeddings, backtrack)
+    data = vfl_server.aggregate_fit(clients_embeddings, backtrack)
 
     ms_config.next_client.ms_comm.send_data(msComm, data, {})
 
@@ -451,7 +376,7 @@ def handle_vflLocalUpdateRequest(msComm, request):
     cycle = -1
 
     try:
-        for cycle in range(communication_frequency):
+        for cycle in range(communication_frequency-1):
             accuracy = vfl_server.local_update()
             accuracies.append(accuracy)
     except Exception as e:
@@ -502,7 +427,7 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
 
         elif request.type == "vflShutdownRequest":
             handle_vflShutdownRequest(msComm)
-
+        
         elif request.type == "vflSampleBatchRequest":
             handle_vflSampleBatchRequest(msComm, request)
 
@@ -538,6 +463,9 @@ def main():
     ms_config.stop(2)
     logger.debug(f"Exiting {config.service_name}")
     sys.exit(0)
+
+# ---  END DYNAMOS Interface code At the Bottom -----------------
+
 
 if __name__ == "__main__":
     main()

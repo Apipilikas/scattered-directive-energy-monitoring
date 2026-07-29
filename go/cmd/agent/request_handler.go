@@ -26,7 +26,7 @@ func requestHandler() http.HandlerFunc {
 		logger.Debug("Entering requestHandler")
 		// Start a new span with the context that has a timeout
 
-		ctxWithTimeout, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+		ctxWithTimeout, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 		defer cancel()
 
 		ctx, span := trace.StartSpan(ctxWithTimeout, serviceName+"/func: requestHandler")

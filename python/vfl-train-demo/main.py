@@ -57,6 +57,7 @@ DEFAULT_WEIGHT_DECAY = 1e-4
 
 # --------------------------------
 
+
 #region Helpers
 
 def load_data(file_path):
@@ -82,10 +83,10 @@ def serialise_array(array):
         array.tobytes().decode("latin1"),
         array.shape])
 
+
 def deserialise_array(string, hook=None):
     encoded_data = json.loads(string, object_pairs_hook=hook)
-    # logger.info(string, encoded_data) # This line breaks the execution due to ''unsupported format character''
-    logger.info("%s %s", string, encoded_data)
+    # logger.info(string, encoded_data)
     dataType = np.dtype(encoded_data[0])
     dataArray = np.frombuffer(encoded_data[1].encode("latin1"), dataType)
 
@@ -116,6 +117,7 @@ def extract_array_from_data(request: rabbitTypes.Request, property_name: str):
 
 #endregion
 
+
 class ClientModel(nn.Module):
     def __init__(self, input_size):
         super().__init__()
@@ -134,23 +136,24 @@ class ClientModel(nn.Module):
 class VFLClient():
     def __init__(self, data, learning_rate=DEFAULT_LEARNING_RATE, model_state=None, optimiser_state=None):
         self.data = data
-        # self.labels = torch.tensor(data.values, dtype=torch.float32)
-        
-        # scaled_values = StandardScaler().fit_transform(data)
-        # self.data = pd.DataFrame(scaled_values, index=data.index)
         self.model = ClientModel(self.data.shape[1])
         if model_state is not None:
             self.model.load_state_dict(model_state)
 
         self.optimiser = None
+        self.scaler = StandardScaler()
+        self.scaler.fit(self.data)
 
-    def set_labels(self, sample_indexes):
+    def set_labels_from_sample(self, sample_indexes):
+        sample_data = self.data.loc[sample_indexes]
+        self.set_labels(sample_data)
+
+    def set_labels(self, data):
         try:
-            sample_data = self.data[self.data.index.isin(sample_indexes)]
-            self.labels = torch.tensor(sample_data.values, dtype=torch.float32)
+            scaled_data = self.scaler.transform(data)
+            self.labels = torch.tensor(scaled_data).float()
         except Exception as e:
             logger.error(f"Error occurred while setting labels: {e}")
-        # self.labels = torch.tensor(StandardScaler().fit_transform(sample_data)).float()
 
     def create_optimiser(self, learning_rate):
         if self.optimiser is None:
@@ -165,13 +168,13 @@ class VFLClient():
             logger.error("Optimiser is not defined.")
 
         try:
-            # Reset the gradients of all optimized tensors
             self.model.zero_grad()
             current_embedding = self.model(self.labels)
             current_embedding.backward(torch.from_numpy(gradients.copy()))
             self.optimiser.step()
         except Exception as e:
             logger.error(f"Error occurred: {e}")
+
 
 #region Request handlers
 
@@ -189,13 +192,12 @@ def handle_vflTrainRequest(msComm: msCommTypes.MicroserviceCommunication,
     try:
         # sample_indexes = request.data["sample_batch_indexes"].string_value
         sample_indexes = extract_array_from_data(request, "sample_batch_indexes")
-        vfl_client.set_labels(sample_indexes)
+        vfl_client.set_labels_from_sample(sample_indexes)
     except Exception as e:
         logger.error(f"Error occurred while getting sample indexes: {e}")
 
     try:
         embeddings = vfl_client.train_model()
-        logger.debug(f"size of serialized array in bytes: {sys.getsizeof(embeddings)}")
         data = Struct()
         data.update({"embeddings":  embeddings})
     except Exception as e:
@@ -214,7 +216,7 @@ def handle_vflGradientDescentRequest(msComm: msCommTypes.MicroserviceCommunicati
         learning_rate = request.data["learning_rate"].number_value
         vfl_client.create_optimiser(learning_rate)
     except Exception:
-        vfl_client.create_optimiser(DEFAULT_LEARNING_RATE)
+        vfl_client.create_optimiser(0.05)
 
     # Extract gradients
     try:
@@ -272,7 +274,7 @@ def request_handler(msComm: msCommTypes.MicroserviceCommunication,
         if request.type == "vflShutdownRequest":
             handle_vflShutdownRequest(msComm)
         else:
-            logger.info(f"Received request: {request.type}. This is the server (not client), relaying request.")
+            logger.info("This is the server (not client), relaying request.")
             ms_config.next_client.ms_comm.send_data(msComm, msComm.data, {})
     else:
         if request is not None:
@@ -319,11 +321,15 @@ def main():
         logger.debug("KeyboardInterrupt received, stopping server...")
         signal_continuation(stop_event, stop_microservice_condition)
 
+    if ms_config.next_client:
+        ms_config.next_client.rabbit.stop()
+
     ms_config.stop(2)
     logger.debug(f"Exiting {config.service_name}")
     sys.exit(0)
 
 # ---  END DYNAMOS Interface code At the Bottom -----------------
+
 
 if __name__ == "__main__":
     main()
