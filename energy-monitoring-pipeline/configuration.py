@@ -17,6 +17,11 @@ DATA_COLLECT_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/data_metrics.csv"
 DATA_DA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/da_data_metrics.csv"
 DATA_RCA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/rca_results.csv"
 
+# Traces constants
+TRACE_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/traces"
+TRACE_FILENAME = "traces.json"
+TRACE_SERVICES = ["clientone", "clienttwo", "clientthree", "server"]
+
 # Experiment constants
 _IDLE_PERIOD_MINS = 3
 _ACTIVE_PERIOD_MINS = 3
