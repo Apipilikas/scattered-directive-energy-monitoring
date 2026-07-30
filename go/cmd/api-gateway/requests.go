@@ -229,6 +229,7 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64, communication_frequency int64, sample_batch_size int64) ([]float64, error) {
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	responses := map[string]string{}
 	var existingError error = nil
 	var sample_batch_indexes string
@@ -291,7 +292,9 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 					// TODO: Handle disagreements?
 				}
 
+				mu.Lock()
 				responses[target] = embeddings
+				mu.Unlock()
 			}
 
 			wg.Done()
