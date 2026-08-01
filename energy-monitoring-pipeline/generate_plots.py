@@ -264,7 +264,8 @@ def _generate_correlation_matrix(is_local, both_environments):
 
 def _generate_accuracies_plot():
     print("> Generating accuracies plot")
-    
+
+    _set_font_size(plt)
     plt.figure(figsize=(10, 6))
     
     json_files = {
@@ -309,7 +310,7 @@ def _generate_accuracies_plot():
         except Exception as e:
             print(f"Error processing accuracy data for {file_path}: {e}")
 
-    plt.xlabel('Train Round')
+    plt.xlabel('Client Training Round')
     plt.ylabel('Accuracy (%)')
     # plt.title('Model accuracy per training round')
     plt.grid(True, linestyle='--', alpha=0.6)
@@ -328,7 +329,8 @@ def _generate_accuracies_plot():
 def _generate_box_plot(is_local, both_environments):
     print("> Generating box plot")
 
-    plt.figure(figsize=(10, 5))
+    _set_font_size(plt)
+    plt.figure(figsize=(6, 5))
 
     data = {}
 
@@ -554,6 +556,9 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     print("Pareto Optimal Strategies identified:")
     for p in pareto_front:
         print(f"- {p[0]}")
+
+def _set_font_size(plt):
+    plt.rcParams.update({'font.size': 14})
 
 def _resolve_args():
     parser = argparse.ArgumentParser()

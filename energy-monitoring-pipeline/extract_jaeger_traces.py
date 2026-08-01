@@ -74,6 +74,9 @@ def _extract_durations(traces, service: str, operation: str):
 
     return durations
 
+def _set_font_size(plt):
+    plt.rcParams.update({'font.size': 12})
+
 def extract_traces(filepath):
     print("Extracting traces...")
     results = {}
@@ -172,6 +175,7 @@ def _read_results(filepath):
 def _generate_box_plot(filepath):
     print("> Generating box plot")
 
+    _set_font_size(plt)
     plt.figure(figsize=(6, 5))
     data = {}
 
