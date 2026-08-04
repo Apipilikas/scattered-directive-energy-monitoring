@@ -10,10 +10,10 @@ import seaborn as sns
 
 CORRELATION_CONFIG = {
         "Baseline": "baseline_experiment",
-        "Event-driven": "baseline_event_driven",
+        # "Event-driven": "baseline_event_driven",
         "Fed-BCD": "fed_bcd_experiment",
-        "Overlap-Fed-BCD": "overlap_fed_bcd_experiment",
-        "Fed-Encrypt": "fed_encrypt_experiment"
+        "Overlap-FedBCD": "overlap_fed_bcd_experiment",
+        # "Fed-Encrypt": "fed_encrypt_experiment"
     }
 
 CORRELATION_COLUMNS = [
@@ -364,7 +364,7 @@ def _generate_box_plot(is_local, both_environments):
 
     plt.grid(True, axis='y', linestyle='--', alpha=0.7)
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/ex_box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/paper_ex_box_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
     plt.tight_layout()
     plt.savefig(file_name)
     plt.close()
@@ -558,7 +558,7 @@ def _generate_mean_pareto_plot(is_local, both_environments):
         print(f"- {p[0]}")
 
 def _set_font_size(plt):
-    plt.rcParams.update({'font.size': 14})
+    plt.rcParams.update({'font.size': 16})
 
 def _resolve_args():
     parser = argparse.ArgumentParser()
