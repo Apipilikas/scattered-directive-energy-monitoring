@@ -1,6 +1,11 @@
-# Scattered Directive Energy Monitoring Pipeline
+<div align="center">
 
-The "Green policy-aware Vertical Federated Learning in distributed environment" thesis aimed to integrate an energy monitoring pipeline into the Scattered Directive and implement different mitigation strategies to minimize the environmental footprint. 
+# Scattered Directive Energy Monitoring
+### Branch: `main`
+
+*The "Green policy-aware Vertical Federated Learning in distributed environment" thesis aimed to integrate an energy monitoring pipeline into the Scattered Directive and implement different mitigation strategies to minimize the environmental footprint.*
+
+</div>
 
 ## Scattered Directive
 
