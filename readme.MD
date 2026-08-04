@@ -73,7 +73,8 @@ where `<mode>` can be either local to deploy Scattered Directive locally or fabr
 
 To configure the experiments, modify the `experiments_configuration.json` file. You can configure the experiment name, number of iterations, repetitions, and whether policy-aware changes are applied.
 
-> [!WARNING] We strongly recommend keeping the iterations count to 10 or fewer when running in the local environment, as the Scattered Directive can become highly unstable locally.
+> [!WARNING] 
+> We strongly recommend keeping the iterations count to 10 or fewer when running in the local environment, as the Scattered Directive can become highly unstable locally.
 
 An example of the file is the following:
 
