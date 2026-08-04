@@ -1,18 +1,23 @@
-# Scattered Directive
+<div align="right">
+  <a href="https://github.com/Apipilikas/scattered-directive-energy-monitoring/tree/main">
+    <strong>🔙 Return to <code>main</code> branch</strong>
+  </a>
+</div>
 
-Welcome to Scattered Directive. This is an automated and reproducible framework to deploy the digital data marketplace
-platform [DYNAMOS](https://github.com/Jorrit05/DYNAMOS) on the [FABRIC](https://portal.fabric-testbed.net) Research
-Infrastructure.
+<div align="center">
 
-Scattered Directive automates the entire setup, from requesting nodes to configuring and deploying DYNAMOS with the
-relevant relations to the nodes all defined. This allows researchers and developers (you!) to utilise DYNAMOS without
-any hassle.
+# Scattered Directive Energy Monitoring
+### Branch: `fabric`
 
-To prove our implementation of Scattered Directive, we utilised it to implement a Vertical Federated Learning workload,
-creating a new archetype to support shared execution of the global model training on a trusted third party. This
-archetype is aptly named *Shared Execution via TTP*.
+*This branch contains the initial deployment configurations for FABRIC environment. It has been merged into the [`baseline`](https://github.com/Apipilikas/scattered-directive-energy-monitoring/tree/baseline) branch.*
 
-## Setup
+</div>
 
-Practically everything is automated. The only thing you need to do is open the FABRIC Jupyter Notebook, clone this
-repository into there, open `fabric/dynamos.ipynb` configure the preferred configuration of nodes and execute.
+---
+
+## Configuration Files
+
+The primary structural differences between the `FABRIC` deployment and other environments (such as local) are in the following key directories:
+
+* **[`charts/`](https://github.com/Apipilikas/scattered-directive-energy-monitoring/tree/fabric/charts)** : contains the Helm charts tuned specifically for FABRIC Kubernetes clusters.
+* **[`configuration/`](https://github.com/Apipilikas/scattered-directive-energy-monitoring/tree/fabric/configuration)** : holds the environment setup scripts and core configuration required to deploy Scattered Directive in FABRIC testbed.
