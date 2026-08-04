@@ -7,6 +7,8 @@
 
 </div>
 
+---
+
 ## Scattered Directive
 
 [Scattered Directive](https://github.com/Javernus/Scattered-Directive) (often abbreviated to S-Drive) is a distributed infrastructure running a digital data
