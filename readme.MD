@@ -13,6 +13,8 @@
 
 </div>
 
+---
+
 ## Deployment 
 To deploy Scattered Directive, run the following command:
 ```
