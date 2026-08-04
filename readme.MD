@@ -39,3 +39,8 @@ In Scattered Directive, VFL training process is abstracted into two distinct tra
 In `vfl-train`, a dedicated function was implemented to extract the data based on the batch sample indexes. Additionally, local gradient descent is executed Q consecutive times within an iteration loop. 
 
 In `vfl-train-model`, two additional functions were implemented. The first is responsible for the generation of the mini-batch. Furthermore, a local update routine was implemented to simply perform loss function over Q-1 times.
+
+## References
+
+- **Y. Liu et al.**, "FedBCD: A Communication-Efficient Collaborative Learning Framework for Distributed Features," in IEEE Transactions on Signal Processing, vol. 70, pp. 4277-4290, 2022, doi: 10.1109/TSP.2022.3198176. keywords: {Stochastic processes;Data models;Collaborative work;Signal processing algorithms;Distributed databases;Security;Data privacy;Federated learning;data privacy;federated stochastic block coordinate descent;cross-silo federated learning;distributed features}
+[![DOI:10.1109/TSP.2022.3198176](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.1109/TSP.2022.3198176)
