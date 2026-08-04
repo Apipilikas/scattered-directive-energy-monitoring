@@ -39,7 +39,8 @@ The architecture was shifted from a poll-driven, hard-coded design to an event-d
 4. **Propagation:** The Orchestrator updates the active job records and pushes the changes downstream to the API-gateway.
 
 ### API-Gateway Pipeline
-> [!INFO] Client storage was changed from an unordered map to an ordered ClientData list to ensure sequential data transmission and prevent accuracy spikes during training as standard go map structures do not preserve order.
+> [!NOTE] 
+> Client storage was changed from an unordered map to an ordered ClientData list to ensure sequential data transmission and prevent accuracy spikes during training as standard go map structures do not preserve order.
 
 1. **Api-gateway notified** : the api-gateway sidecar receives a `policyUpdate` incoming message from the orchestrator.
 2. **Retrieval of providers' available data** : The api-gateway fetches all the providers' available data stored in the `etcd`.
