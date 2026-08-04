@@ -15,7 +15,7 @@
 
 ---
 
-## ⚙️ Configuration Files
+## Configuration Files
 
 The primary structural differences between the `local` deployment and other environments (such as FABRIC) are in the following key directories:
 
