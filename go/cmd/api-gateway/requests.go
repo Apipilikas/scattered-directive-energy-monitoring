@@ -227,7 +227,7 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, float64, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	responses := map[string]string{}
@@ -253,7 +253,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 		dataRequestJson, err := json.Marshal(dataRequest)
 		if err != nil {
 			logger.Sugar().Errorf("Error marshalling combined data: %v", err)
-			return 0., err
+			return 0., 0., err
 		}
 
 		go func(tgt string) {
@@ -294,7 +294,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 	if len(responses) != len(clients) {
 		logger.Sugar().Errorf("Expected %d responses, but got %d", len(clients), len(responses))
 
-		return 0., fmt.Errorf("One or more clients failed to respond during training round")
+		return 0., 0., fmt.Errorf("One or more clients failed to respond during training round")
 	}
 
 	target := strings.ToLower(serverAuth)
@@ -326,7 +326,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 	dataRequestJson, err := json.Marshal(dataRequest)
 	if err != nil {
 		logger.Sugar().Errorf("Error marshalling combined data: %v", err)
-		return 0., err
+		return 0., 0., err
 	}
 
 	responseData, error := sendData(endpoint, dataRequestJson)
@@ -342,6 +342,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 	}
 
 	accuracy := serverResponse.Data.GetFields()["accuracy"].GetNumberValue()
+	loss := serverResponse.Data.GetFields()["loss"].GetNumberValue()
 	gradientList := serverResponse.Data.GetFields()["gradients"].GetListValue().GetValues()
 
 	gradients := []string{}
@@ -370,7 +371,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 		dataRequestJson, err := json.Marshal(dataRequest)
 		if err != nil {
 			logger.Sugar().Errorf("Error marshalling combined data: %v", err)
-			return 0., err
+			return 0., 0., err
 		}
 
 		go func() {
@@ -387,7 +388,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serve
 
 	wg.Wait()
 
-	return accuracy, nil
+	return accuracy, loss, nil
 }
 
 type ClientData struct {
@@ -401,8 +402,11 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	var serverAuth string
 	var finalAccuracy float64
 	var wg sync.WaitGroup
+	var nonImprovementCounter int64
+	var bestLoss float64
 
 	var cycles int64 = 10
+	var patience int64 = 10
 	var learning_rate float64 = 0.05
 	var policy_removal int64 = -1
 	var policy_reintroduction int64 = -1
@@ -418,6 +422,12 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 		if ok {
 			cycles = int64(floatCycles)
+		}
+
+		floatPatience, ok := data["patience"].(float64)
+
+		if ok {
+			patience = int64(floatPatience)
 		}
 
 		floatLearningRate, ok := data["learning_rate"].(float64)
@@ -677,8 +687,8 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			numClients = len(*clients)
 
 			logger.Sugar().Info("- Sending training request")
-			accuracy, err := runVFLTrainingRound(dataRequest, *clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
-			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, " for round ", cycle)
+			accuracy, loss, err := runVFLTrainingRound(dataRequest, *clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
+			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, ", loss: ", loss, " for round ", cycle)
 			finalAccuracy = accuracy
 			metadata_accuracy = accuracy // store accuracy from metadata for results
 
@@ -687,24 +697,35 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 				trainingFailed = true
 				break
 			}
-		}
 
-		result := map[string]any{
-			"timestamp":   time.Now().Format(time.RFC3339),
-			"train_round": cycle,
-			"accuracy":    metadata_accuracy,
-			"clients":     numClients,
-		}
-		results = append(results, result)
-		v, _ := trainingRequests.Load(requestID)
-		reqData := v.(TrainingRequestData)
-		reqData.Results = results
-		trainingRequests.Store(requestID, reqData)
+			result := map[string]any{
+				"timestamp":   time.Now().Format(time.RFC3339),
+				"train_round": cycle,
+				"accuracy":    metadata_accuracy,
+				"loss":        loss,
+				"clients":     numClients,
+			}
+			results = append(results, result)
+			v, _ := trainingRequests.Load(requestID)
+			reqData := v.(TrainingRequestData)
+			reqData.Results = results
+			trainingRequests.Store(requestID, reqData)
 
-		if trainingFailed {
-			break
-		}
+			if cycle == 0 {
+				bestLoss = loss
+			} else {
+				if bestLoss <= loss {
+					nonImprovementCounter++
+				} else {
+					nonImprovementCounter = 0
+					bestLoss = loss
+				}
+			}
 
+			if trainingFailed || (cycle+1 >= patience && nonImprovementCounter == patience) {
+				break
+			}
+		}
 	}
 
 	logger.Sugar().Info("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")

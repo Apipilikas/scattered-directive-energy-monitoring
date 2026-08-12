@@ -141,6 +141,9 @@ class VFLServer():
             embedding_server = embeddings_aggregated.detach().requires_grad_()
             output = self.model(embedding_server)
             loss = self.criterion(output, self.labels)
+
+            loss_error = loss.item()
+
             loss.backward()
 
             self.optimizer.step()
@@ -164,7 +167,7 @@ class VFLServer():
             accuracy = correct / len(self.labels) * 100
 
         data = Struct()
-        data.update({"accuracy": accuracy, "gradients": np_gradients})
+        data.update({"accuracy": accuracy, "loss": loss_error , "gradients": np_gradients})
 
         logger.info(f"Accuracy achieved: {accuracy}")
 
