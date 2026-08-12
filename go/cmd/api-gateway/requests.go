@@ -846,7 +846,15 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			break
 		}
 
-		addAndUpdateTrainingRequest(requestID, cycle, len(currentClients), accuracy)
+		activeClientsCount := 0
+
+		for _, client := range currentClients {
+			if client.Active {
+				activeClientsCount++
+			}
+		}
+
+		addAndUpdateTrainingRequest(requestID, cycle, activeClientsCount, accuracy)
 
 		if trainingFailed {
 			break
