@@ -277,6 +277,9 @@ def main():
         idx += 1
 
     gradients = []
+    best_loss = 0
+    p = 10
+    ni = 0
     for i in range(iterations):
         print(f"----------------------- Run {i + 1} / {iterations} -----------------------")
         # Server is responsible for sampling. Send vflSampleBatchRequest
@@ -329,6 +332,10 @@ def main():
 
         gradients = {}
 
+        # Initialize the first time
+        if i == 0:
+            best_loss = batch_loss
+
         # Orchestrator: looping through sample dimensions
         for party_id, ct_sds in C_sd.items():
             # Send aggragator vflSamplesDecryptionRequest | returns gradients
@@ -338,6 +345,23 @@ def main():
 
             # Send party vflGradientDescentRequest
             parties[party_id].update_weights(party_gradients)
+
+        if best_loss <= batch_loss:
+            print("No improvement...")
+            print(f"Best loss: {best_loss}")
+            print(f"Current batch loss: {batch_loss}")
+            ni += 1
+        else:
+            print("Loss decreased...")
+            print(f"Best loss: {best_loss}")
+            print(f"Current batch loss: {batch_loss}")
+            ni = 0
+            best_loss = batch_loss
+
+        print(f"Non-improvement counter: {ni}")
+        if i + 1 >= p and ni == p:
+            break
+
     
     print("------------------------------------------")
     print("Intermediate accuracies:")
