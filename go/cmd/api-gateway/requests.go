@@ -422,7 +422,7 @@ func ToAnyList[T any](input []T) []any {
 	return result
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weights *[]any, authorizedProviders map[string]string, sampleBatchSize int64) (float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weights *[]any, authorizedProviders map[string]string, sampleBatchSize int64) (float64, float64, error) {
 
 	responseData, err := cloneAndSendDataRequest(dataRequest, authorizedProviders,
 		Server,
@@ -433,7 +433,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 	)
 
 	if err != nil {
-		return 0., err
+		return 0., 0., err
 	}
 
 	sampleBatchIndexes := responseData.Data.GetFields()["sample_batch_indexes"].GetStringValue()
@@ -522,7 +522,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 	)
 
 	if err != nil {
-		return 0., err
+		return 0., 0., err
 	}
 
 	decryptedFeaturesDimension := responseData.Data.GetFields()["decrypted_features_dimension"].GetListValue().GetValues()
@@ -536,10 +536,11 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 	)
 
 	if err != nil {
-		return 0., err
+		return 0., 0., err
 	}
 
 	accuracy := responseData.Data.GetFields()["batch_accuracy"].GetNumberValue()
+	loss := responseData.Data.GetFields()["batch_loss"].GetNumberValue()
 	logisticError := responseData.Data.GetFields()["logistic_error"].GetListValue().GetValues()
 
 	responseData, err = cloneAndSendDataRequest(dataRequest, authorizedProviders,
@@ -551,7 +552,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 	)
 
 	if err != nil {
-		return 0., err
+		return 0., 0., err
 	}
 
 	dkSamplesDimension := responseData.Data.GetFields()["dk_samples_sife"].GetStringValue()
@@ -567,7 +568,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, weigh
 
 	*weights = ToAnyList(responseData.Data.GetFields()["weights"].GetListValue().GetValues())
 
-	return accuracy, nil
+	return accuracy, loss, nil
 }
 
 // #region VFL requests
@@ -674,10 +675,13 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	var finalAccuracy float64
 	var wg sync.WaitGroup
 	var weights = []any{}
+	var nonImprovementCounter int64
+	var bestLoss float64
 
 	// Default parameters values
 	var sampleBatchSize int64 = 64
 	var cycles int64 = 10
+	var patience int64 = 10
 	var learningRate float64 = 0.05
 	var policy_removal int64 = -1
 	var policy_reintroduction int64 = -1
@@ -692,6 +696,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		// Parameters extraction
 		sampleBatchSize = extractValueOrDefault(data, "sample_batch_size", sampleBatchSize)
 		cycles = extractValueOrDefault(data, "cycles", cycles)
+		patience = extractValueOrDefault(data, "patience", patience)
 		learningRate = extractValueOrDefault(data, "learning_rate", learningRate)
 		trainingBacktrack = extractValueOrDefault(data, "training_backtrack", trainingBacktrack)
 		policy_removal = extractValueOrDefault(data, "policy_removal", policy_removal)
@@ -836,7 +841,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 				nil)
 		}
 
-		accuracy, err := runVFLTrainingRound(dataRequest, currentClients, &weights, authorizedProviders, sampleBatchSize)
+		accuracy, loss, err := runVFLTrainingRound(dataRequest, currentClients, &weights, authorizedProviders, sampleBatchSize)
 
 		finalAccuracy = accuracy
 
@@ -856,7 +861,18 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 		addAndUpdateTrainingRequest(requestID, cycle, activeClientsCount, accuracy)
 
-		if trainingFailed {
+		if cycle == 0 {
+			bestLoss = loss
+		} else {
+			if bestLoss <= loss {
+				nonImprovementCounter++
+			} else {
+				nonImprovementCounter = 0
+				bestLoss = loss
+			}
+		}
+
+		if trainingFailed || (cycle+1 >= patience && nonImprovementCounter == patience) {
 			break
 		}
 
