@@ -33,7 +33,7 @@ PLOT_OUTPUT_FOLDER = "plots"
 # Kepler constants
 KEPLER_WATT_PER_SECOND_TO_KWH = 1/3600000
 KEPLER_COAL = 0.4
-KEPLER_CARBON_COEFFICIENT = 0.2264
+KEPLER_CARBON_COEFFICIENT = 0.2264 # EU
 
 # Prometheus constants
 PROM_IDLE_DURATION = f"{_IDLE_PERIOD_MINS}m"
@@ -118,3 +118,26 @@ def extract_property_from_json(file_path: str, property_name: str):
 
 def get_containers():
     return CONTAINERS + get_agents()
+
+# FABRIC
+def _load_fabric_configuration(file_name="node_configuration.json"):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    config_file_path = os.path.join(current_dir, "..", "fabric", "resources", file_name)
+    
+    with open(config_file_path, "r") as file:
+        return json.load(file)
+
+FABRIC_CONFIGURATION = _load_fabric_configuration()
+
+CARBON_COEFFICIENTS = {
+    "AMST": KEPLER_CARBON_COEFFICIENT,
+    "TOKY": 0.4615, # Japan
+    "LOSA": 0.3580 # USA
+}
+
+def get_site_from_container(container_name: str):
+    for node in FABRIC_CONFIGURATION:
+        if node.get("name") == container_name:
+            return node.get("site")
+            
+    return None
