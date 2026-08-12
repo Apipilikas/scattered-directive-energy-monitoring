@@ -79,7 +79,7 @@ def _get_carbon_emission_query_range():
                 sum(count_over_time(kepler_container_joules_total{containers_filter}[24h])) by ({conf.KEPLER_LABEL}) 
                 / 
                 sum(count_over_time(kepler_container_joules_total{containers_filter}[1h])) by ({conf.KEPLER_LABEL})
-                ) * {conf.KEPLER_CARBON_COEFFICIENT}"""
+                )"""
 
 def main():
     iterations = _resolve_args()
@@ -139,7 +139,16 @@ def _get_training_status(jobId : str):
 
 def _get_carbon_emission():
     query = _get_carbon_emission_query_range()
-    return execute_query(query)
+    metrics = execute_query(query)
+
+    for container_name, energy_value in metrics.items():
+        site = None if is_local else conf.get_site_from_container(container_name)
+        
+        coefficient = conf.CARBON_COEFFICIENTS.get(site, conf.KEPLER_CARBON_COEFFICIENT)
+        
+        metrics[container_name] = float(energy_value) * coefficient
+
+    return metrics
 
 def _get_energy_comsumption(is_active = False):
     query = _get_energy_query_range(is_active) 
