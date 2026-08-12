@@ -23,6 +23,7 @@ REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "ser
 REQUEST_APPROVAL_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
+    "patience": 10,
     "policy_removal": -1,
     "policy_reintroduction": -1,
     "training_backtrack": 0,
