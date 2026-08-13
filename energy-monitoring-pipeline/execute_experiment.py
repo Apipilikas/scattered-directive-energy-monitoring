@@ -209,6 +209,9 @@ def execute_experiment_run(run_no: int):
     # Record the start time of the active period
     print("\n> Active period")
     active_start_time = time.time()
+
+    wait = True
+
     if run_baseline:
         time.sleep(conf.ACTIVE_PERIOD)
     else:
@@ -227,6 +230,7 @@ def execute_experiment_run(run_no: int):
                         accuracies = response["results"]
                         break
         except Exception as e:
+            wait = False
             print(f"Error occurred while fetching data.\n {e}")
             _retrieve_logs()
     
@@ -239,7 +243,7 @@ def execute_experiment_run(run_no: int):
 
     remaining_time = conf.ACTIVE_PERIOD - active_elapsed_time
 
-    if remaining_time > 0:
+    if wait and remaining_time > 0:
         print(f"Active period elapsed time: {active_elapsed_time} s ({active_elapsed_datetime})")
         print("Waiting for remaining active period...")
         time.sleep(remaining_time)
