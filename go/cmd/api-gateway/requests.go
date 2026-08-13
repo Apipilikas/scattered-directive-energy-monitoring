@@ -258,7 +258,7 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 			responseData, err := sendData(endpoint, dataRequestJson)
 
 			if err != nil {
-				logger.Sugar().Errorf("Error sending data, %v", err)
+				logger.Sugar().Errorf("Error sending data from client:", auth, "| Error: ", "%v", err)
 			} else {
 				responseJson := &pb.MicroserviceCommunication{}
 				err = json.Unmarshal([]byte(responseData), responseJson)
@@ -275,6 +275,9 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 					embeddings = ""
 					// TODO: Handle disagreements?
 				}
+
+				logger.Sugar().Info("Received training response from client: ", auth, " at url: ", url)
+
 				mu.Lock()
 				responses[tgt] = embeddings
 				mu.Unlock()
@@ -351,6 +354,8 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 			"learning_rate": learning_rate,
 		}
 
+		logger.Sugar().Info("Sending gradient descent request to client: ", auth, " at url: ", url)
+
 		index++
 
 		dataRequestJson, err := json.Marshal(dataRequest)
@@ -362,8 +367,11 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 		go func() {
 			response, err := sendData(endpoint, dataRequestJson)
 			if err != nil {
-				logger.Sugar().Error("Error sending data, ", err, ", received: ", response)
+				logger.Sugar().Error("Error sending data from client:", auth, " | Error: ", err, ", received: ", response)
 			}
+
+			logger.Sugar().Info("Received gradient descent response from client: ", auth, " at url: ", url)
+
 			wg.Done()
 		}()
 	}
