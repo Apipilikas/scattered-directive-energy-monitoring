@@ -7,6 +7,7 @@ import json
 from collect_metrics import collect_metrics, save_metrics_to_csv
 import argparse
 import csv
+import subprocess
 import os
 import utils
 import faulthandler
@@ -228,6 +229,7 @@ def execute_experiment_run(run_no: int):
                         break
         except Exception as e:
             print(f"Error occurred while fetching data.\n {e}")
+            _retrieve_logs()
     
     experiment_end_time = time.time()
     experiment_elapsed_time = experiment_end_time - experiment_start_time
@@ -239,7 +241,6 @@ def execute_experiment_run(run_no: int):
     remaining_time = conf.ACTIVE_PERIOD - active_elapsed_time
 
     if remaining_time > 0:
-        # To Change
         print(f"Active period elapsed time: {active_elapsed_time} s ({active_elapsed_datetime})")
         print("Waiting for remaining active period...")
         time.sleep(remaining_time)
@@ -312,6 +313,30 @@ def _delete_experiment_files(runs_no: int):
 
         if os.path.exists(file_name):
             os.remove(file_name)
+
+def _retrieve_logs():
+    print("\nExperiment failure detected. Triggering retrieve_logs.sh for targets...")
+    
+    targets = [
+        ("api-gateway", "api-gateway", "api-gateway"),
+    ]
+
+    for agent in conf.get_agents():
+        container_name = "vfl-train" if agent != "server" else "vfl-train-model"
+        targets.append((agent, "evangelos-pipilikas", container_name))
+    
+    script_path = os.path.join(os.path.dirname(__file__), "..", "scripts", "retrieve_logs.sh")
+    
+    for namespace, pod_prefix, container_name in targets:
+        cmd = ["bash", script_path, namespace, pod_prefix, container_name]
+        
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
+            print(f"> Successfully retrieved logs for {pod_prefix}")
+        except subprocess.CalledProcessError as e:
+            print(f">!< Failed to retrieve logs for {pod_prefix}. Script exited with code {e.returncode}")
+        except FileNotFoundError:
+            print(f">!< Could not find the bash script at: {script_path}")
 
 def _resolve_output_path(arg, is_local = True):
     timestamp = datetime.datetime.now().strftime("%y%m%d_%H%M")
