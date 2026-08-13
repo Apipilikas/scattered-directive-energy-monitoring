@@ -285,6 +285,10 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 
 			wg.Done()
 		}(target)
+
+		if err != nil {
+			return 0., nil
+		}
 	}
 
 	wg.Wait()
