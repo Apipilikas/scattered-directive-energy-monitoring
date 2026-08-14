@@ -271,8 +271,8 @@ def _generate_accuracies_plot():
     json_files = {
         "Baseline": "experiments/fabric/baseline_experiment_260623_1609/experiments.json",
         "Fed-BCD": "experiments/fabric/fed_bcd_experiment_260623_2335/experiments.json",
-        "Overlap-Fed-BCD": "experiments/fabric/overlap_fed_bcd_experiment_260625_1502/experiments.json",
-        # "Fed-Encrypt": "experiments/fabric/fed_encrypt_experiment_260626_2016/experiments.json"
+        "Overlap-FedBCD": "experiments/fabric/overlap_fed_bcd_experiment_260625_1502/experiments.json",
+        "Fed-Encrypt": "experiments/fabric/fed_encrypt_experiment_260626_2016/experiments.json"
     }
     
     if not json_files:
@@ -321,7 +321,7 @@ def _generate_accuracies_plot():
     
     plt.legend(loc='lower right')
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/paper_accuracies_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/ieee_paper_accuracies_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")

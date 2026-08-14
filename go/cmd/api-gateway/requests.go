@@ -285,13 +285,15 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 
 			wg.Done()
 		}(target)
-
-		if err != nil {
-			return 0., nil
-		}
 	}
 
 	wg.Wait()
+
+	if len(responses) != len(clients) {
+		logger.Sugar().Errorf("Expected %d responses, but got %d", len(clients), len(responses))
+
+		return 0., fmt.Errorf("One or more clients failed to respond during training round")
+	}
 
 	target := strings.ToLower(serverAuth)
 	logger.Sugar().Info("Sending training request to server: ", target, " at url: ", serverUrl)
