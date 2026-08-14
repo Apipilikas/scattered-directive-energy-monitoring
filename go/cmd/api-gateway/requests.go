@@ -160,7 +160,7 @@ func requestHandler() http.HandlerFunc {
 func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[string]any, apiReqApproval api.RequestApproval, r *http.Request, requestID string) {
 	logger.Debug("Starting training process...")
 	// Requests may take up to 10 minutes now
-	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 90*time.Minute)
 	defer cancel()
 
 	// Start a new span with the context that has a timeout
