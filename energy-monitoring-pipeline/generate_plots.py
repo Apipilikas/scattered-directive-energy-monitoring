@@ -321,7 +321,7 @@ def _generate_accuracies_plot():
     
     plt.legend(loc='lower right')
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/ieee_paper_accuracies_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/accuracies_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")
