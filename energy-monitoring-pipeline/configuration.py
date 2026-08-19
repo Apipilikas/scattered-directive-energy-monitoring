@@ -122,7 +122,7 @@ def get_containers():
 # FABRIC
 def _load_fabric_configuration(file_name="node_configuration.json"):
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    config_file_path = os.path.join(current_dir, "..", "fabric", "resources", file_name)
+    config_file_path = os.path.join(current_dir, "..", "fabric", file_name)
     
     with open(config_file_path, "r") as file:
         return json.load(file)
