@@ -3,6 +3,7 @@ import argparse
 from scipy.stats import mannwhitneyu
 import utils
 import configuration as conf
+import numpy as np
 
 METRICS_SCALES = {
     'total_energy_difference': 1,
@@ -53,10 +54,18 @@ def test_statistical_significance(df_baseline: pd.DataFrame, df_opt: pd.DataFram
             mean_difference = opt_mean - baseline_mean
             mean_difference_perc = (mean_difference)/baseline_mean*100
 
+            baseline_std = df_baseline[column].std()
+            opt_std = df_opt[column].std()
+
+            std_difference = np.sqrt(baseline_std**2 + opt_std**2)
+            std_difference_perc = (df_opt[column] - df_baseline[column]).std()
+
             print(f"\nComparison: {optimization} vs. baseline for {column}")
             print(f"    Mann-Whitney U Statistic: {u_stat}")
             print(f"    Mean difference: {mean_difference}")
             print(f"    Mean difference (%): {mean_difference_perc}")
+            print(f"    Std difference: {std_difference}")
+            print(f"    Std difference: {std_difference_perc}")
             print(f"    p-value: {p_value} {'(Significant)' if p_value < 0.05 else '(Not Significant)'}")
             print(f"    Rank Biserial Correlation (Effect Size): {rbc}")
             print(f"    Strength: {strength}\n")
@@ -75,9 +84,17 @@ def test_statistical_significance(df_baseline: pd.DataFrame, df_opt: pd.DataFram
         else:
             print(f"\nNot enough data for Mann-Whitney U test for {optimization} on {column}")
 
-    _print_latex_table(output)
+    # _print_ieee_latex_line(output)
+    # _print_latex_table(output)
 
     return output
+
+def _print_ieee_latex_line(results:dict):
+    print("> Printing IEEE LaTeX line: \n")
+    for name, result in results.items():
+        sig_str = r'\textsuperscript{*}' if result['significance'] else ''
+        print(r"\begin{table}[!htbp]")
+        print(result['mean_difference_perc'] + r" \ensuremath{{\pm}} " + result['std_difference_perc'] + sig_str)
 
 def _print_latex_table(results: dict):
     print("> Printing LaTeX table: \n")

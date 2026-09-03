@@ -7,14 +7,25 @@ import utils
 from scipy.stats import kendalltau
 import numpy as np
 import seaborn as sns
+from matplotlib.patches import Patch
+import matplotlib.patheffects as pe
+from pathlib import Path
 
 CORRELATION_CONFIG = {
         "Baseline": "baseline_experiment",
         # "Event-driven": "baseline_event_driven",
-        "Fed-BCD": "fed_bcd_experiment",
+        "FedBCD": "fed_bcd_experiment",
         "Overlap-FedBCD": "overlap_fed_bcd_experiment",
-        # "Fed-Encrypt": "fed_encrypt_experiment"
+        "FedEncrypt": "fed_encrypt_experiment"
     }
+
+# CORRELATION_CONFIG = {
+#         "Baseline": "distributed_baseline_experiment",
+#         # "Event-driven": "baseline_event_driven",
+#         "FedBCD": "distributed_fed_bcd_experiment",
+#         "Overlap-FedBCD": "distributed_overlap_fed_bcd_experiment",
+#         "FedEncrypt": "distributed_fed_encrypt_experiment"
+#     }
 
 CORRELATION_COLUMNS = [
     ("total_carbon_emission_difference","Carbon Emission (gCO2e/KWh)", "cab", 1000),
@@ -22,7 +33,7 @@ CORRELATION_COLUMNS = [
 ]
 
 def main():
-    plot_sidecar, plot_accuracies, plot_correlation, plot_box, plot_pareto, is_local, both_environments = _resolve_args()
+    plot_sidecar, plot_accuracies, plot_correlation, plot_box, plot_pareto, is_local, both_environments, plot_bar = _resolve_args()
 
     print(f"============= Generate plots =============")
     
@@ -32,7 +43,8 @@ def main():
     if plot_correlation:
         _generate_correlation_plot(is_local, both_environments)
         _generate_mean_correlation_plot(is_local, both_environments)
-        _generate_correlation_matrix(is_local, both_environments)
+        # _generate_correlation_matrix(is_local, both_environments)
+        # _generate_correlation_shrinked_matrix()
 
     if plot_accuracies:
         _generate_accuracies_plot()
@@ -43,6 +55,10 @@ def main():
     if plot_pareto:
         _generate_pareto_plot(is_local, both_environments)
         _generate_mean_pareto_plot(is_local, both_environments)
+
+    if plot_bar:
+        # _generate_distributed_bar_plot(is_local, both_environments)
+        _generate_bar_plot()
 
 def _generate_sidecar_plot():
     print("> Generating sidecar plot")
@@ -133,7 +149,7 @@ def _generate_mean_correlation_plot_by_column(column_name, column_label, column_
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{column_prefix}_mean_correlation_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/paper_en_{column_prefix}_mean_correlation_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")
@@ -191,7 +207,7 @@ def _generate_correlation_plot_by_column(column_name, column_label, column_prefi
 
     label = _resolve_mode_name(is_local, both_environments)
 
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/en_{column_prefix}_correlation_{label}_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/paper_en_{column_prefix}_correlation_{label}_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     print(f"Plot saved in {file_name}!")
@@ -262,6 +278,77 @@ def _generate_correlation_matrix(is_local, both_environments):
     plt.close()
     print(f"Correlation matrix saved in {file_name}!")
 
+def _generate_correlation_shrinked_matrix():
+    print("> Generating compact correlation matrix heatmap (Local vs Fabric)")
+    
+    # Define the specific metric pairs we want to correlate
+    pairs = {
+        "Energy Consumption \n Execution Time": ("total_energy_difference", "execution_time"),
+        "Energy Consumption \n Carbon Emission": ("total_energy_difference", "total_carbon_emission_difference"),
+        "Execution Time \n Carbon Emission": ("execution_time", "total_carbon_emission_difference")
+    }
+    
+    results = {"Local": [], "Fabric": []}
+    
+    # Helper to calculate the 3 correlations for a specific environment
+    def _get_env_correlations(is_local_flag, config=CORRELATION_CONFIG):
+        frames = []
+        for name, file_prefix in config.items():
+            total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local_flag)
+            if not total_metrics_data.empty:
+                frames.append(total_metrics_data)
+        
+        if not frames:
+            return [np.nan, np.nan, np.nan]
+            
+        env_df = pd.concat(frames, ignore_index=True)
+        
+        corrs = []
+        for label, (col1, col2) in pairs.items():
+            if col1 in env_df.columns and col2 in env_df.columns:
+                corr_val = env_df[col1].corr(env_df[col2], method='kendall')
+                corrs.append(corr_val)
+            else:
+                corrs.append(np.nan)
+        return corrs
+
+    # Calculate for both environments regardless of the script's flags 
+    # (since the goal is explicitly to show Local vs Fabric side-by-side)
+    results["Local"] = _get_env_correlations(True)
+    results["Fabric"] = _get_env_correlations(False, {
+        "Baseline": "distributed_baseline_experiment",
+        # "Event-driven": "baseline_event_driven",
+        "FedBCD": "distributed_fed_bcd_experiment",
+        "Overlap-FedBCD": "distributed_overlap_fed_bcd_experiment",
+        "FedEncrypt": "distributed_fed_encrypt_experiment"
+    })
+    
+    corr_df = pd.DataFrame(results, index=pairs.keys()).T
+    
+    plt.figure(figsize=(5, 1.8))
+    
+    cmap_custom = sns.color_palette("vlag", as_cmap=True)
+    
+    sns.heatmap(
+        corr_df, 
+        annot=True,
+        fmt=".3f",
+        cmap=cmap_custom,
+        vmin=-1, vmax=1,
+        center=0,
+        linewidths=0.5,      
+        cbar_kws={"shrink": 1.0}
+    )
+    
+    plt.yticks(rotation=0, fontsize=9)
+    plt.xticks(rotation=12, fontsize=9)
+    plt.tight_layout()
+
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/correlation_matrix.pdf"
+    plt.savefig(file_name, bbox_inches='tight')
+    plt.close()
+    print(f"Compact correlation matrix saved in {file_name}!")
+
 def _generate_accuracies_plot():
     print("> Generating accuracies plot")
 
@@ -293,7 +380,7 @@ def _generate_accuracies_plot():
             
             rounds = [item["train_round"] for item in accuracies_list]
 
-            if name in ["Fed-BCD", "Overlap-Fed-BCD"]:
+            if name in ["Fed-BCD", "Overlap-FedBCD"]:
                 rounds = [item["train_round"] * 15 for item in accuracies_list]
             else:
                 rounds = [item["train_round"] for item in accuracies_list]
@@ -382,6 +469,10 @@ def _generate_pareto_plot(is_local, both_environments):
     colors = sns.color_palette("tab10", num_strategies)
     color_idx = 0
 
+    column = ("total_carbon_emission_difference", 'Carbon Emission (gCO2e/KWh)', 1000, "cab")
+    # column = ("execution_time", 'Execution Time (s)', 1, "ex")
+    # column = ("accuracy", 'Accuracy (%)', 1, "acc")
+
     def _read_data(is_local_flag, include_mode_in_label):
         nonlocal color_idx
         for name, file_prefix in CORRELATION_CONFIG.items():
@@ -396,9 +487,10 @@ def _generate_pareto_plot(is_local, both_environments):
                 
             for index, row in total_metrics_data.iterrows():
                 energy = row["total_energy_difference"]
+                compare = row[column[0]] * column[2]
                 # compare = row["total_carbon_emission_difference"] * 1000
                 # compare = row["execution_time"]
-                compare = row["accuracy"]
+                # compare = row["accuracy"]
                 data_points.append((name, compare, energy))
 
     # Read data based on environment flags
@@ -437,14 +529,15 @@ def _generate_pareto_plot(is_local, both_environments):
     pareto_energies = [row[2] for row in pareto_front]
 
     plt.scatter([], [], facecolor='none', edgecolor='black', s=100, linewidth=1.5, 
-                label='Pareto Optimal Point')
+                label='Pareto Solution')
 
     for strategy, compare, energy in pareto_front:
         plt.scatter(compare, energy, color=strategy_mapping[strategy], s=100, edgecolor='black', zorder=4)
     
     plt.plot(pareto_emissions, pareto_energies, color='red', linestyle='--', linewidth=2, zorder=3)
 
-    plt.xlabel('Accuracy (%)', fontsize=12)
+    plt.xlabel(column[1], fontsize=12)
+    # plt.xlabel('Accuracy (%)', fontsize=12)
     # plt.xlabel('Execution Time (s)', fontsize=12)
     # plt.xlabel('Carbon Emission (gCO2e/KWh)', fontsize=12)
     plt.ylabel('Energy Consumption (J)', fontsize=12)
@@ -453,7 +546,7 @@ def _generate_pareto_plot(is_local, both_environments):
     plt.legend(loc='best', fontsize=10)
 
     plt.tight_layout()
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/acc_pareto_front_{_resolve_mode_name(is_local, both_environments)}.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/paper_{column[3]}_pareto_front_{_resolve_mode_name(is_local, both_environments)}.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     
@@ -475,15 +568,20 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     colors = sns.color_palette("tab10", num_strategies)
     color_idx = 0
 
+    column = ("total_carbon_emission_difference", 'Mean Carbon Emission (gCO2e/KWh)', 1000, "cab")
+    # column = ("execution_time", 'Mean Execution Time (s)', 1, "ex")
+    # column = ("accuracy", 'Mean Accuracy (%)', 1, "acc")
+
     def _read_data(is_local_flag, include_mode_in_label):
         nonlocal color_idx
         for name, file_prefix in CORRELATION_CONFIG.items():
             total_metrics_data, _, _ = utils.read_experiments_by_prefix(file_prefix, is_local_flag)
             
             mean_energy = total_metrics_data["total_energy_difference"].mean()
+            mean_cab = total_metrics_data[column[0]].mean()*column[2]
             # mean_cab = total_metrics_data["total_carbon_emission_difference"].mean()*1000
             # mean_cab = total_metrics_data["execution_time"].mean()
-            mean_cab = total_metrics_data["accuracy"].mean()
+            # mean_cab = total_metrics_data["accuracy"].mean()
             
             if include_mode_in_label:
                 name = f"{name}_{_resolve_mode_name(is_local_flag)}"
@@ -528,7 +626,7 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     pareto_energies = [row[2] for row in pareto_front]
 
     plt.scatter([], [], facecolor='none', edgecolor='black', s=150, linewidth=1.5, 
-                label='Pareto Optimal (The Front)')
+                label='Pareto Solution')
 
     for strategy, emissions, energy in pareto_front:
         plt.scatter(emissions, energy, color=strategy_mapping[strategy], s=150, edgecolor='black', zorder=4)
@@ -539,7 +637,8 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     all_energies = [row[2] for row in data_points]
     labels = [row[0] for row in data_points]
 
-    plt.xlabel('Mean Accuracy (%)', fontsize=12)
+    plt.xlabel(column[1], fontsize=12)
+    # plt.xlabel('Mean Accuracy (%)', fontsize=12)
     # plt.xlabel('Mean Execution Time (s)', fontsize=12)
     # plt.xlabel('Mean Carbon Emission (gCO2e/KWh)', fontsize=12)
     plt.ylabel('Mean Energy Consumption (J)', fontsize=12)
@@ -548,7 +647,7 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     plt.legend(loc='best', fontsize=10)
 
     plt.tight_layout()
-    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/acc_pareto_front_mean_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
+    file_name = f"{conf.PLOT_OUTPUT_FOLDER}/paper_{column[3]}_pareto_front_mean_{_resolve_mode_name(is_local, both_environments)}_plot.pdf"
     plt.savefig(file_name, bbox_inches='tight')
     plt.close()
     
@@ -556,6 +655,336 @@ def _generate_mean_pareto_plot(is_local, both_environments):
     print("Pareto Optimal Strategies identified:")
     for p in pareto_front:
         print(f"- {p[0]}")
+
+def _get_site_mapping(config_path="../fabric/resources/node_configuration.json"):
+    try:
+        with open(config_path, 'r') as f:
+            nodes = json.load(f)
+    except FileNotFoundError:
+        print(f"Warning: {config_path} not found. Using fallback mapping.")
+        return {"AMST": [], "LOSA": [], "TOKY": []}
+
+    site_mapping = {}
+    for node in nodes:
+        site = node.get("site")
+        # Extract name if it exists (e.g., 'clientone'), otherwise use type (e.g., 'control')
+        agent_name = node.get("name", node.get("type"))
+        
+        if site not in site_mapping:
+            site_mapping[site] = []
+        if agent_name not in site_mapping[site]:
+            site_mapping[site].append(agent_name)
+            
+    return site_mapping
+
+def get_site_metrics(active_dict, idle_dict, site_mapping, sites):
+    active_means = {
+        key: sum(float(v) for v in val) / len(val) if val else 0.0 
+        for key, val in active_dict.items()
+    }
+    
+    idle_means = {
+        key: sum(float(v) for v in val) / len(val) if val else 0.0 
+        for key, val in idle_dict.items()
+    }
+    
+    all_keys = set(active_means.keys()).union(set(idle_means.keys()))
+    net_metrics = {
+        key: active_means.get(key, 0.0) - idle_means.get(key, 0.0)
+        for key in all_keys
+    }
+
+    print(net_metrics)
+    
+    site_sums = []
+    for site in sites:
+        agents = site_mapping.get(site, [])
+        site_total = sum(max(0.0, active_means.get(agent, 0.0)) for agent in agents)
+        site_sums.append(site_total)
+
+    print(site_sums)
+    return site_sums
+
+def get_dynamic_limits(totals):    
+    all_tots = sorted(list(totals.values()))
+    max_raw = all_tots[-1]
+    
+    max_gap = 0
+    split_idx = 0
+    for i in range(len(all_tots)-1):
+        gap = all_tots[i+1] - all_tots[i]
+        if gap > max_gap:
+            max_gap = gap
+            split_idx = i
+            
+    # If there is a substantial gap (e.g., more than 20% of the max value)
+    if max_gap > max_raw * 0.2:
+        lower_max = all_tots[split_idx] * 1.0    # 15% headroom above the lower group
+        upper_min = all_tots[split_idx+1] * 1.0  # 15% floor below the upper group
+    else:
+        # Fallback if there is no major outlier gap
+        lower_max = max_raw * 1.05
+        upper_min = max_raw * 0.95
+        
+    return 250, 30, 100
+
+def _generate_distributed_bar_plot(is_local, both_environments):
+    print("> Generating separate stacked bar plots for Energy and Carbon")
+    
+    components = ["LOSA", "AMST", "TOKY"]
+    site_mapping = _get_site_mapping()
+    
+    methods = []
+    carbon_emissions = {}
+    energy_consumption = {}
+
+    def _read_data(is_local_flag, include_mode_in_label):
+        for method_name, file_prefix in CORRELATION_CONFIG.items():
+            _, _, data = utils.read_experiments_by_prefix(file_prefix, is_local_flag)
+            
+            active_energy_data = data.get("active_energy", {})
+            idle_energy_data = data.get("idle_energy", {})
+            active_carbon_data = {
+                agent: [float(v) * 1000 for v in values] 
+                for agent, values in data.get("active_carbon_emission", {}).items()
+            }
+            idle_carbon_data = {
+                agent: [float(v) * 1000 for v in values] 
+                for agent, values in data.get("idle_carbon_emission", {}).items()
+            }
+            
+            label = f"{method_name}_{_resolve_mode_name(is_local_flag)}" if include_mode_in_label else method_name
+            if label not in methods:
+                methods.append(label)
+                
+            energy_consumption[label] = get_site_metrics(
+                active_energy_data, idle_energy_data, site_mapping, components
+            )
+            carbon_emissions[label] = get_site_metrics(
+                active_carbon_data, idle_carbon_data, site_mapping, components
+            )
+
+    _read_data(is_local, both_environments)
+    if both_environments:
+        _read_data(not is_local, both_environments)
+
+    carbon_totals = {method: sum(values) for method, values in carbon_emissions.items()}
+    energy_totals = {method: sum(values) for method, values in energy_consumption.items()}
+
+    x = np.arange(len(methods))
+    bar_width = 0.5  
+    colors = ["#4C78A8", "#F58518", "#54A24B"]
+
+    max_c, c_lower, c_upper = get_dynamic_limits(carbon_totals)
+    max_e, e_lower, e_upper = get_dynamic_limits(energy_totals)
+
+    # Define the configurations using the dynamic limits
+    plot_configs = [
+        {
+            "name": "carbon",
+            "data": carbon_emissions,
+            "totals": carbon_totals,
+            "ylabel": "Carbon emissions (g CO2e)",
+            "max_raw": max_c,
+            "lower_max": c_lower,
+            "upper_min": c_upper,
+            "hatch": "///"
+        },
+        {
+            "name": "energy",
+            "data": energy_consumption,
+            "totals": energy_totals,
+            "ylabel": "Energy consumption (J)",
+            "max_raw": max_e,
+            "lower_max": e_lower,
+            "upper_min": e_upper,
+            "hatch": "///"
+        }
+    ]
+
+    for config in plot_configs:
+        if config["name"] == "energy":
+            return
+        
+        fig, (ax1, ax2) = plt.subplots(
+            2, 1, sharex=True, figsize=(4.5, 4.0), 
+            gridspec_kw={'height_ratios': [1, 3]}
+        )
+        fig.subplots_adjust(hspace=0.1)
+
+        bottom_vals = np.zeros(len(methods))
+
+        for component_index, location in enumerate(components):
+            vals = [config["data"][method][component_index] for method in methods]
+
+            for ax in (ax1, ax2):
+                ax.bar(
+                    x, vals, bar_width, bottom=bottom_vals,
+                    label=location if ax == ax1 else "", color=colors[component_index], 
+                    edgecolor="white", linewidth=0.8, hatch=config["hatch"], clip_on=True
+                )
+
+            bottom_vals += np.array(vals)
+
+        ax1.set_ylim(config["upper_min"], config["max_raw"] * 1.05)
+        ax2.set_ylim(0, config["lower_max"])
+        
+        for xi, method in zip(x, methods):
+            tot = config["totals"][method]
+            
+            if tot >= config["upper_min"]:
+                target_ax = ax1
+                offset = (config["max_raw"] - config["upper_min"]) * 0.08
+            else:
+                target_ax = ax2
+                offset = config["lower_max"] * 0.03
+                
+            prefix = "C:" if config["name"] == "carbon" else "E:"
+            
+            target_ax.text(
+                xi, tot + offset, 
+                f"{prefix} {tot:.2f}", 
+                ha="center", va="bottom", fontsize=7
+            )
+
+        ax1.spines[["bottom", "top", "right"]].set_visible(False)
+        ax2.spines[["top", "right"]].set_visible(False)
+
+        ax1.xaxis.tick_top()
+        ax1.tick_params(labeltop=False, bottom=False) 
+        ax2.xaxis.tick_bottom()
+
+        d = .025
+        kw = dict(marker=[(-1, -d), (1, d)], markersize=10, linestyle="none", color='k', mec='k', mew=1, clip_on=False)
+        
+        ax1.plot([0], [0], transform=ax1.transAxes, **kw)
+        ax2.plot([0], [1], transform=ax2.transAxes, **kw)
+
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(methods, rotation=18, ha="right", fontsize=8)
+        
+        ax1.set_ylabel(config["ylabel"], fontsize=8)
+        ax1.yaxis.set_label_coords(-0.15, -0.1) 
+
+        ax1.tick_params(axis="y", labelsize=7)
+        ax2.tick_params(axis="y", labelsize=7)
+
+        ax1.grid(axis="y", linestyle=":", alpha=0.45)
+        ax2.grid(axis="y", linestyle=":", alpha=0.45)
+
+        location_legend = ax1.legend(
+            title="Location", frameon=False, fontsize=6.5, 
+            title_fontsize=7, ncols=1, loc="upper center"
+        )
+        ax1.add_artist(location_legend)
+
+        file_name = f"{conf.PLOT_OUTPUT_FOLDER}/bar_{config['name']}_{_resolve_mode_name(is_local, both_environments)}.pdf"
+        
+        try:
+            fig.savefig(file_name, dpi=600, bbox_inches="tight")
+            print(f"Plot saved in {file_name}!")
+        except ValueError as e:
+            print(f"Could not save figure {config['name']} due to layout constraints: {e}")
+        finally:
+            plt.close(fig)
+
+def _generate_bar_plot():
+    methods = ["FedBCD", "Overlap-FedBCD", "FedEncrypt"]
+    environments = ["Local", "FABRIC"]
+
+    columns = [
+        ("execution_time", "Execution Time Change (%)", "ex"),
+        ("total_energy_difference", "Energy Consumption Change (%)", "en")
+    ]
+
+    def _generate(column_name, column_caption, column_prefix):
+        changes = {"Local": [], "FABRIC": []}
+            
+        for is_local, env_name in [(True, "Local"), (False, "FABRIC")]:
+
+            config = CORRELATION_CONFIG
+
+            if not is_local:
+                config = {
+                    "Baseline": "distributed_baseline_experiment",
+                    "FedBCD": "distributed_fed_bcd_experiment",
+                    "Overlap-FedBCD": "distributed_overlap_fed_bcd_experiment",
+                    "FedEncrypt": "distributed_fed_encrypt_experiment"
+                }
+
+            baseline_df, _, _ = utils.read_experiments_by_prefix(config["Baseline"], is_local)
+            baseline_time = baseline_df[column_name].mean()
+            
+            # Calculate the percentage change for each specific method
+            for method_key in ["FedBCD", "Overlap-FedBCD", "FedEncrypt"]:
+                method_df, _, _ = utils.read_experiments_by_prefix(config[method_key], is_local)
+                method_time = method_df[column_name].mean()
+                
+                percentage_change = ((method_time - baseline_time) / baseline_time) * 100
+                changes[env_name].append(percentage_change)
+    
+        x = np.arange(len(methods))
+        width = 0.34
+        colors = ["#4C78A8", "#F58518"]
+    
+        fig, ax = plt.subplots(figsize=(2.45, 2.05), constrained_layout=True)
+    
+        for i, environment in enumerate(environments):
+            offset = (i - 0.5) * width
+    
+            bars = ax.bar(
+                x + offset,
+                changes[environment],
+                width,
+                label=environment,
+                color=colors[i],
+                edgecolor="white",
+                linewidth=0.8,
+            )
+    
+            for bar, value in zip(bars, changes[environment]):
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    value * 0.18,
+                    f"{value:+.2f}%",
+                    ha="center",
+                    va="center",
+                    rotation=90,
+                    fontsize=5.5,
+                    color="white",
+                    clip_on=True,
+                )
+    
+        ax.axhline(0, color="#333333", linewidth=1)
+    
+        ax.set_xticks(x)
+        ax.set_xticklabels(methods, rotation=20, ha="right", fontsize=6)
+        ax.set_ylabel(column_caption, fontsize=7)
+        ax.tick_params(axis="y", labelsize=6)
+    
+        ax.legend(
+            title="Execution environment",
+            frameon=False,
+            fontsize=5.5,
+            title_fontsize=6,
+            ncols=1,
+            loc="upper left",
+        )
+    
+        ax.set_yscale("symlog", linthresh=10, linscale=1)
+        # ax.set_ylim(-100, 500)
+    
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", which="both", linestyle=":", alpha=0.45)
+        ax.set_axisbelow(True)
+    
+        output_path = f"{conf.PLOT_OUTPUT_FOLDER}/{column_prefix}_bar_plot.pdf"
+        fig.savefig(output_path, dpi=600, bbox_inches="tight")
+    
+        plt.show()
+
+    for column_name, column_caption, column_prefix in columns:
+            _generate(column_name, column_caption, column_prefix)
 
 def _set_font_size(plt):
     plt.rcParams.update({'font.size': 16})
@@ -567,6 +996,7 @@ def _resolve_args():
     parser.add_argument("-cor", "--correlation", action='store_true')
     parser.add_argument("-box", "--box-plot", action='store_true')
     parser.add_argument("-par", "--pareto", action='store_true')
+    parser.add_argument("-bar", "--bar-plot", action='store_true')
     utils.add_boolean_argument(parser, conf.F_ARGUMENT)
     utils.add_boolean_argument(parser, conf.BE_ARGUMENT)
 
@@ -576,8 +1006,9 @@ def _resolve_args():
     plot_correlation = args.correlation
     plot_box = args.box_plot
     plot_pareto = args.pareto
+    plot_bar = args.bar_plot
 
-    return plot_sidecar, plot_accuracies, plot_correlation, plot_box, plot_pareto, not args.fabric_mode, args.both_environments
+    return plot_sidecar, plot_accuracies, plot_correlation, plot_box, plot_pareto, not args.fabric_mode, args.both_environments, plot_bar
 
 
 if __name__ == '__main__':
