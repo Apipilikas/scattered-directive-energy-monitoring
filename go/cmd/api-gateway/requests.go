@@ -160,7 +160,7 @@ func requestHandler() http.HandlerFunc {
 func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[string]any, apiReqApproval api.RequestApproval, r *http.Request, requestID string) {
 	logger.Debug("Starting training process...")
 	// Requests may take up to 10 minutes now
-	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 90*time.Minute)
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	// Start a new span with the context that has a timeout
@@ -227,12 +227,14 @@ func startTraining(protoRequest *pb.RequestApproval, dataRequestInterface map[st
 
 }
 
-func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
+func runVFLTrainingRound(dataRequest map[string]any, clients []ClientData, serverAuth string, serverUrl string, learning_rate float64, trainingBacktrack int64) (float64, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	responses := map[string]string{}
 
-	for auth, url := range clients {
+	for _, client := range clients {
+		auth := client.Auth
+		url := client.Url
 
 		logger.Sugar().Info("Sending training request to client: ", auth, " at url: ", url)
 
@@ -308,8 +310,8 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	// }
 	// Collect embeddings from all clients
 	embeddingList := []string{}
-	for approved_client := range clients {
-		if emb, ok := responses[strings.ToLower(approved_client)]; ok {
+	for _, client := range clients {
+		if emb, ok := responses[strings.ToLower(client.Auth)]; ok {
 			embeddingList = append(embeddingList, emb)
 		}
 	}
@@ -349,7 +351,10 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 
 	// TODO: Send the gradients back to the client to update their models
 	index := 0
-	for auth, url := range clients {
+	for _, client := range clients {
+		auth := client.Auth
+		url := client.Url
+
 		wg.Add(1)
 		target := strings.ToLower(auth)
 		endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", url, target)
@@ -359,8 +364,6 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 			"gradients":     gradients[index],
 			"learning_rate": learning_rate,
 		}
-
-		logger.Sugar().Info("Sending gradient descent request to client: ", auth, " at url: ", url)
 
 		index++
 
@@ -387,8 +390,13 @@ func runVFLTrainingRound(dataRequest map[string]any, clients map[string]string, 
 	return accuracy, nil
 }
 
+type ClientData struct {
+	Auth string
+	Url  string
+}
+
 func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]string, jobId string, ctx context.Context, requestID string) []byte {
-	clients := map[string]string{}
+	clients := &[]ClientData{}
 	var serverUrl string
 	var serverAuth string
 	var finalAccuracy float64
@@ -454,7 +462,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			serverUrl = url
 			serverAuth = auth
 		} else if url != "" {
-			clients[auth] = url
+			*clients = append(*clients, ClientData{Auth: auth, Url: url})
 		}
 
 		dataProviders = append(dataProviders, auth)
@@ -509,14 +517,14 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	wg.Wait()
 
 	logger.Sugar().Info("Running VFL for ", cycles, " rounds")
-	for round := range cycles {
-		logger.Sugar().Info("Running VFL training round ", round)
+	for cycle := range cycles {
+		logger.Sugar().Info("Running VFL training round ", cycle)
 
 		numClients := -1          // default value in case of error
 		metadata_accuracy := -1.0 // default value in case of error
 
 		// TODO: Implement policy change request
-		if policy_removal == round {
+		if policy_removal == cycle {
 			logger.Sugar().Info("Sending in the policy change request, removing client 3 from the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented.")
 
@@ -541,7 +549,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		// TODO: Implement policy change request
-		if policy_reintroduction == round {
+		if policy_reintroduction == cycle {
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
@@ -629,23 +637,36 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 				// if len is different I can still allow training to continue with the authorised ones
 				// in that case remove the unauthorised ones from the clients map
 				// or add the authorised ones if they were not present before
-				for auth_provider := range authorizedProviders {
-					if _, ok := msg.AuthorizedProviders[auth_provider]; !ok {
-						logger.Sugar().Debug("Removing unauthorised provider: ", auth_provider, " from the training.")
-						delete(clients, auth_provider)
+				var updatedClients []ClientData
+				for _, client := range *clients {
+					if _, ok := msg.AuthorizedProviders[client.Auth]; !ok {
+						logger.Sugar().Debug("Removing unauthorised provider: ", client.Auth, " from the training.")
+					} else {
+						updatedClients = append(updatedClients, client)
 					}
 				}
+				*clients = updatedClients
 			}
 
 			// maybe we can merge the above if into this one
-			if len(clients) != len(authorizedProviders) {
+			if len(*clients) != len(authorizedProviders) {
 				// add newly authorised clients that are not yet in the clients map
 				for auth_provider, url := range authorizedProviders {
 					if strings.ToLower(auth_provider) != "server" { // exclude server
 						if _, ok := msg.AuthorizedProviders[auth_provider]; ok {
-							if _, exists := clients[auth_provider]; !exists {
+							exists := false
+							for _, c := range *clients {
+								if c.Auth == auth_provider {
+									exists = true
+									break
+								}
+							}
+							if !exists {
 								logger.Sugar().Debug("Adding newly authorised provider: ", auth_provider, " to the training.")
-								clients[auth_provider] = url
+								*clients = append(*clients, ClientData{
+									Auth: auth_provider,
+									Url:  url,
+								})
 							}
 						}
 					}
@@ -653,11 +674,11 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			}
 
 			logger.Sugar().Debug("Clients: ", clients)
-			numClients = len(clients)
+			numClients = len(*clients)
 
 			logger.Sugar().Info("- Sending training request")
-			accuracy, err := runVFLTrainingRound(dataRequest, clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
-			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, " for round ", round)
+			accuracy, err := runVFLTrainingRound(dataRequest, *clients, serverAuth, serverUrl, learning_rate, trainingBacktrack)
+			logger.Sugar().Info("- Intermediate accuracy achieved: ", accuracy, " for round ", cycle)
 			finalAccuracy = accuracy
 			metadata_accuracy = accuracy // store accuracy from metadata for results
 
@@ -670,7 +691,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 		result := map[string]any{
 			"timestamp":   time.Now().Format(time.RFC3339),
-			"train_round": round,
+			"train_round": cycle,
 			"accuracy":    metadata_accuracy,
 			"clients":     numClients,
 		}
