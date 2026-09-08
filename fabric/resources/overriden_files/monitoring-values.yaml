@@ -1,0 +1,24 @@
+cadvisor:
+  image:
+    repository: ghcr.io/google/cadvisor
+    tag: 0.56.2
+  # Resources are required to set to avoid opening too many files error for example
+  resources:
+    requests:
+      cpu: 400m
+      memory: 400Mi
+    limits:
+      cpu: 800m
+      memory: 2000Mi
+  service:
+    port: 8080
+    targetPort: 8080
+prometheus:
+  rbac:
+    enabled: true
+
+loki:
+  image: grafana/loki:2.8.0
+  port: "3100"
+
+node: control

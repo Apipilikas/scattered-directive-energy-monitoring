@@ -1,0 +1,20 @@
+2026-06-16T16:25:25.613055438Z 2026-06-16 16:25:25,610 - main.py - ms_init.py:189 - DEBUG - NewConfiguration vfl-party, 
+2026-06-16T16:25:25.613085154Z job_name: evangelos-pipilikas-00aacca7server1 
+2026-06-16T16:25:25.613088680Z port: 50053,  
+2026-06-16T16:25:25.613091536Z first_service: 1,  
+2026-06-16T16:25:25.613093920Z last_service: 0
+2026-06-16T16:25:25.619306385Z 2026-06-16 16:25:25,619 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50051
+2026-06-16T16:25:25.620305790Z 2026-06-16 16:25:25,619 - main.py - grpc_server.py:162 - INFO - gRPC server started on localhost:50053
+2026-06-16T16:25:25.625075101Z 2026-06-16 16:25:25,624 - main.py - grpc_client.py:78 - INFO - Successfully connected to gRPC server at localhost:50051
+2026-06-16T16:25:25.626430870Z 2026-06-16 16:25:25,626 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50054
+2026-06-16T16:25:25.626446479Z Attempting to instrument while already instrumented
+2026-06-16T16:25:25.628426706Z 2026-06-16 16:25:25,628 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:50054: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:25:25.628434321Z 2026-06-16 16:25:25,628 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:25:26.631836613Z 2026-06-16 16:25:26,629 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:50054: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:25:26.631862603Z 2026-06-16 16:25:26,629 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:25:27.631718593Z 2026-06-16 16:25:27,631 - main.py - grpc_client.py:78 - INFO - Successfully connected to gRPC server at localhost:50054
+2026-06-16T16:25:27.633008437Z 2026-06-16 16:25:27,632 - main.py - rabbit_client.py:71 - WARNING - Attempt : could not establish connection with RabbitMQ: <_InactiveRpcError of RPC that terminated with:
+2026-06-16T16:25:27.633015360Z  status = StatusCode.UNAVAILABLE
+2026-06-16T16:25:27.633018656Z  details = "failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:50051: Failed to connect to remote host: connect: Connection refused (111)"
+2026-06-16T16:25:27.633029246Z  debug_error_string = "UNKNOWN:Error received from peer  {created_time:"2026-06-16T16:25:27.632681189+00:00", grpc_status:14, grpc_message:"failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:50051: Failed to connect to remote host: connect: Connection refused (111)"}"
+2026-06-16T16:25:27.633033394Z >

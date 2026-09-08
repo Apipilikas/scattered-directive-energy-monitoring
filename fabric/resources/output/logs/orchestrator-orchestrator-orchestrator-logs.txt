@@ -1,0 +1,355 @@
+2026-05-27T14:12:45.076505683Z 1.7798911650760899e+09 [33mWARN[0m	/app/pkg/lib/go-grpc.go:38	could not check: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:50051: connect: connection refused"
+2026-05-27T14:12:45.076554115Z 1.7798911650761566e+09 [35mDEBUG[0m	/app/pkg/lib/go-grpc.go:44	Sleep 1 second
+2026-05-27T14:12:46.079624080Z 1.7798911660775836e+09 [33mWARN[0m	/app/pkg/lib/go-grpc.go:38	could not check: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:50051: connect: connection refused"
+2026-05-27T14:12:46.079649629Z 1.7798911660790393e+09 [35mDEBUG[0m	/app/pkg/lib/go-grpc.go:44	Sleep 1 second
+2026-05-27T14:12:47.080847750Z 1.7798911670804975e+09 [33mWARN[0m	/app/pkg/lib/go-grpc.go:38	could not check: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:50051: connect: connection refused"
+2026-05-27T14:12:47.081560286Z 1.779891167081156e+09 [35mDEBUG[0m	/app/pkg/lib/go-grpc.go:44	Sleep 1 second
+2026-05-27T14:12:48.087593605Z 1.77989116808692e+09 [35mDEBUG[0m	/app/pkg/lib/go-grpc.go:51	returning conn GetGrpcConnection
+2026-05-27T14:12:48.089400708Z 1.7798911680889735e+09 [35mDEBUG[0m	/app/pkg/lib/go-grpc.go:60	Initializing sidecar messaging with: service_name:"orchestrator-in" routing_key:"orchestrator-in"
+2026-05-27T14:12:48.134943048Z 1.7798911681346557e+09 [34mINFO[0m	/app/pkg/lib/consume.go:15	Starting to consume with retry (StartConsumingWithRetry)
+2026-05-27T14:12:48.135439405Z 1.7798911681348336e+09 [34mINFO[0m	/app/pkg/lib/consume.go:30	Starting to consume (startConsuming)
+2026-05-27T14:12:48.135935262Z 1.779891168135758e+09 [35mDEBUG[0m	/app/cmd/orchestrator/etcd_config.go:13	Start registerPolicyEnforcerConfiguration
+2026-05-27T14:12:48.137342870Z 1.7798911681353471e+09 [34mINFO[0m	/app/cmd/orchestrator/main.go:84	/api/v1
+2026-05-27T14:12:48.137351947Z 1.7798911681369646e+09 [34mINFO[0m	/app/cmd/orchestrator/main.go:88	Starting http server on: 	{"port": ":8080"}
+2026-05-27T14:23:33.815665330Z 1.7798918138151581e+09 [34mINFO[0m	/app/pkg/api/http_utils.go:24	Received request	{"method": "GET", "path": "/api/v1/policyEnforcer"}
+2026-05-27T14:23:33.815696109Z trimmedPath: 
+2026-05-27T14:23:33.815699755Z req.URL.Path: /policyEnforcer
+2026-05-27T14:23:33.815702871Z 1.7798918138155138e+09 [34mINFO[0m	/app/pkg/api/http.go:136	Start GetPrefixListEtcd
+2026-05-27T14:31:00.392454611Z 1.7798922603918967e+09 [34mINFO[0m	/app/pkg/api/http_utils.go:24	Received request	{"method": "GET", "path": "/api/v1/policyEnforcer"}
+2026-05-27T14:31:00.392486061Z trimmedPath: 
+2026-05-27T14:31:00.392489688Z req.URL.Path: /policyEnforcer
+2026-05-27T14:31:00.392492713Z 1.7798922603920102e+09 [34mINFO[0m	/app/pkg/api/http.go:136	Start GetPrefixListEtcd
+2026-05-27T14:31:38.869517454Z 1.7798922988690495e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:31:38.869536671Z 1.7798922988692558e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:31:38.869783366Z 1.7798922988695445e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:31:38.878549839Z 1.7798922988782673e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:31:38.878725480Z 1.7798922988786047e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientthree
+2026-05-27T14:31:38.883243425Z 1.779892298883009e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientthree
+2026-05-27T14:31:38.883252121Z 1.7798922988830452e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:31:38.886922127Z 1.7798922988867793e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:31:38.886929681Z 1.779892298886806e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:31:38.890986927Z 1.7798922988908045e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:31:38.890995193Z 1.7798922988908393e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:31:38.890997507Z 1.779892298890863e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:31:38.891781076Z 1.7798922988916078e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clientthree" value:{archetypes:"computeToData" compute_providers:"clientthree"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clientthree" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:31:38.891792287Z 1.7798922988916361e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:31:38.891794431Z 1.779892298891642e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:31:38.891796224Z 1.7798922988916469e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:31:38.891797737Z 1.7798922988916502e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:31:38.891799200Z 1.7798922988916535e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientthree
+2026-05-27T14:31:38.891801504Z 1.779892298891664e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:31:38.896363062Z 1.7798922988961654e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:31:38.896381868Z 1.7798922988962383e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:31:38.896383972Z 1.779892298896269e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:31:38.897364702Z 1.779892298896275e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:31:38.900437470Z 1.7798922989001377e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:31:38.901950907Z 1.7798922989018228e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientthree
+2026-05-27T14:31:38.902940123Z 1.7798922989027722e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:31:38.905394785Z 1.779892298905233e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:31:38.914091575Z 1.7798922989139194e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:31:56.777217330Z 1.7798923167764635e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:31:56.777231286Z 1.779892316776552e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:31:56.780667261Z 1.7798923167799337e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:31:56.788534607Z 1.7798923167881267e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:31:56.788545798Z 1.7798923167881436e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:31:56.793376443Z 1.7798923167931266e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:31:56.794618577Z 1.779892316794388e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:31:56.799766351Z 1.779892316799574e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:31:56.800486630Z 1.7798923168003325e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientthree
+2026-05-27T14:31:56.805744432Z 1.7798923168052518e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientthree
+2026-05-27T14:31:56.805753760Z 1.7798923168052905e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:31:56.805756986Z 1.779892316805303e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:31:56.805765391Z 1.7798923168054607e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clientthree" value:{archetypes:"computeToData" compute_providers:"clientthree"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clientthree" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:31:56.805770220Z 1.7798923168054733e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:31:56.805773116Z 1.779892316805479e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientthree
+2026-05-27T14:31:56.805776102Z 1.7798923168054838e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:31:56.805778726Z 1.7798923168054874e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:31:56.805781321Z 1.7798923168054903e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:31:56.805784277Z 1.7798923168055162e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:31:56.809921945Z 1.77989231680974e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:31:56.809959396Z 1.7798923168097787e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:31:56.809961660Z 1.7798923168097858e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:31:56.809963744Z 1.779892316809795e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:31:56.813798390Z 1.7798923168136406e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:31:56.816650932Z 1.779892316816074e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:31:56.818291489Z 1.7798923168179476e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:31:56.819540676Z 1.7798923168192675e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientthree
+2026-05-27T14:31:56.831944051Z 1.779892316831475e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:31:57.089880224Z 1.7798923170894268e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:31:57.089890955Z 1.779892317089534e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:31:57.089893099Z 1.7798923170895908e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:31:57.099010012Z 1.7798923170986414e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:31:57.099018348Z 1.7798923170986886e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientthree
+2026-05-27T14:31:57.107682508Z 1.7798923171074526e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientthree
+2026-05-27T14:31:57.107690724Z 1.7798923171074903e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:31:57.112499217Z 1.7798923171121364e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:31:57.112509056Z 1.7798923171121583e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:31:57.125920734Z 1.7798923171254177e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:31:57.125928258Z 1.7798923171254373e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:31:57.125930773Z 1.7798923171254554e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:31:57.125935852Z 1.7798923171255772e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clientthree" value:{archetypes:"computeToData" compute_providers:"clientthree"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clientthree" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:31:57.125947855Z 1.779892317125586e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:31:57.125949548Z 1.7798923171255908e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:31:57.125951381Z 1.7798923171255953e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:31:57.125953175Z 1.779892317125599e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:31:57.125954688Z 1.7798923171256022e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientthree
+2026-05-27T14:31:57.125956481Z 1.7798923171256058e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:31:57.131593629Z 1.7798923171312208e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:31:57.132589378Z 1.7798923171319516e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:31:57.133223554Z 1.7798923171329672e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:31:57.133892817Z 1.7798923171334827e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:31:57.145969967Z 1.7798923171455252e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:31:57.148990227Z 1.7798923171487978e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:31:57.158798725Z 1.7798923171582801e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientthree
+2026-05-27T14:31:57.161135095Z 1.7798923171608746e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:31:57.171156034Z 1.7798923171684606e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:31:57.594736733Z 1.779892317594147e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:31:57.594753795Z 1.7798923175945833e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:31:57.595533246Z 1.779892317595152e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:31:57.601307322Z 1.7798923176010468e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:31:57.601316690Z 1.779892317601078e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:31:57.605472131Z 1.7798923176051028e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:31:57.606036115Z 1.779892317605677e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientthree
+2026-05-27T14:31:57.610324708Z 1.7798923176101296e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientthree
+2026-05-27T14:31:57.610719904Z 1.779892317610572e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:31:57.615671147Z 1.7798923176154022e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:31:57.615705842Z 1.7798923176154447e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:31:57.615708377Z 1.779892317615465e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:31:57.616336373Z 1.7798923176159716e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clientthree" value:{archetypes:"computeToData" compute_providers:"clientthree"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clientthree" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:31:57.616344748Z 1.7798923176160026e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:31:57.616347193Z 1.7798923176160085e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:31:57.616349678Z 1.779892317616013e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:31:57.616352002Z 1.7798923176160173e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientthree
+2026-05-27T14:31:57.616354837Z 1.7798923176160219e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:31:57.616367481Z 1.779892317616026e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:31:57.621474148Z 1.7798923176209016e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:31:57.621483365Z 1.7798923176209319e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:31:57.621485649Z 1.7798923176209376e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:31:57.621487533Z 1.7798923176209435e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:31:57.631968902Z 1.7798923176302807e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientthree
+2026-05-27T14:31:57.640263875Z 1.7798923176344652e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:31:57.641846140Z 1.7798923176404443e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:31:57.650625978Z 1.7798923176450667e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:31:57.655698590Z 1.7798923176552556e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:31:57.798331112Z 1.7798923177980218e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:31:57.798843549Z 1.7798923177984521e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:31:57.799310771Z 1.7798923177989442e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:31:57.806126401Z 1.7798923178058841e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:31:57.806134096Z 1.7798923178058996e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:31:57.812878523Z 1.7798923178124013e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:31:57.812885947Z 1.779892317812415e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientthree
+2026-05-27T14:31:57.826508414Z 1.779892317826216e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientthree
+2026-05-27T14:31:57.826515807Z 1.7798923178262317e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:31:57.831011290Z 1.7798923178305757e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:31:57.831018944Z 1.7798923178305924e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:31:57.831021119Z 1.7798923178306007e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:31:57.831024826Z 1.7798923178306563e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clientthree" value:{archetypes:"computeToData" compute_providers:"clientthree"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clientthree" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:31:57.831026820Z 1.7798923178306632e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:31:57.831028423Z 1.7798923178306673e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:31:57.831030106Z 1.779892317830671e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:31:57.831031629Z 1.7798923178306744e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientthree
+2026-05-27T14:31:57.831033443Z 1.7798923178306773e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:31:57.831035046Z 1.7798923178306801e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:31:57.834556380Z 1.7798923178343208e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:31:57.834564696Z 1.779892317834337e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:31:57.834566629Z 1.7798923178343425e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:31:57.834577530Z 1.7798923178343477e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:31:57.838324541Z 1.779892317837903e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:31:57.839101256Z 1.7798923178389366e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:31:57.842084436Z 1.7798923178417585e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientthree
+2026-05-27T14:31:57.845081030Z 1.7798923178445902e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:31:57.851123342Z 1.779892317850973e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:31:58.654217586Z 1.779892318653883e+09 [34mINFO[0m	/app/pkg/api/http_utils.go:24	Received request	{"method": "PUT", "path": "/api/v1/policyEnforcer"}
+2026-05-27T14:31:58.682382434Z 1.7798923186820796e+09 [34mINFO[0m	/app/pkg/api/http.go:217	Added /policyEnforcer/agreements/clientthree
+2026-05-27T14:32:00.525663607Z 1.7798923205253646e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:00.526226569Z 1.7798923205260415e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:00.527215185Z 1.779892320526831e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:00.532706687Z 1.7798923205324965e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:00.532976386Z 1.779892320532804e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:00.542809070Z 1.7798923205426672e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:00.543689643Z 1.779892320543336e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:00.556810562Z 1.7798923205565002e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:00.556818236Z 1.7798923205565891e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:00.557061325Z 1.7798923205566144e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:00.557067907Z 1.77989232055682e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:00.557070262Z 1.7798923205568347e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:00.557072175Z 1.7798923205568395e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:00.557087354Z 1.779892320556844e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:00.557089067Z 1.779892320556847e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:00.557090981Z 1.7798923205568507e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:00.575696610Z 1.7798923205753734e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:00.575706880Z 1.7798923205755312e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:00.575888102Z 1.779892320575768e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:00.576613781Z 1.7798923205762427e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:00.588148889Z 1.779892320587691e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:00.591642100Z 1.7798923205914094e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:00.604401939Z 1.7798923206041152e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:00.613771959Z 1.7798923206135604e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:00.992433968Z 1.7798923209921062e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:00.992858539Z 1.7798923209922807e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:00.992883687Z 1.7798923209923513e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:01.010745122Z 1.779892321010525e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:01.012812553Z 1.7798923210122707e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:01.027757435Z 1.779892321027607e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:01.028274150Z 1.7798923210280943e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:01.045032383Z 1.7798923210446544e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:01.045040198Z 1.7798923210446818e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:01.045042332Z 1.7798923210446987e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:01.045045398Z 1.7798923210447829e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:01.045059684Z 1.7798923210447917e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:01.045061788Z 1.7798923210447972e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:01.045063652Z 1.7798923210448012e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:01.045065135Z 1.7798923210448048e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:01.045066658Z 1.779892321044808e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:01.060942586Z 1.7798923210606503e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:01.060951513Z 1.7798923210607233e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:01.060953607Z 1.779892321060731e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:01.060955380Z 1.7798923210607426e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:01.078305480Z 1.7798923210780485e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:01.084700448Z 1.7798923210844114e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:01.091258083Z 1.7798923210908482e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:01.180024077Z 1.7798923211381507e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:01.534266375Z 1.7798923215340123e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:01.536477077Z 1.7798923215354207e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:01.538066907Z 1.7798923215372748e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:01.545928312Z 1.7798923215457296e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:01.545937770Z 1.7798923215458076e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:01.557638720Z 1.7798923215573978e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:01.557646855Z 1.7798923215574243e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:01.578252699Z 1.7798923215779285e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:01.578264932Z 1.7798923215779848e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:01.578267918Z 1.7798923215780082e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:01.578691908Z 1.7798923215781314e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:01.578714490Z 1.779892321578156e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:01.578717856Z 1.779892321578162e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:01.578720792Z 1.7798923215781662e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:01.578723216Z 1.7798923215781696e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:01.580604867Z 1.7798923215781739e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:01.597740924Z 1.779892321596769e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:01.597748468Z 1.7798923215967972e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:01.597750602Z 1.7798923215968027e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:01.597752285Z 1.7798923215968091e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:01.633065322Z 1.7798923216326563e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:01.639038784Z 1.779892321637642e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:01.645909820Z 1.7798923216453247e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:01.668729101Z 1.7798923216679943e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:01.957473993Z 1.779892321957079e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:01.957485715Z 1.7798923219572034e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:01.957488019Z 1.7798923219572403e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:01.992932615Z 1.7798923219923973e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:01.992943736Z 1.7798923219924319e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:02.007826951Z 1.7798923220076003e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:02.007834555Z 1.779892322007629e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:02.052536429Z 1.7798923220523274e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:02.052552980Z 1.7798923220523639e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:02.052567688Z 1.7798923220523875e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:02.052570143Z 1.7798923220524445e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:02.052571856Z 1.7798923220524514e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:02.052573429Z 1.7798923220524561e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:02.052575032Z 1.7798923220524619e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:02.052577186Z 1.7798923220524657e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:02.052970829Z 1.7798923220524688e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:02.083650753Z 1.7798923220835145e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:02.084877368Z 1.7798923220845544e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:02.085805590Z 1.7798923220854714e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:02.085812843Z 1.7798923220855732e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:02.101450382Z 1.7798923221011744e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:02.104697429Z 1.7798923221045287e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:02.108478945Z 1.7798923221076975e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:02.113680711Z 1.7798923221134362e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:02.393058637Z 1.7798923223927178e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:02.393072353Z 1.7798923223928118e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:02.393074507Z 1.7798923223928707e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:02.424674417Z 1.7798923224244852e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:02.425299947Z 1.7798923224251637e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:02.470522825Z 1.7798923224676323e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:02.470547131Z 1.7798923224700072e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:02.478978091Z 1.7798923224783702e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:02.490296108Z 1.7798923224895468e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:02.490316747Z 1.779892322489605e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:02.491105366Z 1.779892322490402e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:02.491116346Z 1.7798923224904318e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:02.491119141Z 1.7798923224904382e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:02.491120975Z 1.779892322490443e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:02.491122728Z 1.7798923224904466e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:02.491124391Z 1.7798923224904504e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:02.515312776Z 1.7798923225148892e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:02.515337432Z 1.7798923225149424e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:02.515340067Z 1.7798923225149488e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:02.515342622Z 1.779892322514969e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:02.567498372Z 1.779892322566795e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:02.571915256Z 1.7798923225717392e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:02.573784003Z 1.7798923225732982e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:02.576820343Z 1.7798923225765865e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:03.008232794Z 1.7798923230076568e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:03.008249445Z 1.779892323007757e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:03.008251579Z 1.7798923230078218e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:03.012743566Z 1.7798923230124764e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:03.013644597Z 1.7798923230134687e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:03.034592797Z 1.7798923230344594e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:03.035329787Z 1.7798923230350196e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:03.047416575Z 1.7798923230467849e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:03.047436002Z 1.7798923230468032e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:03.047442825Z 1.7798923230468442e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:03.047447283Z 1.7798923230469594e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:03.047451040Z 1.7798923230469692e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:03.047453084Z 1.7798923230469737e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:03.047454897Z 1.779892323046978e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:03.047456981Z 1.779892323046982e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:03.047458745Z 1.7798923230469856e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:03.053002556Z 1.7798923230527604e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:03.053695764Z 1.7798923230534372e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:03.054132688Z 1.7798923230539796e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:03.054895458Z 1.779892323054546e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:03.068729924Z 1.7798923230683851e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:03.072309719Z 1.779892323071965e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:03.083593853Z 1.7798923230832732e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:03.110253601Z 1.7798923231099923e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:03.460979044Z 1.7798923234602857e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:03.460997097Z 1.7798923234604108e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:03.461000223Z 1.7798923234604375e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:03.474534824Z 1.779892323473849e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:03.474828839Z 1.779892323474601e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:03.484891187Z 1.7798923234845977e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:03.484902418Z 1.7798923234846992e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:03.492442326Z 1.779892323492301e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:03.493129282Z 1.7798923234927785e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:03.494471535Z 1.779892323493288e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:03.494482977Z 1.779892323493807e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:03.496461410Z 1.7798923234960065e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:03.496482100Z 1.7798923234961252e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:03.496485186Z 1.7798923234961307e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:03.496488031Z 1.779892323496134e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:03.496490165Z 1.7798923234961371e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:03.505264051Z 1.7798923235048954e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:03.505275713Z 1.7798923235049427e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:03.505278388Z 1.7798923235049987e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:03.505285161Z 1.7798923235050106e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:03.511747726Z 1.7798923235115244e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:03.515170705Z 1.779892323514823e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:03.518204791Z 1.7798923235174804e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:03.523638023Z 1.779892323523319e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages
+2026-05-27T14:32:03.832945108Z 1.779892323831999e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:12	start orchestrator handleIncomingMessages
+2026-05-27T14:32:03.832957001Z 1.779892323832034e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:19	Type:	{"MessageType": "validationResponse"}
+2026-05-27T14:32:03.832958965Z 1.77989232383206e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clientone
+2026-05-27T14:32:03.848952625Z 1.7798923238486857e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clientone
+2026-05-27T14:32:03.848961592Z 1.779892323848701e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: clienttwo
+2026-05-27T14:32:03.862399479Z 1.779892323862105e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: clienttwo
+2026-05-27T14:32:03.863318835Z 1.7798923238629e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:17	key: server
+2026-05-27T14:32:03.869432211Z 1.779892323869035e+09 [35mDEBUG[0m	/app/cmd/orchestrator/get_authorized_providers.go:29	Added agent: server
+2026-05-27T14:32:03.869440487Z 1.779892323869049e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:24	Entering startCompositionRequest
+2026-05-27T14:32:03.869442731Z 1.7798923238690572e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:201	starting chooseArchetype
+2026-05-27T14:32:03.869445466Z 1.7798923238691194e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:202	type:"validationResponse" request_type:"vflTrainModelRequest" valid_dataproviders:{key:"clientone" value:{archetypes:"computeToData" compute_providers:"clientone"}} valid_dataproviders:{key:"clienttwo" value:{archetypes:"computeToData" compute_providers:"clienttwo"}} valid_dataproviders:{key:"server" value:{archetypes:"computeToData" compute_providers:"server"}} invalid_dataproviders:"clientthree" auth:{access_token:"1234" refresh_token:"1234"} user:{id:"1234" user_name:"evangelos.pipilikas@student.uva.nl"} request_approved:true valid_archetypes:{user_name:"evangelos.pipilikas@student.uva.nl" archetypes:{key:"clientone" value:{archetypes:"computeToData"}} archetypes:{key:"clienttwo" value:{archetypes:"computeToData"}} archetypes:{key:"server" value:{archetypes:"computeToData"}}}
+2026-05-27T14:32:03.869448131Z 1.7798923238691268e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:203	length options: 0
+2026-05-27T14:32:03.869449724Z 1.779892323869131e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clientone
+2026-05-27T14:32:03.869459262Z 1.779892323869135e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s clienttwo
+2026-05-27T14:32:03.869460865Z 1.7798923238691385e+09 [35mDEBUG[0m	/app/cmd/orchestrator/composition_request.go:206	validDataprovider: %s server
+2026-05-27T14:32:03.869462458Z 1.7798923238691416e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:141	Start pickArchetypeBasedOnWeight
+2026-05-27T14:32:03.877699391Z 1.779892323877148e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{computeToData dataProvider requestor 100}
+2026-05-27T14:32:03.877707777Z 1.7798923238772583e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{dataThroughTtp other requestor 200}
+2026-05-27T14:32:03.877709961Z 1.7798923238772655e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:159	&{trainThroughClients other requestor 50}
+2026-05-27T14:32:03.878361961Z 1.779892323877278e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:33	Chosen archetype: computeToData
+2026-05-27T14:32:03.891377963Z 1.7798923238902545e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clientone
+2026-05-27T14:32:03.894235235Z 1.779892323893918e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider clienttwo
+2026-05-27T14:32:03.901422488Z 1.7798923239012382e+09 [34mINFO[0m	/app/cmd/orchestrator/composition_request.go:69	Sending composition request for dataProvider server
+2026-05-27T14:32:03.916406843Z 1.779892323915483e+09 [35mDEBUG[0m	/app/cmd/orchestrator/consume.go:60	end orchestrator handleIncomingMessages

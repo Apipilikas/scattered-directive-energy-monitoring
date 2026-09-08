@@ -1,0 +1,145 @@
+2026-06-16T16:24:20.200218761Z 2026-06-16 16:24:20,199 - main.py - ms_init.py:189 - DEBUG - NewConfiguration vfl-aggregator, 
+2026-06-16T16:24:20.200267243Z job_name: evangelos-pipilikas-00aacca7aggregator1 
+2026-06-16T16:24:20.200269637Z port: 50055,  
+2026-06-16T16:24:20.200271952Z first_service: 0,  
+2026-06-16T16:24:20.200273595Z last_service: 1
+2026-06-16T16:24:20.211380187Z 2026-06-16 16:24:20,210 - main.py - grpc_server.py:162 - INFO - gRPC server started on localhost:50055
+2026-06-16T16:24:20.212717893Z 2026-06-16 16:24:20,212 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50051
+2026-06-16T16:24:20.216414721Z 2026-06-16 16:24:20,215 - main.py - grpc_client.py:78 - INFO - Successfully connected to gRPC server at localhost:50051
+2026-06-16T16:24:20.615653378Z 2026-06-16 16:24:20,614 - main.py - grpc_server.py:56 - INFO - Received health check request
+2026-06-16T16:24:21.163914157Z 2026-06-16 16:24:21,163 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:21.164252106Z 2026-06-16 16:24:21,163 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:21.164258708Z 2026-06-16 16:24:21,163 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:21.164260852Z 2026-06-16 16:24:21,163 - main.py - main.py:366 - INFO - Received request: vflPingRequest. This is the aggregator.
+2026-06-16T16:24:21.164262896Z 2026-06-16 16:24:21,163 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:22.173423627Z 2026-06-16 16:24:22,173 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:22.173432523Z 2026-06-16 16:24:22,173 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:22.173439837Z 2026-06-16 16:24:22,173 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:22.173748760Z 2026-06-16 16:24:22,173 - main.py - main.py:366 - INFO - Received request: vflInitializeRequest. This is the aggregator.
+2026-06-16T16:24:22.175261275Z 2026-06-16 16:24:22,174 - main.py - main.py:198 - INFO - Old parties: []
+2026-06-16T16:24:22.175288426Z 2026-06-16 16:24:22,174 - main.py - main.py:201 - INFO - Updated parties: ['clientone', 'clienttwo', 'clientthree']
+2026-06-16T16:24:22.175437107Z 2026-06-16 16:24:22,175 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:24.773281044Z 2026-06-16 16:24:24,772 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:24.773291003Z 2026-06-16 16:24:24,772 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:24.773293167Z 2026-06-16 16:24:24,772 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:24.774537856Z 2026-06-16 16:24:24,774 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:26.698571073Z 2026-06-16 16:24:26,698 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:27.021593495Z 2026-06-16 16:24:27,021 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:27.021767153Z 2026-06-16 16:24:27,021 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:27.021771411Z 2026-06-16 16:24:27,021 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:27.024315824Z 2026-06-16 16:24:27,023 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:28.117662313Z 2026-06-16 16:24:28,117 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:28.926341884Z 2026-06-16 16:24:28,925 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:28.926352614Z 2026-06-16 16:24:28,925 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:28.926355109Z 2026-06-16 16:24:28,925 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:28.926359237Z 2026-06-16 16:24:28,925 - main.py - main.py:366 - INFO - Received request: vflInitializeRequest. This is the aggregator.
+2026-06-16T16:24:28.926881612Z 2026-06-16 16:24:28,926 - main.py - main.py:198 - INFO - Old parties: ['clientone', 'clienttwo', 'clientthree']
+2026-06-16T16:24:28.926885690Z 2026-06-16 16:24:28,926 - main.py - main.py:201 - INFO - Updated parties: ['clientone', 'clienttwo']
+2026-06-16T16:24:28.927293009Z 2026-06-16 16:24:28,927 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:31.367354933Z 2026-06-16 16:24:31,366 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:31.367599424Z 2026-06-16 16:24:31,367 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:31.367603422Z 2026-06-16 16:24:31,367 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:31.369037559Z 2026-06-16 16:24:31,368 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:33.094792515Z 2026-06-16 16:24:33,094 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:33.424434853Z 2026-06-16 16:24:33,424 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:33.424443128Z 2026-06-16 16:24:33,424 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:33.424715502Z 2026-06-16 16:24:33,424 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:33.425766526Z 2026-06-16 16:24:33,425 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:34.179929790Z 2026-06-16 16:24:34,179 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:36.672627874Z 2026-06-16 16:24:36,672 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:36.672643614Z 2026-06-16 16:24:36,672 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:36.672748401Z 2026-06-16 16:24:36,672 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:36.673271910Z 2026-06-16 16:24:36,673 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:38.291188987Z 2026-06-16 16:24:38,290 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:38.561409459Z 2026-06-16 16:24:38,560 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:38.561419438Z 2026-06-16 16:24:38,561 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:38.561421391Z 2026-06-16 16:24:38,561 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:38.562666902Z 2026-06-16 16:24:38,562 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:39.263502443Z 2026-06-16 16:24:39,262 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:40.086406653Z 2026-06-16 16:24:40,084 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:40.086420169Z 2026-06-16 16:24:40,085 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:40.086422533Z 2026-06-16 16:24:40,085 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:40.086425981Z 2026-06-16 16:24:40,085 - main.py - main.py:366 - INFO - Received request: vflInitializeRequest. This is the aggregator.
+2026-06-16T16:24:40.087790486Z 2026-06-16 16:24:40,087 - main.py - main.py:198 - INFO - Old parties: ['clientone', 'clienttwo']
+2026-06-16T16:24:40.087800715Z 2026-06-16 16:24:40,087 - main.py - main.py:201 - INFO - Updated parties: ['clienttwo', 'clientone', 'clientthree']
+2026-06-16T16:24:40.088243241Z 2026-06-16 16:24:40,087 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:42.662965646Z 2026-06-16 16:24:42,662 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:42.662997435Z 2026-06-16 16:24:42,662 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:42.663004749Z 2026-06-16 16:24:42,662 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:42.665665841Z 2026-06-16 16:24:42,665 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:44.617720644Z 2026-06-16 16:24:44,617 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:44.913594285Z 2026-06-16 16:24:44,913 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:44.913607589Z 2026-06-16 16:24:44,913 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:44.913612339Z 2026-06-16 16:24:44,913 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:44.917832444Z 2026-06-16 16:24:44,917 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:45.859010975Z 2026-06-16 16:24:45,858 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:48.462647785Z 2026-06-16 16:24:48,462 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:48.462656952Z 2026-06-16 16:24:48,462 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:48.462658776Z 2026-06-16 16:24:48,462 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:48.463688289Z 2026-06-16 16:24:48,463 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:50.406140388Z 2026-06-16 16:24:50,405 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:50.681563631Z 2026-06-16 16:24:50,681 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:50.681574812Z 2026-06-16 16:24:50,681 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:50.681577036Z 2026-06-16 16:24:50,681 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:50.683157308Z 2026-06-16 16:24:50,682 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:51.663266860Z 2026-06-16 16:24:51,662 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:54.861841949Z 2026-06-16 16:24:54,861 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:54.862039301Z 2026-06-16 16:24:54,861 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:54.862042557Z 2026-06-16 16:24:54,861 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:54.862651716Z 2026-06-16 16:24:54,862 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:56.825451403Z 2026-06-16 16:24:56,825 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:24:57.109320596Z 2026-06-16 16:24:57,108 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:24:57.109330695Z 2026-06-16 16:24:57,109 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:24:57.109332919Z 2026-06-16 16:24:57,109 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:24:57.110233299Z 2026-06-16 16:24:57,109 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:24:58.105217197Z 2026-06-16 16:24:58,104 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:00.702683835Z 2026-06-16 16:25:00,702 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:00.702699746Z 2026-06-16 16:25:00,702 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:00.702975506Z 2026-06-16 16:25:00,702 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:00.703436576Z 2026-06-16 16:25:00,703 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:02.693420764Z 2026-06-16 16:25:02,692 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:02.997547243Z 2026-06-16 16:25:02,995 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:02.997579714Z 2026-06-16 16:25:02,995 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:02.997581908Z 2026-06-16 16:25:02,995 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:02.997584242Z 2026-06-16 16:25:02,996 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:04.057295332Z 2026-06-16 16:25:04,056 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:06.796254305Z 2026-06-16 16:25:06,795 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:06.796277118Z 2026-06-16 16:25:06,795 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:06.796283280Z 2026-06-16 16:25:06,795 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:06.796953675Z 2026-06-16 16:25:06,796 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:08.762548059Z 2026-06-16 16:25:08,761 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:09.070440516Z 2026-06-16 16:25:09,070 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:09.070574580Z 2026-06-16 16:25:09,070 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:09.070579880Z 2026-06-16 16:25:09,070 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:09.071032544Z 2026-06-16 16:25:09,070 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:10.220369680Z 2026-06-16 16:25:10,219 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:12.846503142Z 2026-06-16 16:25:12,846 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:12.846514573Z 2026-06-16 16:25:12,846 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:12.846633568Z 2026-06-16 16:25:12,846 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:12.847215968Z 2026-06-16 16:25:12,846 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:14.793095983Z 2026-06-16 16:25:14,792 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:15.081293627Z 2026-06-16 16:25:15,080 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:15.081303335Z 2026-06-16 16:25:15,080 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:15.081305870Z 2026-06-16 16:25:15,080 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:15.081671891Z 2026-06-16 16:25:15,081 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:16.177014886Z 2026-06-16 16:25:16,176 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:18.732168577Z 2026-06-16 16:25:18,731 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:18.732529408Z 2026-06-16 16:25:18,732 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:18.732533456Z 2026-06-16 16:25:18,732 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:18.733337985Z 2026-06-16 16:25:18,733 - main.py - main.py:366 - INFO - Received request: vflFeaturesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:20.709456216Z 2026-06-16 16:25:20,709 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:20.960297220Z 2026-06-16 16:25:20,959 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:20.960305055Z 2026-06-16 16:25:20,959 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:20.960306838Z 2026-06-16 16:25:20,959 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:20.960308912Z 2026-06-16 16:25:20,959 - main.py - main.py:366 - INFO - Received request: vflSamplesDecryptionRequest. This is the aggregator.
+2026-06-16T16:25:22.138398821Z 2026-06-16 16:25:22,137 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:22.346399265Z 2026-06-16 16:25:22,346 - main.py - grpc_server.py:97 - DEBUG - Starting MicroserviceServicer grpc_server.py/SendData: evangelos-pipilikas-00aacca7aggregator1
+2026-06-16T16:25:22.346565098Z 2026-06-16 16:25:22,346 - main.py - grpc_server.py:109 - DEBUG - msComm type: <class 'microserviceCommunication_pb2.MicroserviceCommunication'>
+2026-06-16T16:25:22.346568053Z 2026-06-16 16:25:22,346 - main.py - main.py:345 - INFO - Received original request type: vflTrainModelRequest
+2026-06-16T16:25:22.346656069Z 2026-06-16 16:25:22,346 - main.py - main.py:366 - INFO - Received request: vflShutdownRequest. This is the aggregator.
+2026-06-16T16:25:22.346658734Z 2026-06-16 16:25:22,346 - main.py - grpc_client.py:139 - DEBUG - Sending message to <microserviceCommunication_pb2_grpc.MicroserviceStub object at 0x72a1a4f9d250>
+2026-06-16T16:25:22.350452014Z 2026-06-16 16:25:22,349 - main.py - grpc_server.py:181 - INFO - Stopping gRPC server...
+2026-06-16T16:25:22.354416567Z 2026-06-16 16:25:22,353 - main.py - grpc_server.py:167 - INFO - Server stopped
+2026-06-16T16:25:22.355594391Z 2026-06-16 16:25:22,355 - main.py - grpc_server.py:186 - INFO - gRPC server stopped
+2026-06-16T16:25:22.356003914Z 2026-06-16 16:25:22,355 - main.py - grpc_client.py:52 - DEBUG - Closed gRPC channel
+2026-06-16T16:25:24.358015479Z 2026-06-16 16:25:24,357 - main.py - main.py:414 - DEBUG - Exiting vfl-aggregator
