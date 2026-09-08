@@ -1,0 +1,36 @@
+2026-06-16T16:27:17.926175867Z 2026-06-16 16:27:17,925 - main.py - ms_init.py:189 - DEBUG - NewConfiguration vfl-authority, 
+2026-06-16T16:27:17.926203349Z job_name: evangelos-pipilikas-00aacca7authority1 
+2026-06-16T16:27:17.926205843Z port: 50054,  
+2026-06-16T16:27:17.926207897Z first_service: 0,  
+2026-06-16T16:27:17.926209490Z last_service: 0
+2026-06-16T16:27:17.933543202Z 2026-06-16 16:27:17,932 - main.py - grpc_client.py:72 - DEBUG - Try connecting to: localhost:50055
+2026-06-16T16:27:17.934728279Z 2026-06-16 16:27:17,934 - main.py - grpc_server.py:162 - INFO - gRPC server started on localhost:50054
+2026-06-16T16:27:17.935792788Z 2026-06-16 16:27:17,935 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:17.935801454Z 2026-06-16 16:27:17,935 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:18.936710725Z 2026-06-16 16:27:18,936 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:18.936730822Z 2026-06-16 16:27:18,936 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:19.937213047Z 2026-06-16 16:27:19,936 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv6:%5B::1%5D:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:19.937227875Z 2026-06-16 16:27:19,937 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:20.938009945Z 2026-06-16 16:27:20,937 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv6:%5B::1%5D:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:20.938027388Z 2026-06-16 16:27:20,937 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:21.938643395Z 2026-06-16 16:27:21,938 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv6:%5B::1%5D:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:21.938659004Z 2026-06-16 16:27:21,938 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:22.939122364Z 2026-06-16 16:27:22,938 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv6:%5B::1%5D:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:22.939138744Z 2026-06-16 16:27:22,938 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:23.939845484Z 2026-06-16 16:27:23,939 - main.py - grpc_client.py:81 - WARNING - Could not check: failed to connect to all addresses; last error: UNKNOWN: ipv6:%5B::1%5D:50055: Failed to connect to remote host: connect: Connection refused (111)
+2026-06-16T16:27:23.939863137Z 2026-06-16 16:27:23,939 - main.py - grpc_client.py:83 - INFO - Sleep 1 second
+2026-06-16T16:27:24.940745346Z Traceback (most recent call last):
+2026-06-16T16:27:24.940766406Z   File "/app/vfl-authority/main.py", line 383, in <module>
+2026-06-16T16:27:24.940769061Z     main()
+2026-06-16T16:27:24.940771215Z   File "/app/vfl-authority/main.py", line 358, in main
+2026-06-16T16:27:24.940773179Z     ms_config = NewConfiguration(
+2026-06-16T16:27:24.940775043Z                 ^^^^^^^^^^^^^^^^^
+2026-06-16T16:27:24.940777327Z   File "/usr/local/lib/python3.12/site-packages/dynamos/ms_init.py", line 225, in NewConfiguration
+2026-06-16T16:27:24.941176230Z     conf.next_client = GRPCClient(
+2026-06-16T16:27:24.941180368Z                        ^^^^^^^^^^^
+2026-06-16T16:27:24.941197219Z   File "/usr/local/lib/python3.12/site-packages/dynamos/grpc_client.py", line 43, in __init__
+2026-06-16T16:27:24.941199794Z     self.channel = self.get_grpc_connection(grpc_addr)
+2026-06-16T16:27:24.941201718Z                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-06-16T16:27:24.941401615Z   File "/usr/local/lib/python3.12/site-packages/dynamos/grpc_client.py", line 86, in get_grpc_connection
+2026-06-16T16:27:24.941725646Z     raise Exception(f"Could not connect with gRPC {grpc_addr} after {i} tries")
+2026-06-16T16:27:24.941733982Z Exception: Could not connect with gRPC localhost:50055 after 7 tries
