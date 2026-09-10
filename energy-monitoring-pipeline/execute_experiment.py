@@ -229,10 +229,15 @@ def execute_experiment_run(run_no: int):
                     time.sleep(5)
                     response = _get_training_status(request_id)
                     is_training_done = response["status"] == "done"
+                    is_training_failed = response["status"] == "failed"
 
                     if is_training_done:
                         accuracies = response["results"]
                         break
+
+                    if is_training_failed:
+                        accuracies = response["results"]
+                        raise Exception("Training pipeline returned [failed] status instead of [done]!")
         except Exception as e:
             wait = False
             print(f"Error occurred while fetching data.\n {e}")
