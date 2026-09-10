@@ -215,6 +215,7 @@ def execute_experiment_run(run_no: int):
     active_start_time = time.time()
 
     wait = True
+    training_status = ""
 
     if run_baseline:
         time.sleep(conf.ACTIVE_PERIOD)
@@ -228,8 +229,10 @@ def execute_experiment_run(run_no: int):
                 while True:
                     time.sleep(5)
                     response = _get_training_status(request_id)
-                    is_training_done = response["status"] == "done"
-                    is_training_failed = response["status"] == "failed"
+                    training_status = response["status"]
+
+                    is_training_done = training_status == "done"
+                    is_training_failed = training_status == "failed"
 
                     if is_training_done:
                         accuracies = response["results"]
@@ -308,6 +311,7 @@ def execute_experiment_run(run_no: int):
         })
 
     output = {
+        "training_status": training_status,
         "request_approval_status_code": status_code,
         "request_approval_execution_time": execution_time,
         "experiment_elapsed_time": experiment_elapsed_datetime,
