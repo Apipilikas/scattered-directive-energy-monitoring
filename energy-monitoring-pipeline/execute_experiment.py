@@ -171,18 +171,18 @@ def execute_experiment(runs_no: int):
     try:
         for r in range(runs_no):
             print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
-            try:
-                run_output = execute_experiment_run(r)
-                runs[r] = run_output
+            run_output = execute_experiment_run(r)
+            runs[r] = run_output
 
-                if not utils.is_experiment_run_valid(run_output):
-                    print(f"Experiment {r} is not valid.")
-                    break
-            except Exception as e:
-                print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
+            if not utils.is_experiment_run_valid(run_output):
+                print(f"Experiment {r} is not valid.")
+                break
+            
 
     except KeyboardInterrupt:
         print("\nExperiment manually interrupted by user!")
+    except Exception as e:
+        print(f">!< Fatal error occurred while executing experiment.\n {e}")
 
     finally:
         if runs:
@@ -240,10 +240,11 @@ def execute_experiment_run(run_no: int):
 
                     if is_training_failed:
                         accuracies = response["results"]
-                        raise Exception("Training pipeline returned [failed] status instead of [done]!")
+                        print("Training pipeline returned [failed] status instead of [done]!")
+                        break
         except Exception as e:
             wait = False
-            print(f"Error occurred while fetching data.\n {e}")
+            print(f">!< Error occurred while fetching data.\n {e}")
             _retrieve_logs()
     
     experiment_end_time = time.time()
