@@ -33,8 +33,8 @@ REQUEST_APPROVAL_DATA_BODY = {
 REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
-    "policy_removal": 40,
-    "policy_reintroduction": 80,
+    "policy_removal": 20,
+    "policy_reintroduction": 60,
     "training_backtrack": 0,
     "communication_frequency": 15,
     "sample_batch_size": 256
