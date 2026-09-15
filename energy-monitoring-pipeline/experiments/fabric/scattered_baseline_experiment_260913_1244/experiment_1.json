@@ -1,0 +1,137 @@
+{
+  "training_status": "failed",
+  "request_approval_status_code": 202,
+  "request_approval_execution_time": 0.013239,
+  "experiment_elapsed_time": "1:09:59.015921",
+  "active_elapsed_time": "0:09:56.194933",
+  "idle_energy": {
+    "system_processes": "1333240.2090756302",
+    "policy": "11476.651764705884",
+    "rabbitmq": "32088.554621848736",
+    "sidecar": "101709.9650420168",
+    "server": "14235.325714285715",
+    "clientone": "16083.142184873954",
+    "api-gateway": "2816.8971428571417",
+    "orchestrator": "4670.863865546217",
+    "policy-enforcer": "3587.112605042016",
+    "clientthree": "15195.146218487396",
+    "clienttwo": "15951.586838556595"
+  },
+  "active_energy": {
+    "system_processes": "1339890.3444996744",
+    "policy": "11875.592268907565",
+    "rabbitmq": "31229.431260504196",
+    "sidecar": "106176.47118090151",
+    "server": "13851.12705882353",
+    "clientone": "15976.645714285713",
+    "api-gateway": "6028.015462184874",
+    "orchestrator": "5505.41344537815",
+    "policy-enforcer": "4123.443025210083",
+    "clientthree": "15263.80638655462",
+    "clienttwo": "15526.341264054105"
+  },
+  "clear_active_energy": {
+    "system_processes": "225359.99664811796",
+    "policy": "1950.3284421052676",
+    "rabbitmq": "4871.08482222222",
+    "sidecar": "19299.40649915936",
+    "server": "2238.2685894736837",
+    "clientone": "2527.0368631578945",
+    "api-gateway": "1478.9938666666649",
+    "orchestrator": "896.4998888888881",
+    "policy-enforcer": "1064.4659333333318",
+    "clientthree": "2467.835242105258",
+    "clienttwo": "2501.587663157895"
+  },
+  "idle_carbon_emission": {
+    "sidecar": 0.021623834146664404,
+    "clienttwo": 0.00513266825722112,
+    "system_processes": 0.2537045493001437,
+    "clientthree": 0.005018938351811313,
+    "api-gateway": 0.0005433639409363742,
+    "server": 0.004716956918895558,
+    "orchestrator": 0.0009009839084810392,
+    "rabbitmq": 0.00618970541487183,
+    "policy": 0.002226427215792622,
+    "policy-enforcer": 0.0006919342605748182,
+    "clientone": 0.008290115206386556
+  },
+  "active_carbon_emission": {
+    "sidecar": 0.028729475466938558,
+    "system_processes": 0.3517288560151162,
+    "clientthree": 0.006001540545848456,
+    "clienttwo": 0.017821567284673365,
+    "api-gateway": 0.0015321764115966384,
+    "server": 0.005460732478813642,
+    "orchestrator": 0.0013993435600840333,
+    "rabbitmq": 0.00793776960677871,
+    "policy": 0.003012265970845938,
+    "policy-enforcer": 0.0010480799489355737,
+    "clientone": 0.009824009863333332
+  },
+  "clear_active_carbon_emission": {
+    "sidecar": 0.023073565353124645,
+    "clienttwo": 0.005873184894568739,
+    "system_processes": 0.266718860991648,
+    "clientthree": 0.005186542091151753,
+    "api-gateway": 0.0007920936941176472,
+    "server": 0.004827533828447143,
+    "orchestrator": 0.0009822799901136922,
+    "rabbitmq": 0.006384837170341077,
+    "policy": 0.002360517431750463,
+    "policy-enforcer": 0.0008098705706376668,
+    "clientone": 0.008456910580252098
+  },
+  "accuracies": [
+    {
+      "accuracy": 31.608548931383577,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:45:08Z",
+      "train_round": 0
+    },
+    {
+      "accuracy": 32.05849268841395,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:45:25Z",
+      "train_round": 1
+    },
+    {
+      "accuracy": 32.28346456692913,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:45:50Z",
+      "train_round": 2
+    },
+    {
+      "accuracy": 32.62092238470191,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:46:20Z",
+      "train_round": 3
+    },
+    {
+      "accuracy": 33.52080989876266,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:46:52Z",
+      "train_round": 4
+    },
+    {
+      "accuracy": 34.53318335208099,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:47:19Z",
+      "train_round": 5
+    },
+    {
+      "accuracy": 35.77052868391451,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:47:43Z",
+      "train_round": 6
+    },
+    {
+      "accuracy": 0,
+      "clients": 3,
+      "timestamp": "2026-09-13T15:47:47Z",
+      "train_round": 7
+    }
+  ],
+  "total_metrics_path": "experiments/fabric/scattered_baseline_experiment_260913_1244/experiment_1_total_metrics.csv",
+  "metrics_path": "experiments/fabric/scattered_baseline_experiment_260913_1244/experiment_1_metrics.csv"
+}
