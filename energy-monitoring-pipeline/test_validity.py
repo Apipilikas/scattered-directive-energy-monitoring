@@ -26,6 +26,7 @@ def _test_validity(prefix, is_local = True):
     total_valid_experiments = 0
     invalid_non_202_experiments = 0
     invalid_empty_accuracies_exeperiments = 0
+    invalid_non_done_experiments = 0
     invalid_experiments = []
     running_experiments = []
 
@@ -42,6 +43,10 @@ def _test_validity(prefix, is_local = True):
                     if data["request_approval_status_code"] != 202:
                         reason += "Non 202 Status code"
                         invalid_non_202_experiments += 1
+
+                    if data.get("training_status", "done") != "done":
+                        reason += "Non 'done' Training Status"
+                        invalid_non_done_experiments += 1
 
                     if data["accuracies"] == {}:
                         if reason == "":
@@ -64,6 +69,7 @@ def _test_validity(prefix, is_local = True):
 
     if len(invalid_experiments) > 0:
         print(f"> Invalid non-202 experiments: {invalid_non_202_experiments}")
+        print(f"> Invalid non-done experiments: {invalid_non_done_experiments}")
         print(f"> Invalid premature termination experiments: {invalid_empty_accuracies_exeperiments}")
         print("> Invalid directories:")
         [print(f"    - {ex}") for ex in invalid_experiments]
