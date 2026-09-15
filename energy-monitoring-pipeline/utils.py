@@ -18,7 +18,11 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     return [df.head(min_length) for df in dfs]
 
 def is_experiment_run_valid(output: dict):
-    return output["request_approval_status_code"] == 202 and output["accuracies"] != {}
+    is_approval_status_ok = output["request_approval_status_code"] == 202
+    is_accuracies_ok = output["accuracies"] != {}
+    is_training_status_ok = output.get("training_status", "done") == "done"
+
+    return is_approval_status_ok and is_accuracies_ok and is_training_status_ok 
 
 def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     filtered_dirs = get_experiments_directories_by_prefix(prefix, is_local)
