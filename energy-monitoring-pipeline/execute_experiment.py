@@ -240,6 +240,7 @@ def execute_experiment_run(run_no: int):
 
                     if is_training_failed:
                         accuracies = response["results"]
+                        wait = False
                         print("Training pipeline returned [failed] status instead of [done]!")
                         break
         except Exception as e:
