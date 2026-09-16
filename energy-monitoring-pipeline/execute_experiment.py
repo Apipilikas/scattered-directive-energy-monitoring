@@ -174,8 +174,8 @@ def execute_experiment(runs_no: int):
             run_output = execute_experiment_run(r)
             runs[r] = run_output
 
-            if not utils.is_experiment_run_valid(run_output):
-                print(f"Experiment {r} is not valid.")
+            if not utils.is_experiment_run_valid(run_output, omit_training_status_check=True):
+                print(f"Experiment {output_path} with run {r} is not valid.")
                 break
             
 

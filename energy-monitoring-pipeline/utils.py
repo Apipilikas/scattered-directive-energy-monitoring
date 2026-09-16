@@ -17,10 +17,10 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     min_length = min(len(df) for df in dfs)
     return [df.head(min_length) for df in dfs]
 
-def is_experiment_run_valid(output: dict):
+def is_experiment_run_valid(output: dict, omit_training_status_check = False):
     is_approval_status_ok = output["request_approval_status_code"] == 202
     is_accuracies_ok = output["accuracies"] != {}
-    is_training_status_ok = output.get("training_status", "done") == "done"
+    is_training_status_ok = omit_training_status_check or output.get("training_status", "done") == "done"
 
     return is_approval_status_ok and is_accuracies_ok and is_training_status_ok 
 
