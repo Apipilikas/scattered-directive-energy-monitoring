@@ -136,7 +136,7 @@ FABRIC_CONFIGURATION = _load_fabric_configuration()
 
 CARBON_COEFFICIENTS = {
     "AMST": KEPLER_CARBON_COEFFICIENT,
-    "TOKY": 0.4615, # Japan
+    "HAWI": 0.3580, # USA
     "LOSA": 0.3580 # USA
 }
 
