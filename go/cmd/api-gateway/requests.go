@@ -702,6 +702,29 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		trainingRequests.Store(requestID, reqData)
 
 		if trainingFailed {
+			logger.Sugar().Info(">!< Recover >!< Sending in the policy change request, reintroducing client 3 to the agreement after failure.")
+
+			if cycle > policy_removal && cycle < policy_reintroduction {
+				policyUpdate := &pb.RequestApproval{
+					Type:             "policyReintroduction",
+					User:             user,
+					DestinationQueue: "policyEnforcer-in",
+				}
+
+				// Create a channel to receive the response
+				responseChan := make(chan validation)
+
+				requestApprovalMutex.Lock()
+				requestApprovalMap[policyUpdate.User.Id] = responseChan
+				requestApprovalMutex.Unlock()
+
+				logger.Sugar().Info("- Sending policy reintroduction request")
+				_, err = c.SendRequestApproval(ctx, policyUpdate)
+				if err != nil {
+					logger.Sugar().Warnf("error in sending/receiving policy reintroduction: %v", err)
+				}
+			}
+
 			break
 		}
 
@@ -720,17 +743,17 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 	}
 
 	for auth, url := range authorizedProviders {
-		wg.Add(1)
+		// wg.Add(1)
 		target := strings.ToLower(auth)
 		endpoint := fmt.Sprintf("http://%s:8080/agent/v1/vflTrainRequest/%s", url, target)
 
 		go func() {
 			sendData(endpoint, dataRequestJson)
-			wg.Done()
+			// wg.Done()
 		}()
 	}
 
-	wg.Wait()
+	// wg.Wait()
 
 	response := map[string]any{
 		"jobId":    jobId,
