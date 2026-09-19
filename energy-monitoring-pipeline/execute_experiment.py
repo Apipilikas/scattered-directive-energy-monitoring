@@ -33,8 +33,8 @@ REQUEST_APPROVAL_DATA_BODY = {
 REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
-    "policy_removal": 40,
-    "policy_reintroduction": 80,
+    "policy_removal": 20,
+    "policy_reintroduction": 60,
     "training_backtrack": 0,
     "communication_frequency": 15,
     "sample_batch_size": 256
@@ -174,8 +174,8 @@ def execute_experiment(runs_no: int):
             run_output = execute_experiment_run(r)
             runs[r] = run_output
 
-            if not utils.is_experiment_run_valid(run_output):
-                print(f"Experiment {r} is not valid.")
+            if not utils.is_experiment_run_valid(run_output, omit_training_status_check=True):
+                print(f"Experiment {output_path} with run {r} is not valid.")
                 break
             
 
@@ -240,6 +240,7 @@ def execute_experiment_run(run_no: int):
 
                     if is_training_failed:
                         accuracies = response["results"]
+                        wait = False
                         print("Training pipeline returned [failed] status instead of [done]!")
                         break
         except Exception as e:
