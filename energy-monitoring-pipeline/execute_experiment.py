@@ -20,11 +20,10 @@ REQUEST_APPROVAL_URL = f"{API_BASE_URL}/requestApproval"
 GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
-REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server", "aggregator", "authority"]
+REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server"]
 REQUEST_APPROVAL_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
-    "patience": 10,
     "policy_removal": -1,
     "policy_reintroduction": -1,
     "training_backtrack": 0,
@@ -34,8 +33,8 @@ REQUEST_APPROVAL_DATA_BODY = {
 REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
-    "policy_removal": 40,
-    "policy_reintroduction": 80,
+    "policy_removal": 20,
+    "policy_reintroduction": 60,
     "training_backtrack": 0,
     "communication_frequency": 15,
     "sample_batch_size": 256
@@ -61,13 +60,18 @@ relative_path = ""
 def _get_duration(is_active = False):
     return conf.PROM_ACTIVE_DURATION if is_active else conf.PROM_IDLE_DURATION
 
-def _get_energy_query_range(is_active = False):
+def _get_energy_query_range(is_active = False, seconds = -1):
     containers_filter = PROM_CONTAINERS_LOCAL if is_local else PROM_CONTAINERS_FABRIC
+
+    duration = f"{seconds}s"
+
+    if seconds == -1:
+        duration = _get_duration(is_active)
 
     if run_custom:
         containers_filter = "{container_name=\"" + custom_container + "\"}"
 
-    return f"sum(increase(kepler_container_joules_total{containers_filter}[{_get_duration(is_active)}])) by ({conf.KEPLER_LABEL})"
+    return f"sum(increase(kepler_container_joules_total{containers_filter}[{duration}])) by ({conf.KEPLER_LABEL})"
 
 def _get_carbon_emission_query_range():
     containers_filter = PROM_CONTAINERS_LOCAL if is_local else PROM_CONTAINERS_FABRIC
@@ -111,7 +115,6 @@ def _get_request_approval_body():
         }
     }
 
-
 def _request_approval():
     response = requests.post(
         REQUEST_APPROVAL_URL, json=_get_request_approval_body(), headers=REQUEST_APPROVAL_HEADER
@@ -152,8 +155,8 @@ def _get_carbon_emission():
 
     return metrics
 
-def _get_energy_comsumption(is_active = False):
-    query = _get_energy_query_range(is_active) 
+def _get_energy_comsumption(is_active = False, seconds = -1):
+    query = _get_energy_query_range(is_active, seconds) 
     return execute_query(query)
 
 def _sum_metrics(metrics: dict):
@@ -168,18 +171,18 @@ def execute_experiment(runs_no: int):
     try:
         for r in range(runs_no):
             print(f"\n> Starting new experiment run [{r + 1}/{runs_no}]")
-            try:
-                run_output = execute_experiment_run(r)
-                runs[r] = run_output
+            run_output = execute_experiment_run(r)
+            runs[r] = run_output
 
-                if not utils.is_experiment_run_valid(run_output):
-                    print(f"Experiment {r} is not valid.")
-                    break
-            except Exception as e:
-                print(f"Error has been occurred while executing experiment with number: {r}.\n {e}")
+            if not utils.is_experiment_run_valid(run_output, omit_training_status_check=True):
+                print(f"Experiment {output_path} with run {r} is not valid.")
+                break
+            
 
     except KeyboardInterrupt:
         print("\nExperiment manually interrupted by user!")
+    except Exception as e:
+        print(f">!< Fatal error occurred while executing experiment.\n {e}")
 
     finally:
         if runs:
@@ -210,6 +213,10 @@ def execute_experiment_run(run_no: int):
     # Record the start time of the active period
     print("\n> Active period")
     active_start_time = time.time()
+
+    wait = True
+    training_status = ""
+
     if run_baseline:
         time.sleep(conf.ACTIVE_PERIOD)
     else:
@@ -222,13 +229,23 @@ def execute_experiment_run(run_no: int):
                 while True:
                     time.sleep(5)
                     response = _get_training_status(request_id)
-                    is_training_done = response["status"] == "done"
+                    training_status = response["status"]
+
+                    is_training_done = training_status == "done"
+                    is_training_failed = training_status == "failed"
 
                     if is_training_done:
                         accuracies = response["results"]
                         break
+
+                    if is_training_failed:
+                        accuracies = response["results"]
+                        wait = False
+                        print("Training pipeline returned [failed] status instead of [done]!")
+                        break
         except Exception as e:
-            print(f"Error occurred while fetching data.\n {e}")
+            wait = False
+            print(f">!< Error occurred while fetching data.\n {e}")
             _retrieve_logs()
     
     experiment_end_time = time.time()
@@ -238,9 +255,15 @@ def execute_experiment_run(run_no: int):
     experiment_elapsed_datetime = _format_datetime(experiment_elapsed_time)
     active_elapsed_datetime = _format_datetime(active_elapsed_time)
 
+    clear_active_energy = _get_energy_comsumption(seconds=int(active_elapsed_time))
+    total_clear_active_energy = _sum_metrics(clear_active_energy)
+
+    clear_active_carbon_emission = _get_carbon_emission()
+    total_clear_active_carbon_emission = _sum_metrics(clear_active_carbon_emission)
+
     remaining_time = conf.ACTIVE_PERIOD - active_elapsed_time
 
-    if remaining_time > 0:
+    if wait and remaining_time > 0:
         print(f"Active period elapsed time: {active_elapsed_time} s ({active_elapsed_datetime})")
         print("Waiting for remaining active period...")
         time.sleep(remaining_time)
@@ -269,7 +292,7 @@ def execute_experiment_run(run_no: int):
     output_total_metrics_path = f"{output_path}/{total_metrics_name}"
     relative_total_metrics_path = f"{relative_path}/{total_metrics_name}"
     with open(output_total_metrics_path, mode="w", newline="") as file:
-        fieldnames = ["total_idle_energy", "total_active_energy", "total_energy_difference", 
+        fieldnames = ["total_idle_energy", "total_active_energy", "total_energy_difference", "total_clear_active_energy", "total_clear_active_carbon_emission",
                       "total_idle_carbon_emission", "total_active_carbon_emission", "total_carbon_emission_difference"]
         
         writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -282,20 +305,25 @@ def execute_experiment_run(run_no: int):
             "total_idle_energy": total_idle_energy,
             "total_active_energy": total_active_energy,
             "total_energy_difference": total_energy_difference,
+            "total_clear_active_energy": total_clear_active_energy,
             "total_idle_carbon_emission": total_idle_carbon_emission,
             "total_active_carbon_emission": total_active_carbon_emission,
+            "total_clear_active_carbon_emission": total_clear_active_carbon_emission,
             "total_carbon_emission_difference": total_carbon_emission_difference
         })
 
     output = {
+        "training_status": training_status,
         "request_approval_status_code": status_code,
         "request_approval_execution_time": execution_time,
         "experiment_elapsed_time": experiment_elapsed_datetime,
         "active_elapsed_time": active_elapsed_datetime,
         "idle_energy": idle_energy,
         "active_energy": active_energy,
+        "clear_active_energy": clear_active_energy,
         "idle_carbon_emission": idle_carbon_emission,
         "active_carbon_emission": active_carbon_emission,
+        "clear_active_carbon_emission": clear_active_carbon_emission,
         "accuracies": accuracies,
         "total_metrics_path": relative_total_metrics_path,
         "metrics_path": relative_metrics_path

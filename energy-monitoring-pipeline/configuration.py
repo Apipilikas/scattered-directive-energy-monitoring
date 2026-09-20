@@ -17,9 +17,14 @@ DATA_COLLECT_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/data_metrics.csv"
 DATA_DA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/da_data_metrics.csv"
 DATA_RCA_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/rca_results.csv"
 
+# Traces constants
+TRACE_OUTPUT_PATH = f"{DATA_OUTPUT_FOLDER}/traces"
+TRACE_FILENAME = "traces.json"
+TRACE_SERVICES = ["clientone", "clienttwo", "clientthree", "server"]
+
 # Experiment constants
-_IDLE_PERIOD_MINS = 40
-_ACTIVE_PERIOD_MINS = 40
+_IDLE_PERIOD_MINS = 30
+_ACTIVE_PERIOD_MINS = 30
 EXPERIMENT_RUNS_NO = 10
 IDLE_PERIOD = _IDLE_PERIOD_MINS * 60
 ACTIVE_PERIOD = _ACTIVE_PERIOD_MINS * 60
@@ -65,7 +70,7 @@ PROM_QUERIES = {
 AD_ARGUMENT = '-ad', '--anomaly-detection', 'Run only anomaly detection algorithm'
 RCA_ARGUMENT = '-rca', '--root-cause-analysis', 'Run only root cause analysis algorithm'
 CM_ARGUMENT = '-cm', '--collect-metrics', 'Run only anomaly detection algorithm'
-L_ARGUMENT = '-l', '--local-mode', 'Execute experiment locally'
+BE_ARGUMENT = '-be', '--both-environments', 'Execute experiment including both environments'
 F_ARGUMENT = '-f', '--fabric-mode', 'Execute experiment on FABRIC'
 
 # AD and RCA parameters
@@ -131,7 +136,7 @@ FABRIC_CONFIGURATION = _load_fabric_configuration()
 
 CARBON_COEFFICIENTS = {
     "AMST": KEPLER_CARBON_COEFFICIENT,
-    "TOKY": 0.4615, # Japan
+    "HAWI": 0.3580, # USA
     "LOSA": 0.3580 # USA
 }
 

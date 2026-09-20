@@ -76,7 +76,7 @@ def _resolve_args():
     return pd.concat(total_metrics_dfs)
 
 def _inject_dir_to_df(df: pd.DataFrame, dir: str):
-    df["Dir"] = dir
+    df["dir"] = dir
     return df
 
 def main():

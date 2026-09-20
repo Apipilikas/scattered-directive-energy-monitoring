@@ -17,8 +17,12 @@ def _align_experiments(dfs: list[pd.DataFrame]):
     min_length = min(len(df) for df in dfs)
     return [df.head(min_length) for df in dfs]
 
-def is_experiment_run_valid(output: dict):
-    return output["request_approval_status_code"] == 202 and output["accuracies"] != {}
+def is_experiment_run_valid(output: dict, omit_training_status_check = False):
+    is_approval_status_ok = output["request_approval_status_code"] == 202
+    is_accuracies_ok = output["accuracies"] != {}
+    is_training_status_ok = omit_training_status_check or output.get("training_status", "done") == "done"
+
+    return is_approval_status_ok and is_accuracies_ok and is_training_status_ok 
 
 def read_experiments_by_prefix(prefix: str, is_local = True) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     filtered_dirs = get_experiments_directories_by_prefix(prefix, is_local)
@@ -76,6 +80,8 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
     flat_metrics = defaultdict(list)
     nested_metrics = defaultdict(lambda: defaultdict(list))
 
+    is_fed_encrypt = "fed_encrypt" in str(file_path).lower()
+
     ignore_properties = ["accuracies", "total_metrics_path", "metrics_path"]
 
     for run, data in experiments_data.items():
@@ -85,6 +91,25 @@ def read_experiments_file(file_path = conf.EXPERIMENT_OUTPUT_FOLDER) -> tuple[pd
         df = pd.read_csv(data["total_metrics_path"])
         df["run"] = run
         df["execution_time"] = pd.to_timedelta(data["active_elapsed_time"]).total_seconds()
+
+        valid_accuracies_sum = 0
+        valid_count = 0
+        
+        for item in reversed(data.get("accuracies", [])):
+            acc = item.get("accuracy", 0)
+            if acc != 0:
+                valid_accuracies_sum += acc
+                valid_count += 1
+                
+                # Stop once we have found the last 5 valid accuracies
+                if valid_count == 5:
+                    break
+                
+        df["accuracy"] = valid_accuracies_sum / valid_count
+
+        if is_fed_encrypt:
+            df["accuracy"] = df["accuracy"] * 100
+
         total_metrics_dfs.append(df)
         metrics_dfs.append(pd.read_csv(data["metrics_path"]))
 

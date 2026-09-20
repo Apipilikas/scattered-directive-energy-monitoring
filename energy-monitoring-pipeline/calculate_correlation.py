@@ -35,23 +35,43 @@ def _resolve_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-pr", "--prefix")
     parser.add_argument("-all", "--all", action="store_true")
+    parser.add_argument("-m", "--mean", action="store_true")
     utils.add_boolean_argument(parser, conf.F_ARGUMENT)
+    utils.add_boolean_argument(parser, conf.BE_ARGUMENT)
 
     args = parser.parse_args()
     is_local = not args.fabric_mode
     prefix_arg = args.prefix
     all_arg = args.all
+    both_environments_arg = args.both_environments
+    mean_arg = args.mean
 
-    if all_arg is not None:
-        total_dfs = []
+    total_metrics_data = []
 
-        for prefix in conf.PREFIXES:
-            total_metrics_data, _, _ = utils.read_experiments_by_prefix(prefix, is_local)
-            total_dfs.append(total_metrics_data)
+    if all_arg:
+        prefixes_to_run = conf.PREFIXES
+    else:
+        prefixes_to_run = [prefix_arg]
+
+    for prefix in prefixes_to_run:
+        local_data, _, _ = utils.read_experiments_by_prefix(prefix, is_local)
         
-        return pd.concat(total_dfs)
+        if mean_arg:
+            local_row = local_data[["total_energy_difference", "execution_time", "total_carbon_emission_difference"]].mean().to_frame().T
+            total_metrics_data.append(local_row)
+        else:
+            total_metrics_data.append(local_data)
 
-    return utils.read_experiments_by_prefix(prefix_arg, is_local)[0]
+        if both_environments_arg and all_arg:
+            dist_data, _, _ = utils.read_experiments_by_prefix(prefix, not is_local)
+            
+            if mean_arg:
+                dist_row = dist_data[["total_energy_difference", "execution_time", "total_carbon_emission_difference"]].mean().to_frame().T
+                total_metrics_data.append(dist_row)
+            else:
+                total_metrics_data.append(dist_data)
+    
+    return pd.concat(total_metrics_data)
 
 def main():
     total_metrics_data = _resolve_args()
