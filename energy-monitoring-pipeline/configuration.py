@@ -23,8 +23,8 @@ TRACE_FILENAME = "traces.json"
 TRACE_SERVICES = ["clientone", "clienttwo", "clientthree", "server"]
 
 # Experiment constants
-_IDLE_PERIOD_MINS = 30
-_ACTIVE_PERIOD_MINS = 30
+_IDLE_PERIOD_MINS = 20
+_ACTIVE_PERIOD_MINS = 20
 EXPERIMENT_RUNS_NO = 10
 IDLE_PERIOD = _IDLE_PERIOD_MINS * 60
 ACTIVE_PERIOD = _ACTIVE_PERIOD_MINS * 60
