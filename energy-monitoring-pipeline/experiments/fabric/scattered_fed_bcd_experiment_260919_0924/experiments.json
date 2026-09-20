@@ -1,0 +1,1612 @@
+{
+  "0": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.012078,
+    "experiment_elapsed_time": "0:04:25.300329",
+    "active_elapsed_time": "0:01:25.274229",
+    "idle_energy": {
+      "sidecar": "4979.3796",
+      "clientone": "649.0152",
+      "system_processes": "69458.3676",
+      "policy": "626.7852",
+      "clienttwo": "853.2792",
+      "clientthree": "793.7604",
+      "orchestrator": "284.96520000000004",
+      "api-gateway": "336.8627999999999",
+      "rabbitmq": "1632.8231999999998",
+      "policy-enforcer": "270.28079999999994",
+      "server": "775.4292000000002"
+    },
+    "active_energy": {
+      "sidecar": "5861.389674249999",
+      "clientone": "635.3892",
+      "system_processes": "71793.7450857",
+      "policy": "636.0911999999998",
+      "clienttwo": "775.1087999999999",
+      "clientthree": "728.7444000000002",
+      "orchestrator": "267.85440000000006",
+      "api-gateway": "389.4516",
+      "rabbitmq": "1684.458",
+      "policy-enforcer": "210.94200000000006",
+      "server": "711.9431999999997"
+    },
+    "clear_active_energy": {
+      "sidecar": "3294.83519735",
+      "clientone": "296.35249999999985",
+      "system_processes": "34138.73700000001",
+      "policy": "300.19024999999976",
+      "clienttwo": "340.9520000000001",
+      "clientthree": "337.48824999999977",
+      "orchestrator": "125.38350000000003",
+      "api-gateway": "215.65433229999994",
+      "rabbitmq": "806.9559999999993",
+      "policy-enforcer": "94.97900000000011",
+      "server": "334.713"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.00037102748346518885,
+      "clientone": 8.108660934244447e-05,
+      "system_processes": 0.0051405875553898655,
+      "policy": 4.886969276134074e-05,
+      "clienttwo": 6.504390118876296e-05,
+      "clientthree": 5.95326356728889e-05,
+      "orchestrator": 2.0787267869622225e-05,
+      "api-gateway": 2.428351817743703e-05,
+      "rabbitmq": 0.00011815773109987407,
+      "policy-enforcer": 1.9105357943629626e-05,
+      "server": 5.5425234172e-05
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0007375913842327744,
+      "clientone": 0.00014502371345666667,
+      "system_processes": 0.00968136021204592,
+      "policy": 8.895635927185555e-05,
+      "clienttwo": 0.00011456082430797034,
+      "clientthree": 0.00010633547787286666,
+      "orchestrator": 3.776548841802963e-05,
+      "api-gateway": 4.8119576367822214e-05,
+      "rabbitmq": 0.00022578293057990743,
+      "policy-enforcer": 3.249826472071481e-05,
+      "server": 9.953108780898889e-05
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.000577160265923932,
+      "clientone": 0.00011154032114538271,
+      "system_processes": 0.007313397714646897,
+      "policy": 6.78840256968395e-05,
+      "clienttwo": 8.775149899710618e-05,
+      "clientthree": 8.196189702216047e-05,
+      "orchestrator": 2.885570381713579e-05,
+      "api-gateway": 3.6726273270395055e-05,
+      "rabbitmq": 0.00017056602173770368,
+      "policy-enforcer": 2.5317740780222217e-05,
+      "server": 7.591015341966666e-05
+    },
+    "accuracies": [
+      {
+        "accuracy": 69.140625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:27:40Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 69.921875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:27:45Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 71.09375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:27:51Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:27:56Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 76.5625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:02Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 78.515625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:07Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 77.34375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:12Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 80.859375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:17Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:23Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 80.078125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:28Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 78.515625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:33Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 82.8125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:28:38Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_0_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_0_metrics.csv"
+  },
+  "1": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.00876,
+    "experiment_elapsed_time": "0:04:25.420413",
+    "active_elapsed_time": "0:01:25.401794",
+    "idle_energy": {
+      "sidecar": "4739.9292",
+      "clientone": "675.3059999999997",
+      "system_processes": "69396.822",
+      "policy": "621.0036000000001",
+      "clienttwo": "770.7672000000002",
+      "clientthree": "805.6188000000001",
+      "orchestrator": "307.8648",
+      "api-gateway": "339.55920000000015",
+      "rabbitmq": "1790.5788000000002",
+      "policy-enforcer": "240.90839999999994",
+      "server": "757.1196000000001"
+    },
+    "active_energy": {
+      "sidecar": "5712.384316059999",
+      "clientone": "627.0371999999999",
+      "system_processes": "72375.63186285",
+      "policy": "592.8552000000003",
+      "clienttwo": "727.8120000000002",
+      "clientthree": "689.2092000000001",
+      "orchestrator": "307.1051999999999",
+      "api-gateway": "392.95799999999997",
+      "rabbitmq": "1637.7875999999994",
+      "policy-enforcer": "255.97439999999995",
+      "server": "735.7896000000001"
+    },
+    "clear_active_energy": {
+      "sidecar": "3219.1813742",
+      "clientone": "288.7152499999999",
+      "system_processes": "33836.57475",
+      "policy": "280.17275",
+      "clienttwo": "318.29524999999984",
+      "clientthree": "320.0377499999998",
+      "orchestrator": "139.27675000000002",
+      "api-gateway": "212.06650000000025",
+      "rabbitmq": "753.0957500000009",
+      "policy-enforcer": "114.51624999999997",
+      "server": "330.37375"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.0010257268330665678,
+      "clientone": 0.0002135062453020987,
+      "system_processes": 0.014076999962163814,
+      "policy": 0.00012799469248723705,
+      "clienttwo": 0.00016282810079002716,
+      "clientthree": 0.00015691192254406913,
+      "orchestrator": 5.6864897904999996e-05,
+      "api-gateway": 6.920490704870372e-05,
+      "rabbitmq": 0.00033645173359897907,
+      "policy-enforcer": 4.7488270764796296e-05,
+      "server": 0.00014671480595202215
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0013787276333588818,
+      "clientone": 0.0002770937988571851,
+      "system_processes": 0.018647090378894095,
+      "policy": 0.00016555903190728887,
+      "clienttwo": 0.00020827583153769995,
+      "clientthree": 0.00020086002001574812,
+      "orchestrator": 7.620673173686944e-05,
+      "api-gateway": 9.411628042084444e-05,
+      "rabbitmq": 0.00044039394688556943,
+      "policy-enforcer": 6.355836101387222e-05,
+      "server": 0.00019252280440124625
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.0012225643887471373,
+      "clientone": 0.0002437782725653227,
+      "system_processes": 0.016238589511996374,
+      "policy": 0.00014597636829559256,
+      "clienttwo": 0.00018303259682796082,
+      "clientthree": 0.00017781833749508038,
+      "orchestrator": 6.579806293701165e-05,
+      "api-gateway": 8.235892407703282e-05,
+      "rabbitmq": 0.00038528787842713653,
+      "policy-enforcer": 5.4810422212211636e-05,
+      "server": 0.00016741254588760633
+    },
+    "accuracies": [
+      {
+        "accuracy": 48.828125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:33:40Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 69.921875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:33:45Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 62.890625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:33:51Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 78.125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:33:56Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 81.640625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:01Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 78.515625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:07Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 76.953125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:12Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:17Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 76.171875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:23Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 78.125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:28Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 77.734375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:33Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:34:39Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_1_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_1_metrics.csv"
+  },
+  "2": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.010981,
+    "experiment_elapsed_time": "0:04:25.252841",
+    "active_elapsed_time": "0:01:25.225964",
+    "idle_energy": {
+      "sidecar": "4581.532799999999",
+      "clientone": "720.6155999999999",
+      "system_processes": "70161.8832",
+      "policy": "652.7843999999999",
+      "clienttwo": "810.018",
+      "clientthree": "791.2584000000006",
+      "orchestrator": "273.60360000000014",
+      "api-gateway": "291.57120000000003",
+      "rabbitmq": "1622.5992000000006",
+      "policy-enforcer": "229.01400000000015",
+      "server": "773.4347999999997"
+    },
+    "active_energy": {
+      "sidecar": "5802.873964249998",
+      "clientone": "636.1848",
+      "system_processes": "73988.48928344999",
+      "policy": "653.3387999999994",
+      "clienttwo": "772.2396000000007",
+      "clientthree": "756.9611999999994",
+      "orchestrator": "260.62559999999996",
+      "api-gateway": "372.36240000000015",
+      "rabbitmq": "1545.1560000000004",
+      "policy-enforcer": "224.87399999999988",
+      "server": "722.6028000000003"
+    },
+    "clear_active_energy": {
+      "sidecar": "3203.6056456999986",
+      "clientone": "288.57925",
+      "system_processes": "34690.88000000001",
+      "policy": "319.4682499999999",
+      "clienttwo": "329.9444999999998",
+      "clientthree": "321.77599999999944",
+      "orchestrator": "124.50799999999975",
+      "api-gateway": "213.0822500000004",
+      "rabbitmq": "709.1125000000008",
+      "policy-enforcer": "106.12249999999976",
+      "server": "321.9672500000005"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.00166103721596552,
+      "clientone": 0.0003482580625793999,
+      "system_processes": 0.023098497458111638,
+      "policy": 0.0002063155307243289,
+      "clienttwo": 0.0002595522686213214,
+      "clientthree": 0.00025070863967320886,
+      "orchestrator": 9.375701950335778e-05,
+      "api-gateway": 0.00011247063733664368,
+      "rabbitmq": 0.0005433176300024228,
+      "policy-enforcer": 7.824414953638592e-05,
+      "server": 0.0002411425965831703
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0020192861046881816,
+      "clientone": 0.0004121075395469212,
+      "system_processes": 0.02775934432181009,
+      "policy": 0.0002476744260967407,
+      "clienttwo": 0.0003080730805048179,
+      "clientthree": 0.00029763501484800735,
+      "orchestrator": 0.00011023789615901235,
+      "api-gateway": 0.00013608485617726292,
+      "rabbitmq": 0.0006412647034046679,
+      "policy-enforcer": 9.244792711722222e-05,
+      "server": 0.0002852135792997592
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.0018581638831703454,
+      "clientone": 0.00037790435808154535,
+      "system_processes": 0.025299444541440255,
+      "policy": 0.00022654979674015756,
+      "clienttwo": 0.0002808899816911784,
+      "clientthree": 0.0002709249735648666,
+      "orchestrator": 0.00010164625179542084,
+      "api-gateway": 0.00012546112234218719,
+      "rabbitmq": 0.0005890418604447959,
+      "policy-enforcer": 8.498247361136025e-05,
+      "server": 0.0002603903902155124
+    },
+    "accuracies": [
+      {
+        "accuracy": 71.484375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:39:40Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 67.1875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:39:45Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 72.265625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:39:50Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:39:56Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 76.171875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:01Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:06Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 82.8125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:12Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 82.03125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:17Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 78.90625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:22Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 84.375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:27Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:33Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 76.171875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:40:38Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_2_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_2_metrics.csv"
+  },
+  "3": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.009919,
+    "experiment_elapsed_time": "0:04:20.245713",
+    "active_elapsed_time": "0:01:20.224818",
+    "idle_energy": {
+      "sidecar": "4637.116799999998",
+      "clientone": "680.6484",
+      "system_processes": "67551.3432",
+      "policy": "592.2791999999998",
+      "clienttwo": "790.8515999999998",
+      "clientthree": "744.6563999999995",
+      "orchestrator": "235.4112",
+      "api-gateway": "300.7260000000003",
+      "rabbitmq": "1509.2927999999988",
+      "policy-enforcer": "213.20999999999998",
+      "server": "807.0335999999999"
+    },
+    "active_energy": {
+      "sidecar": "5777.242769925",
+      "clientone": "672.8724000000005",
+      "system_processes": "71226.91318425002",
+      "policy": "603.3348000000001",
+      "clienttwo": "695.7468000000001",
+      "clientthree": "716.9688",
+      "orchestrator": "236.61719999999983",
+      "api-gateway": "327.03119999999996",
+      "rabbitmq": "1600.0343999999986",
+      "policy-enforcer": "208.06200000000015",
+      "server": "725.5403999999992"
+    },
+    "clear_active_energy": {
+      "sidecar": "3079.500102550001",
+      "clientone": "281.58400000000046",
+      "system_processes": "31441.043999999987",
+      "policy": "266.0480000000002",
+      "clienttwo": "280.3639999999996",
+      "clientthree": "310.7600000000001",
+      "orchestrator": "104.06799999999983",
+      "api-gateway": "199.60800000000046",
+      "rabbitmq": "686.283999999999",
+      "policy-enforcer": "91.15200000000013",
+      "server": "306.1279999999982"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.002305387395614263,
+      "clientone": 0.00048012770542132005,
+      "system_processes": 0.032033048279918167,
+      "policy": 0.00028476466503799734,
+      "clienttwo": 0.0003588571447955296,
+      "clientthree": 0.00034528385834344975,
+      "orchestrator": 0.0001250099003252222,
+      "api-gateway": 0.00015472525948366663,
+      "rabbitmq": 0.0007369755436482593,
+      "policy-enforcer": 0.00010582516020029629,
+      "server": 0.00033715803584080943
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0026643684059756705,
+      "clientone": 0.000548291948247736,
+      "system_processes": 0.03653537650294349,
+      "policy": 0.0003227366973893356,
+      "clienttwo": 0.0004030805068441713,
+      "clientthree": 0.0003896452066015768,
+      "orchestrator": 0.00013982962429767031,
+      "api-gateway": 0.00017587430034354438,
+      "rabbitmq": 0.0008381374821852127,
+      "policy-enforcer": 0.00011885742878568146,
+      "server": 0.0003814089342610055
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.002495102947370845,
+      "clientone": 0.0005098750969823815,
+      "system_processes": 0.03405613951005837,
+      "policy": 0.00030154668788009184,
+      "clienttwo": 0.0003772059832033629,
+      "clientthree": 0.0003641601788466282,
+      "orchestrator": 0.00013141740152957626,
+      "api-gateway": 0.0001670139122013254,
+      "rabbitmq": 0.0007810557269091594,
+      "policy-enforcer": 0.00011146759328904195,
+      "server": 0.00035588216902902566
+    },
+    "accuracies": [
+      {
+        "accuracy": 58.203125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:45:40Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 77.34375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:45:45Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 80.46875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:45:51Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 76.171875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:45:56Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 80.078125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:01Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 78.515625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:06Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 80.859375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:12Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 80.46875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:17Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 78.90625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:22Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 81.25,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:28Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:33Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 80.859375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:46:38Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_3_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_3_metrics.csv"
+  },
+  "4": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.008414,
+    "experiment_elapsed_time": "0:04:20.200239",
+    "active_elapsed_time": "0:01:20.183281",
+    "idle_energy": {
+      "sidecar": "4742.405999999999",
+      "clientone": "676.6956000000005",
+      "system_processes": "67457.91240000002",
+      "policy": "608.5728000000004",
+      "clienttwo": "814.3775999999999",
+      "clientthree": "751.8672000000008",
+      "orchestrator": "241.60679999999996",
+      "api-gateway": "212.17320000000026",
+      "rabbitmq": "1655.9424000000015",
+      "policy-enforcer": "211.95360000000028",
+      "server": "902.6531999999999"
+    },
+    "active_energy": {
+      "sidecar": "5894.620696",
+      "clientone": "641.0447999999993",
+      "system_processes": "73889.03300109998",
+      "policy": "568.3860000000001",
+      "clienttwo": "726.3827999999988",
+      "clientthree": "786.8268000000002",
+      "orchestrator": "304.4412000000002",
+      "api-gateway": "329.11200000000014",
+      "rabbitmq": "1726.4411999999973",
+      "policy-enforcer": "198.52200000000016",
+      "server": "733.2192"
+    },
+    "clear_active_energy": {
+      "sidecar": "3231.0307082500008",
+      "clientone": "271.7799999999994",
+      "system_processes": "33660.78800000002",
+      "policy": "257.6559999999996",
+      "clienttwo": "307.2799999999998",
+      "clientthree": "314.10400000000067",
+      "orchestrator": "137.95599999999996",
+      "api-gateway": "210.36000000000044",
+      "rabbitmq": "800.4199999999975",
+      "policy-enforcer": "85.8920000000003",
+      "server": "319.74400000000105"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.002954089002195569,
+      "clientone": 0.000615411393467896,
+      "system_processes": 0.040798782378537526,
+      "policy": 0.0003610487595042535,
+      "clienttwo": 0.00045492766940249675,
+      "clientthree": 0.00043755292542328847,
+      "orchestrator": 0.00015504879433136132,
+      "api-gateway": 0.00018945963045390949,
+      "rabbitmq": 0.0009420267491035031,
+      "policy-enforcer": 0.00013226300743059095,
+      "server": 0.0004374631280504073
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0033209305740511063,
+      "clientone": 0.0006805471503608426,
+      "system_processes": 0.04546647440495958,
+      "policy": 0.00039700614331851844,
+      "clienttwo": 0.000502335267951483,
+      "clientthree": 0.00048570452457621845,
+      "orchestrator": 0.00017370914210637961,
+      "api-gateway": 0.0002096084506606278,
+      "rabbitmq": 0.001053278773845161,
+      "policy-enforcer": 0.0001440412700198648,
+      "server": 0.00048280230371306664
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.003152957818895672,
+      "clientone": 0.0006440690415600075,
+      "system_processes": 0.042938235888577356,
+      "policy": 0.0003772852034560311,
+      "clienttwo": 0.00047609457818266503,
+      "clientthree": 0.00045664089870178554,
+      "orchestrator": 0.00016331658593897656,
+      "api-gateway": 0.0002011832712609844,
+      "rabbitmq": 0.0009948719222976313,
+      "policy-enforcer": 0.0001369199999608869,
+      "server": 0.000457273889268
+    },
+    "accuracies": [
+      {
+        "accuracy": 50,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:51:40Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 67.1875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:51:46Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 76.171875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:51:51Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 77.734375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:51:56Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 78.125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:02Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 78.90625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:07Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:12Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 78.90625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:17Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 82.8125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:22Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 81.25,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:28Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 83.59375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:33Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 83.984375,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:52:38Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_4_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_4_metrics.csv"
+  },
+  "5": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.00962,
+    "experiment_elapsed_time": "0:04:25.222974",
+    "active_elapsed_time": "0:01:25.196597",
+    "idle_energy": {
+      "sidecar": "4834.130399999997",
+      "clientone": "679.1651999999995",
+      "system_processes": "67767.4944",
+      "policy": "564.7212000000001",
+      "clienttwo": "791.8523999999985",
+      "clientthree": "774.3959999999981",
+      "orchestrator": "343.9548000000001",
+      "api-gateway": "270.6084000000002",
+      "rabbitmq": "1865.0664000000022",
+      "policy-enforcer": "219.93479999999983",
+      "server": "894.1212000000005"
+    },
+    "active_energy": {
+      "sidecar": "5810.873899975003",
+      "clientone": "632.6351999999991",
+      "system_processes": "71298.04372454999",
+      "policy": "570.9239999999999",
+      "clienttwo": "741.769199999999",
+      "clientthree": "742.6475999999999",
+      "orchestrator": "321.10920000000027",
+      "api-gateway": "325.59480000000025",
+      "rabbitmq": "1656.597600000003",
+      "policy-enforcer": "224.00639999999996",
+      "server": "764.0171999999997"
+    },
+    "clear_active_energy": {
+      "sidecar": "3414.191195100001",
+      "clientone": "278.71925000000044",
+      "system_processes": "33990.62025000001",
+      "policy": "274.3587500000006",
+      "clienttwo": "330.66700000000026",
+      "clientthree": "352.8689999999988",
+      "orchestrator": "147.18175000000014",
+      "api-gateway": "209.15525000000042",
+      "rabbitmq": "761.1410000000028",
+      "policy-enforcer": "101.88099999999989",
+      "server": "367.4804999999989"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.003616158925149362,
+      "clientone": 0.0007482451029229343,
+      "system_processes": 0.0497448458824884,
+      "policy": 0.0004323434676836443,
+      "clienttwo": 0.0005523915031929777,
+      "clientthree": 0.0005351919633193676,
+      "orchestrator": 0.00019489031930544339,
+      "api-gateway": 0.00022684946530837673,
+      "rabbitmq": 0.0011691623378364856,
+      "policy-enforcer": 0.00015768382393185754,
+      "server": 0.0005376335154091595
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.003980706271114578,
+      "clientone": 0.0008118416794357637,
+      "system_processes": 0.0542564903047507,
+      "policy": 0.0004685202717967035,
+      "clienttwo": 0.0006013952721763838,
+      "clientthree": 0.0005817117682677315,
+      "orchestrator": 0.00021522365331162494,
+      "api-gateway": 0.00024742441702874996,
+      "rabbitmq": 0.0012761125543326866,
+      "policy-enforcer": 0.00017170703219697683,
+      "server": 0.0005851488002412037
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.0038285323748540262,
+      "clientone": 0.0007772070873171721,
+      "system_processes": 0.051909281911423535,
+      "policy": 0.0004497780966022698,
+      "clienttwo": 0.0005758882590856915,
+      "clientthree": 0.000557186771202744,
+      "orchestrator": 0.00020443829192281568,
+      "api-gateway": 0.00023912535041274073,
+      "rabbitmq": 0.0012202606906590073,
+      "policy-enforcer": 0.00016410948768983604,
+      "server": 0.0005601326378381913
+    },
+    "accuracies": [
+      {
+        "accuracy": 71.875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:57:41Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 74.21875,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:57:46Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 81.640625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:57:52Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 80.078125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:57:57Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 76.953125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:02Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 78.90625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:08Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 82.03125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:13Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 82.8125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:18Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 82.8125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:23Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 81.25,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:29Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 81.640625,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:34Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 78.125,
+        "clients": 3,
+        "timestamp": "2026-09-19T09:58:39Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_5_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_5_metrics.csv"
+  },
+  "6": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.014141,
+    "experiment_elapsed_time": "0:04:25.318754",
+    "active_elapsed_time": "0:01:25.292786",
+    "idle_energy": {
+      "sidecar": "4869.158399999997",
+      "clientone": "744.8903999999998",
+      "system_processes": "68852.63879999997",
+      "policy": "592.9740000000007",
+      "clienttwo": "819.0432000000005",
+      "clientthree": "794.3832000000001",
+      "orchestrator": "349.4952000000001",
+      "api-gateway": "242.62559999999914",
+      "rabbitmq": "1787.288399999999",
+      "policy-enforcer": "236.19599999999963",
+      "server": "761.9075999999992"
+    },
+    "active_energy": {
+      "sidecar": "5697.205922249996",
+      "clientone": "598.7232000000012",
+      "system_processes": "74224.45249919998",
+      "policy": "598.4064",
+      "clienttwo": "740.7360000000006",
+      "clientthree": "756.1584000000004",
+      "orchestrator": "295.69680000000005",
+      "api-gateway": "318.0492000000002",
+      "rabbitmq": "1509.7752000000016",
+      "policy-enforcer": "228.2544",
+      "server": "713.9988000000011"
+    },
+    "clear_active_energy": {
+      "sidecar": "3394.084484999996",
+      "clientone": "272.7692500000003",
+      "system_processes": "35571.10174999999",
+      "policy": "282.94799999999873",
+      "clienttwo": "321.6357499999987",
+      "clientthree": "371.2035000000004",
+      "orchestrator": "138.54999999999956",
+      "api-gateway": "212.75075000000058",
+      "rabbitmq": "699.0867499999993",
+      "policy-enforcer": "105.49349999999984",
+      "server": "325.86449999999957"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.004276645892337134,
+      "clientone": 0.0008873961135811136,
+      "system_processes": 0.058626709731898395,
+      "policy": 0.0005059719330530334,
+      "clienttwo": 0.0006525096052620255,
+      "clientthree": 0.0006310915112220963,
+      "orchestrator": 0.00023739952058926322,
+      "api-gateway": 0.0002623982361269162,
+      "rabbitmq": 0.001388833796169465,
+      "policy-enforcer": 0.00018681478489614015,
+      "server": 0.0006332767011875438
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0046336573127335945,
+      "clientone": 0.0009485975999987127,
+      "system_processes": 0.06330637786301524,
+      "policy": 0.0005435760556914635,
+      "clienttwo": 0.0006999053176666666,
+      "clientthree": 0.0006788225305878387,
+      "orchestrator": 0.0002559730797795888,
+      "api-gateway": 0.00028325375517934437,
+      "rabbitmq": 0.001484999317845983,
+      "policy-enforcer": 0.00020110162594744443,
+      "server": 0.000677656022944656
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.0044834577576083464,
+      "clientone": 0.0009164251570187036,
+      "system_processes": 0.06087727926227933,
+      "policy": 0.0005237775093075924,
+      "clienttwo": 0.0006740721557682734,
+      "clientthree": 0.0006544273982646889,
+      "orchestrator": 0.00024614889709530637,
+      "api-gateway": 0.00027553017529614816,
+      "rabbitmq": 0.0014341938509238963,
+      "policy-enforcer": 0.00019344753610713738,
+      "server": 0.0006534525447179895
+    },
+    "accuracies": [
+      {
+        "accuracy": 54.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:03:42Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 69.53125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:03:47Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 74.609375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:03:52Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 78.125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:03:58Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:03Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 78.515625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:09Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 80.46875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:14Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 81.640625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:19Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 77.34375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:24Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 78.515625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:30Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:35Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:04:40Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_6_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_6_metrics.csv"
+  },
+  "7": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.010764,
+    "experiment_elapsed_time": "0:04:25.205780",
+    "active_elapsed_time": "0:01:25.183509",
+    "idle_energy": {
+      "sidecar": "4790.221199999996",
+      "clientone": "713.6856000000012",
+      "system_processes": "72956.33639999999",
+      "policy": "636.7967999999997",
+      "clienttwo": "780.8184000000008",
+      "clientthree": "813.0024000000018",
+      "orchestrator": "289.9116000000004",
+      "api-gateway": "215.39160000000015",
+      "rabbitmq": "1541.8800000000008",
+      "policy-enforcer": "225.6696000000001",
+      "server": "810.8964000000005"
+    },
+    "active_energy": {
+      "sidecar": "5662.152899999998",
+      "clientone": "621.3023999999986",
+      "system_processes": "72248.8308183",
+      "policy": "596.7396000000006",
+      "clienttwo": "684.3743999999992",
+      "clientthree": "718.3872",
+      "orchestrator": "296.69759999999974",
+      "api-gateway": "294.24239999999963",
+      "rabbitmq": "1520.2115999999976",
+      "policy-enforcer": "219.83760000000004",
+      "server": "711.4319999999991"
+    },
+    "clear_active_energy": {
+      "sidecar": "3299.0234310500005",
+      "clientone": "282.25525000000016",
+      "system_processes": "34763.70800000002",
+      "policy": "288.6430000000017",
+      "clienttwo": "295.4642500000002",
+      "clientthree": "336.2260000000013",
+      "orchestrator": "127.15575000000024",
+      "api-gateway": "213.23099999999974",
+      "rabbitmq": "659.1962499999976",
+      "policy-enforcer": "96.99349999999995",
+      "server": "324.58949999999857"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.004925404540673494,
+      "clientone": 0.0010198874881335665,
+      "system_processes": 0.06791039727614452,
+      "policy": 0.0005838318560938577,
+      "clienttwo": 0.0007494341993690152,
+      "clientthree": 0.0007293049588467065,
+      "orchestrator": 0.000274386425475259,
+      "api-gateway": 0.00029689219504586465,
+      "rabbitmq": 0.0015822439801917165,
+      "policy-enforcer": 0.00021537427391250664,
+      "server": 0.0007284569474624158
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.005276071217212095,
+      "clientone": 0.0010828377329123087,
+      "system_processes": 0.07249285309674426,
+      "policy": 0.0006211198269070729,
+      "clienttwo": 0.0007934863734470437,
+      "clientthree": 0.0007755752622701505,
+      "orchestrator": 0.00029290451527917217,
+      "api-gateway": 0.0003166352492666652,
+      "rabbitmq": 0.0016791822416680783,
+      "policy-enforcer": 0.00022925258570605692,
+      "server": 0.000772352037722914
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.005125600209365823,
+      "clientone": 0.0010493944910064635,
+      "system_processes": 0.07012915465478764,
+      "policy": 0.0006016404591163155,
+      "clienttwo": 0.0007694445621477896,
+      "clientthree": 0.0007515794960005237,
+      "orchestrator": 0.0002825055659363356,
+      "api-gateway": 0.0003101848287836666,
+      "rabbitmq": 0.001625992161203432,
+      "policy-enforcer": 0.0002216545554012427,
+      "server": 0.0007481979627319597
+    },
+    "accuracies": [
+      {
+        "accuracy": 50,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:09:42Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 58.984375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:09:47Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 65.625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:09:53Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 71.09375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:09:58Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 71.875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:03Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 74.21875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:09Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 76.953125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:14Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 80.859375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:19Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 77.34375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:24Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 80.859375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:29Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 82.03125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:35Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 82.421875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:10:40Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_7_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_7_metrics.csv"
+  },
+  "8": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.0124,
+    "experiment_elapsed_time": "0:04:25.219677",
+    "active_elapsed_time": "0:01:25.199473",
+    "idle_energy": {
+      "sidecar": "4983.192000000001",
+      "clientone": "737.3052000000004",
+      "system_processes": "71616.44880000006",
+      "policy": "647.5031999999997",
+      "clienttwo": "908.0028000000007",
+      "clientthree": "832.1940000000001",
+      "orchestrator": "334.2275999999997",
+      "api-gateway": "167.33880000000042",
+      "rabbitmq": "1747.2923999999975",
+      "policy-enforcer": "232.35120000000012",
+      "server": "828.7811999999996"
+    },
+    "active_energy": {
+      "sidecar": "5878.7631",
+      "clientone": "652.5144000000018",
+      "system_processes": "72209.73095895002",
+      "policy": "610.2612",
+      "clienttwo": "734.2776000000001",
+      "clientthree": "682.549200000001",
+      "orchestrator": "355.7951999999999",
+      "api-gateway": "305.64359999999965",
+      "rabbitmq": "1639.1376000000032",
+      "policy-enforcer": "217.51920000000004",
+      "server": "709.2863999999998"
+    },
+    "clear_active_energy": {
+      "sidecar": "3426.1260265499964",
+      "clientone": "310.72599999999835",
+      "system_processes": "34296.178250000055",
+      "policy": "299.03850000000205",
+      "clienttwo": "338.96724999999884",
+      "clientthree": "305.26899999999927",
+      "orchestrator": "159.56624999999937",
+      "api-gateway": "213.11200000000022",
+      "rabbitmq": "732.0115000000006",
+      "policy-enforcer": "98.42999999999971",
+      "server": "318.60125000000045"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.0055775561558303755,
+      "clientone": 0.0011549359619183615,
+      "system_processes": 0.0769760485442138,
+      "policy": 0.0006613425619820714,
+      "clienttwo": 0.0008495420051587711,
+      "clientthree": 0.0008268949408471694,
+      "orchestrator": 0.00031408842647387414,
+      "api-gateway": 0.0003271513683708147,
+      "rabbitmq": 0.0017895849627179315,
+      "policy-enforcer": 0.00024392173450416831,
+      "server": 0.0008239589544333176
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.005942698455134086,
+      "clientone": 0.0012215033981119875,
+      "system_processes": 0.08157564662847677,
+      "policy": 0.0007000037155848795,
+      "clienttwo": 0.0008976498313013584,
+      "clientthree": 0.000870126622974,
+      "orchestrator": 0.00033630067776589293,
+      "api-gateway": 0.0003469077893041601,
+      "rabbitmq": 0.0018939006119605927,
+      "policy-enforcer": 0.00025788595825924855,
+      "server": 0.0008674088057051696
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.005785322609187501,
+      "clientone": 0.001186626137429511,
+      "system_processes": 0.07921132764461589,
+      "policy": 0.0006802747432603176,
+      "clienttwo": 0.0008729114884132402,
+      "clientthree": 0.0008466453302534984,
+      "orchestrator": 0.0003242248596548137,
+      "api-gateway": 0.00033986050612502854,
+      "rabbitmq": 0.001837690098602249,
+      "policy-enforcer": 0.0002504759447623196,
+      "server": 0.0008431057550974519
+    },
+    "accuracies": [
+      {
+        "accuracy": 42.1875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:15:42Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 73.4375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:15:47Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 73.828125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:15:52Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 77.734375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:15:58Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 77.734375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:03Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 79.296875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:08Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 80.078125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:14Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:19Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 79.6875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:25Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 75.390625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:30Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 82.421875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:36Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 78.125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:16:41Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_8_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_8_metrics.csv"
+  },
+  "9": {
+    "training_status": "done",
+    "request_approval_status_code": 202,
+    "request_approval_execution_time": 0.011393,
+    "experiment_elapsed_time": "0:04:20.188965",
+    "active_elapsed_time": "0:01:20.164924",
+    "idle_energy": {
+      "sidecar": "4854.673799999998",
+      "clientone": "723.1409999999989",
+      "system_processes": "69805.7793",
+      "policy": "583.2539999999995",
+      "clienttwo": "799.5635999999994",
+      "clientthree": "836.0604000000016",
+      "orchestrator": "361.65240000000074",
+      "api-gateway": "184.28039999999976",
+      "rabbitmq": "1689.7643999999957",
+      "policy-enforcer": "210.90960000000044",
+      "server": "802.1736000000011"
+    },
+    "active_energy": {
+      "sidecar": "5871.870900000004",
+      "clientone": "649.8180000000006",
+      "system_processes": "71525.97447165001",
+      "policy": "601.0308",
+      "clienttwo": "732.1248000000003",
+      "clientthree": "735.1560000000001",
+      "orchestrator": "347.7959999999997",
+      "api-gateway": "334.45080000000036",
+      "rabbitmq": "1672.217999999994",
+      "policy-enforcer": "203.6195999999994",
+      "server": "695.7432000000005"
+    },
+    "clear_active_energy": {
+      "sidecar": "3158.110022200008",
+      "clientone": "275.0719999999971",
+      "system_processes": "31833.78000000002",
+      "policy": "256.2599999999993",
+      "clienttwo": "290.7279999999994",
+      "clientthree": "305.0199999999991",
+      "orchestrator": "147.02399999999957",
+      "api-gateway": "205.47600000000048",
+      "rabbitmq": "703.952",
+      "policy-enforcer": "90.32799999999921",
+      "server": "290.4719999999993"
+    },
+    "idle_carbon_emission": {
+      "sidecar": 0.006236406411592434,
+      "clientone": 0.0012922753028446075,
+      "system_processes": 0.08598292565285677,
+      "policy": 0.0007366007834132632,
+      "clienttwo": 0.0009475537398215701,
+      "clientthree": 0.0009224181780016404,
+      "orchestrator": 0.000359290593588565,
+      "api-gateway": 0.00035904749409220696,
+      "rabbitmq": 0.0020012427989114486,
+      "policy-enforcer": 0.0002712550974161158,
+      "server": 0.0009173975790383987
+    },
+    "active_carbon_emission": {
+      "sidecar": 0.0066105482770401494,
+      "clientone": 0.001398207069887418,
+      "system_processes": 0.09046233533293938,
+      "policy": 0.0007705622677422968,
+      "clienttwo": 0.000997869628975311,
+      "clientthree": 0.0009782720756156375,
+      "orchestrator": 0.00038098320573669466,
+      "api-gateway": 0.0003800852142352941,
+      "rabbitmq": 0.0021071983501288506,
+      "policy-enforcer": 0.0002841796835182073,
+      "server": 0.0009733653333138474
+    },
+    "clear_active_carbon_emission": {
+      "sidecar": 0.006425593238293884,
+      "clientone": 0.0013201289066002038,
+      "system_processes": 0.08804673864853226,
+      "policy": 0.0007525159001420459,
+      "clienttwo": 0.0009671865014002394,
+      "clientthree": 0.0009409302344171354,
+      "orchestrator": 0.0003685560764470646,
+      "api-gateway": 0.0003714829654949166,
+      "rabbitmq": 0.0020463441595063893,
+      "policy-enforcer": 0.0002770576521309559,
+      "server": 0.000934599327777233
+    },
+    "accuracies": [
+      {
+        "accuracy": 61.328125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:21:42Z",
+        "train_round": 0
+      },
+      {
+        "accuracy": 64.0625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:21:47Z",
+        "train_round": 1
+      },
+      {
+        "accuracy": 67.1875,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:21:52Z",
+        "train_round": 2
+      },
+      {
+        "accuracy": 72.265625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:21:58Z",
+        "train_round": 3
+      },
+      {
+        "accuracy": 77.734375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:03Z",
+        "train_round": 4
+      },
+      {
+        "accuracy": 77.34375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:08Z",
+        "train_round": 5
+      },
+      {
+        "accuracy": 80.078125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:13Z",
+        "train_round": 6
+      },
+      {
+        "accuracy": 77.34375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:18Z",
+        "train_round": 7
+      },
+      {
+        "accuracy": 80.859375,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:24Z",
+        "train_round": 8
+      },
+      {
+        "accuracy": 75.390625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:29Z",
+        "train_round": 9
+      },
+      {
+        "accuracy": 75.78125,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:34Z",
+        "train_round": 10
+      },
+      {
+        "accuracy": 81.640625,
+        "clients": 3,
+        "timestamp": "2026-09-19T10:22:40Z",
+        "train_round": 11
+      }
+    ],
+    "total_metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_9_total_metrics.csv",
+    "metrics_path": "experiments/fabric/scattered_fed_bcd_experiment_260919_0924/experiment_9_metrics.csv"
+  }
+}
