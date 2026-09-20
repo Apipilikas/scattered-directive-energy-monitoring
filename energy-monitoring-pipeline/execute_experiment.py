@@ -20,11 +20,10 @@ REQUEST_APPROVAL_URL = f"{API_BASE_URL}/requestApproval"
 GET_TRAINING_STATUS_URL = f"{API_BASE_URL}/getTrainingStatus"
 
 # Request bodies
-REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server", "aggregator", "authority"]
+REQUEST_APPROVAL_DATA_PROVIDERS = ["clientone", "clienttwo", "clientthree", "server"]
 REQUEST_APPROVAL_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
-    "patience": 10,
     "policy_removal": -1,
     "policy_reintroduction": -1,
     "training_backtrack": 0,
@@ -34,7 +33,6 @@ REQUEST_APPROVAL_DATA_BODY = {
 REQUEST_APPROVAL_POLICY_AWARE_DATA_BODY = {
     "learning_rate": 0.1,
     "cycles": 180,
-    "patience": 10,
     "policy_removal": 20,
     "policy_reintroduction": 60,
     "training_backtrack": 0,
