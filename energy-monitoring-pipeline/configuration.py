@@ -4,11 +4,11 @@ import os
 # General
 COLLECT_MINUTES_BEFORE = 15
 COLUMN_TO_DROP = "timestamp"
-PREFIXES = ["baseline_experiment", 
-            "baseline_event_driven_experiment", 
-            "fed_bcd_experiment", 
-            "overlap_fed_bcd_experiment", 
-            "fed_encrypt_experiment"
+PREFIXES = ["scattered_baseline_experiment", 
+            # "baseline_event_driven_experiment", 
+            "scattered_fed_bcd_experiment", 
+            "scattered_overlap_fed_bcd_experiment", 
+            "scattered_es_fed_encrypt_experiment"
             ]
 
 # Paths / Files
