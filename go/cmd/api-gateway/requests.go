@@ -809,36 +809,7 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 			logger.Sugar().Info("Sending in the policy change request, reintroducing client 3 to the agreement.")
 			logger.Sugar().Info("TODO: Policy change request not yet implemented. (values are hardcoded)")
 
-			rawPayload := `{
-						"name": "clientthree"
-						,
-						"relations": {
-							"evangelos.pipilikas@student.uva.nl": {
-								"ID": "GUID",
-								"requestTypes": [
-									"vflTrainRequest"
-								],
-								"dataSets": null,
-								"allowedArchetypes": [
-									"computeToData"
-								],
-								"allowedComputeProviders": [
-									"clientthree"
-								]
-							}
-						},
-						"computeProviders": [
-							"clientthree"
-						],
-						"archetypes": [
-							"computeToData"
-						]
-				}`
-
-			api.PutRequest(
-				"http://orchestrator.orchestrator.svc.cluster.local:8080/api/v1/policyEnforcer",
-				rawPayload,
-				nil)
+			addClient()
 		}
 
 		accuracy, loss, err := runVFLTrainingRound(dataRequest, currentClients, &weights, authorizedProviders, sampleBatchSize)
@@ -873,6 +844,12 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 		}
 
 		if trainingFailed || (cycle+1 >= patience && nonImprovementCounter == patience) {
+
+			if cycle > policy_removal && cycle < policy_reintroduction {
+				logger.Sugar().Info("Recovering client due to early stopping")
+				addClient()
+			}
+
 			break
 		}
 
@@ -949,6 +926,39 @@ func runVFLTraining(dataRequest map[string]any, authorizedProviders map[string]s
 
 	logger.Sugar().Info("Training results: ", string(responseJson))
 	return cleanupAndMarshalResponse(response) // note this is not the same as responseJson
+}
+
+func addClient() {
+	rawPayload := `{
+						"name": "clientthree"
+						,
+						"relations": {
+							"evangelos.pipilikas@student.uva.nl": {
+								"ID": "GUID",
+								"requestTypes": [
+									"vflTrainRequest"
+								],
+								"dataSets": null,
+								"allowedArchetypes": [
+									"computeToData"
+								],
+								"allowedComputeProviders": [
+									"clientthree"
+								]
+							}
+						},
+						"computeProviders": [
+							"clientthree"
+						],
+						"archetypes": [
+							"computeToData"
+						]
+				}`
+
+	api.PutRequest(
+		"http://orchestrator.orchestrator.svc.cluster.local:8080/api/v1/policyEnforcer",
+		rawPayload,
+		nil)
 }
 
 // #region vflTrainModelRequest - Helpers
